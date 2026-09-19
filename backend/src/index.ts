@@ -1,12 +1,17 @@
 import Fastify from 'fastify';
+import { sql } from 'drizzle-orm';
+import { db } from './db';
 
 const fastify = Fastify({
     logger: true,
 });
 
 fastify.get('/', async () => {
+    await db.execute(sql`SELECT 1`);
+
     return {
         message: 'Backend is running',
+        database: 'connected',
     };
 });
 
