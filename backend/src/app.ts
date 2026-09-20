@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyServerOptions } from 'fastify';
 
 import { registerErrorHandler } from './errors/error-handler';
 import { healthRoutes } from './routes/health';
@@ -6,10 +6,12 @@ import { jobRoutes } from './routes/jobs';
 import { skillRoutes } from './routes/skills';
 import { userSkillRoutes } from './routes/user-skills';
 
-export function buildApp() {
-    const fastify = Fastify({
+export function buildApp(
+    options: FastifyServerOptions = {
         logger: false,
-    });
+    }
+) {
+    const fastify = Fastify(options);
 
     registerErrorHandler(fastify);
 

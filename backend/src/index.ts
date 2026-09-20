@@ -1,6 +1,8 @@
 import { buildApp } from './app';
 
-const fastify = buildApp();
+const fastify = buildApp({
+    logger: true,
+});
 
 const start = async () => {
     try {
