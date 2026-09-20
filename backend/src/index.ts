@@ -1,18 +1,28 @@
 import Fastify from 'fastify';
-import { sql } from 'drizzle-orm';
-import { db } from './db';
+
+import { healthRoutes } from './routes/health';
+import { jobRoutes } from './routes/jobs';
+import { skillRoutes } from './routes/skills';
+import { userSkillRoutes } from './routes/user-skills';
 
 const fastify = Fastify({
     logger: true,
 });
 
-fastify.get('/', async () => {
-    await db.execute(sql`SELECT 1`);
+fastify.register(healthRoutes, {
+    prefix: '/api/v1/health',
+});
 
-    return {
-        message: 'Backend is running',
-        database: 'connected',
-    };
+fastify.register(jobRoutes, {
+    prefix: '/api/v1/jobs',
+});
+
+fastify.register(skillRoutes, {
+    prefix: '/api/v1/skills',
+});
+
+fastify.register(userSkillRoutes, {
+    prefix: '/api/v1/user-skills',
 });
 
 const start = async () => {
