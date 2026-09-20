@@ -27,6 +27,7 @@ export const jobs = pgTable(
         company: varchar('company', { length: 255 }).notNull(),
         title: varchar('title', { length: 255 }).notNull(),
         sourceUrl: text('source_url'),
+        originalText: text('original_text'),
 
         location: varchar('location', { length: 255 }),
         workModel: varchar('work_model', { length: 50 }),

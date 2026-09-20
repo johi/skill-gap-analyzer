@@ -1,0 +1,1298 @@
+SKILL GAP ANALYZER
+USE CASE CATALOGUE
+==================
+
+
+JOB MANAGEMENT
+==============
+
+UC-01: Add Job
+
+Primary Actor:
+User
+
+Goal:
+Add a job opportunity manually to the system.
+
+Preconditions:
+None.
+
+Trigger:
+User wants to record a job opportunity.
+
+Main Success Scenario:
+1. User provides the job information.
+2. System validates the information.
+3. System stores the job.
+4. System confirms that the job was created.
+
+Extensions:
+2a. Job information is invalid:
+    System reports the validation errors and does not store the job.
+
+Postcondition:
+The job exists in the system.
+
+
+UC-02: View Job
+
+Primary Actor:
+User
+
+Goal:
+View all stored information about a job.
+
+Preconditions:
+The job exists.
+
+Trigger:
+User selects a job.
+
+Main Success Scenario:
+1. User selects a job.
+2. System retrieves the job.
+3. System retrieves its associated skills.
+4. System presents the complete job information.
+
+Extensions:
+2a. Job does not exist:
+    System reports that the job could not be found.
+
+Postcondition:
+No data is changed.
+
+
+UC-03: List Jobs
+
+Primary Actor:
+User
+
+Goal:
+View the jobs stored in the system.
+
+Preconditions:
+None.
+
+Trigger:
+User requests the job list.
+
+Main Success Scenario:
+1. User requests the jobs.
+2. System retrieves the jobs.
+3. System returns the job list.
+
+Extensions:
+2a. No jobs exist:
+    System returns an empty list.
+
+Postcondition:
+No data is changed.
+
+
+UC-04: Filter and Sort Jobs
+
+Primary Actor:
+User
+
+Goal:
+Find jobs matching selected criteria.
+
+Preconditions:
+None.
+
+Trigger:
+User specifies filtering or sorting criteria.
+
+Main Success Scenario:
+1. User specifies criteria.
+2. System validates the criteria.
+3. System retrieves matching jobs.
+4. System sorts the result as requested.
+5. System returns the result.
+
+Extensions:
+2a. Criteria are invalid:
+    System reports the validation error.
+
+3a. No jobs match:
+    System returns an empty result.
+
+Postcondition:
+No data is changed.
+
+
+UC-05: Update Job
+
+Primary Actor:
+User
+
+Goal:
+Correct or update information about an existing job.
+
+Preconditions:
+The job exists.
+
+Trigger:
+User edits a job.
+
+Main Success Scenario:
+1. User submits changed job information.
+2. System validates the changes.
+3. System updates the job.
+4. System confirms the update.
+
+Extensions:
+2a. Information is invalid:
+    System reports the validation errors and leaves the job unchanged.
+
+3a. Job no longer exists:
+    System reports that the job could not be found.
+
+Postcondition:
+The stored job reflects the accepted changes.
+
+
+UC-06: Delete Job
+
+Primary Actor:
+User
+
+Goal:
+Remove a job from the dataset.
+
+Preconditions:
+The job exists.
+
+Trigger:
+User requests deletion of a job.
+
+Main Success Scenario:
+1. User requests deletion.
+2. System deletes the job.
+3. System deletes its job-skill associations.
+4. System confirms deletion.
+
+Extensions:
+2a. Job does not exist:
+    System reports that the job could not be found.
+
+Postcondition:
+The job no longer participates in analysis.
+
+
+UC-07: Update Job Application Status
+
+Primary Actor:
+User
+
+Goal:
+Track the application status of a job.
+
+Preconditions:
+The job exists.
+
+Trigger:
+User changes the job's application status.
+
+Main Success Scenario:
+1. User selects an application status.
+2. System validates the status.
+3. System updates the job.
+4. System confirms the change.
+
+Extensions:
+2a. Status is invalid:
+    System rejects the change.
+
+Postcondition:
+The current application status is stored.
+
+
+UC-08: Rate Job Interest
+
+Primary Actor:
+User
+
+Goal:
+Record the user's level of interest in a job.
+
+Preconditions:
+The job exists.
+
+Trigger:
+User assigns or changes an interest value.
+
+Main Success Scenario:
+1. User provides an interest value.
+2. System validates the value.
+3. System stores the value.
+
+Extensions:
+2a. Value is outside the permitted range:
+    System rejects the value.
+
+Postcondition:
+The job has the current interest assessment.
+
+
+JOB ADVERTISEMENT ANALYSIS
+==========================
+
+UC-09: Submit Job Advertisement for Analysis
+
+Primary Actor:
+User
+
+Goal:
+Have the system analyze an unstructured job advertisement.
+
+Preconditions:
+User has the job advertisement text.
+
+Trigger:
+User submits the advertisement.
+
+Main Success Scenario:
+1. User provides the raw advertisement text.
+2. System validates the input.
+3. System sends the advertisement to the configured AI analysis service.
+4. System receives structured analysis data.
+5. System validates the structured result.
+6. System returns the proposed job information for review.
+
+Extensions:
+2a. Advertisement is empty or invalid:
+    System rejects the request.
+
+3a. AI service is unavailable:
+    System reports that analysis could not be completed.
+
+4a. AI service does not return a usable result:
+    System reports that analysis failed.
+
+5a. Structured result is invalid:
+    System rejects the analysis result.
+
+Postcondition:
+A proposed structured representation exists for review.
+No job has yet been persisted.
+
+
+UC-10: Extract Job Metadata
+
+Primary Actor:
+System
+
+Goal:
+Extract structured job metadata from an advertisement.
+
+Preconditions:
+A job advertisement has been submitted for analysis.
+
+Trigger:
+Job analysis begins.
+
+Main Success Scenario:
+1. System analyzes the advertisement.
+2. System identifies company and job title.
+3. System identifies available location and work-model information.
+4. System identifies employment type and seniority.
+5. System identifies primary role.
+6. System identifies experience requirements.
+7. System identifies education requirements.
+8. System identifies language requirements.
+9. System identifies salary information when available.
+10. System produces structured metadata.
+
+Extensions:
+2a-9a. Information is not present or cannot be determined reliably:
+    System leaves the corresponding value unspecified rather than inventing it.
+
+Postcondition:
+Structured job metadata is available for review.
+
+
+UC-11: Extract Skills from Job Advertisement
+
+Primary Actor:
+System
+
+Goal:
+Identify technologies, competencies and other relevant skills requested by an employer.
+
+Preconditions:
+A job advertisement has been submitted for analysis.
+
+Trigger:
+Job analysis begins.
+
+Main Success Scenario:
+1. System analyzes the advertisement.
+2. System identifies skills mentioned or clearly required by the advertisement.
+3. System assigns a category to each skill.
+4. System determines whether each skill is must-have or nice-to-have.
+5. System returns the proposed skills.
+
+Extensions:
+2a. No relevant skills can be identified:
+    System returns no proposed skills.
+
+3a. Category cannot be determined reliably:
+    System marks the skill for review.
+
+4a. Requirement level cannot be determined reliably:
+    System marks the classification for review.
+
+Postcondition:
+A proposed structured skill list is available for review.
+
+
+UC-12: Review Job Analysis
+
+Primary Actor:
+User
+
+Goal:
+Verify AI-extracted information before it becomes persistent application data.
+
+Preconditions:
+A job advertisement has been analyzed.
+
+Trigger:
+System returns the proposed analysis.
+
+Main Success Scenario:
+1. System presents the extracted job information.
+2. System presents the extracted skills and requirement classifications.
+3. User reviews the information.
+4. User accepts or corrects the proposed information.
+5. System validates the reviewed information.
+
+Extensions:
+4a. User rejects the analysis:
+    Analysis is discarded without creating a job.
+
+5a. Corrected information is invalid:
+    System reports the validation errors.
+
+Postcondition:
+Validated job information is ready to be saved.
+
+
+UC-13: Save Analyzed Job
+
+Primary Actor:
+User
+
+Goal:
+Store a reviewed job analysis as a job in the dataset.
+
+Preconditions:
+The analyzed information has been reviewed.
+
+Trigger:
+User accepts and saves the analysis.
+
+Main Success Scenario:
+1. User requests that the reviewed job be saved.
+2. System validates the complete job.
+3. System stores the job.
+4. System resolves its skills against the skill taxonomy.
+5. System creates the job-skill associations.
+6. System stores the original advertisement.
+7. System confirms creation.
+
+Extensions:
+2a. Reviewed information is invalid:
+    System reports validation errors.
+
+4a. A skill requires normalization:
+    System resolves it according to the skill normalization rules.
+
+Postcondition:
+The analyzed job participates in the dataset and subsequent analysis.
+
+
+SKILL TAXONOMY
+==============
+
+UC-14: Add Skill
+
+Primary Actor:
+User
+
+Goal:
+Add a skill to the system's skill taxonomy.
+
+Preconditions:
+None.
+
+Trigger:
+User wants to create a skill.
+
+Main Success Scenario:
+1. User provides a skill name and category.
+2. System validates the information.
+3. System checks for an existing equivalent skill.
+4. System creates the skill.
+5. System returns the created skill.
+
+Extensions:
+3a. Skill already exists:
+    System does not create a duplicate and reports the existing skill.
+
+Postcondition:
+The skill is available for jobs and user proficiency assessments.
+
+
+UC-15: View Skills
+
+Primary Actor:
+User
+
+Goal:
+View the skill taxonomy.
+
+Preconditions:
+None.
+
+Trigger:
+User requests the skills.
+
+Main Success Scenario:
+1. User requests the skill list.
+2. System retrieves the skills.
+3. System returns the skills and their categories.
+
+Extensions:
+2a. No skills exist:
+    System returns an empty list.
+
+Postcondition:
+No data is changed.
+
+
+UC-16: Update Skill
+
+Primary Actor:
+User
+
+Goal:
+Correct the name or category of a skill.
+
+Preconditions:
+The skill exists.
+
+Trigger:
+User edits a skill.
+
+Main Success Scenario:
+1. User submits the changed skill.
+2. System validates the information.
+3. System checks that the change will not create a duplicate.
+4. System updates the skill.
+
+Extensions:
+2a. Information is invalid:
+    System rejects the change.
+
+3a. Equivalent skill already exists:
+    System reports the conflict.
+
+Postcondition:
+The taxonomy contains the updated skill.
+
+
+UC-17: Delete Skill
+
+Primary Actor:
+User
+
+Goal:
+Remove an unwanted skill from the taxonomy.
+
+Preconditions:
+The skill exists.
+
+Trigger:
+User requests deletion.
+
+Main Success Scenario:
+1. User requests deletion.
+2. System determines the consequences of deletion.
+3. System deletes the skill and associated relationships.
+4. System confirms deletion.
+
+Extensions:
+2a. Deletion would remove relevant existing information:
+    System warns the user and requires appropriate confirmation.
+
+Postcondition:
+The skill no longer exists in the taxonomy.
+
+
+UC-18: Normalize Skill
+
+Primary Actor:
+System
+
+Goal:
+Map different representations of the same skill to one canonical skill.
+
+Preconditions:
+A skill name has been obtained from user input, import or AI analysis.
+
+Trigger:
+System needs to resolve a skill.
+
+Main Success Scenario:
+1. System receives a proposed skill.
+2. System searches the existing taxonomy.
+3. System identifies an equivalent canonical skill.
+4. System uses the canonical skill.
+
+Extensions:
+3a. No equivalent skill exists:
+    System proposes creation of a new skill.
+
+3b. Multiple possible matches exist:
+    System marks the skill for user review.
+
+Postcondition:
+The input refers to a canonical skill or is identified as requiring review.
+
+
+JOB SKILL REQUIREMENTS
+======================
+
+UC-19: Assign Skill to Job
+
+Primary Actor:
+User
+
+Goal:
+Associate a required skill with a job.
+
+Preconditions:
+The job and skill exist.
+
+Trigger:
+User adds a skill to a job.
+
+Main Success Scenario:
+1. User selects a skill.
+2. User classifies it as must-have or nice-to-have.
+3. System validates the association.
+4. System associates the skill with the job.
+
+Extensions:
+3a. Association already exists:
+    System updates or retains the existing association.
+
+Postcondition:
+The skill contributes to analysis of the job.
+
+
+UC-20: Change Job Skill Requirement
+
+Primary Actor:
+User
+
+Goal:
+Correct whether a skill is must-have or nice-to-have.
+
+Preconditions:
+The skill is associated with the job.
+
+Trigger:
+User changes the requirement classification.
+
+Main Success Scenario:
+1. User changes the classification.
+2. System validates the classification.
+3. System updates the association.
+
+Extensions:
+2a. Classification is invalid:
+    System rejects the change.
+
+Postcondition:
+The association contains the current requirement classification.
+
+
+UC-21: Remove Skill from Job
+
+Primary Actor:
+User
+
+Goal:
+Remove an incorrectly associated skill from a job.
+
+Preconditions:
+The association exists.
+
+Trigger:
+User removes the skill.
+
+Main Success Scenario:
+1. User requests removal.
+2. System removes the association.
+
+Extensions:
+None.
+
+Postcondition:
+The skill no longer contributes to analysis of that job.
+
+
+PERSONAL SKILL PROFILE
+======================
+
+UC-22: Assess Personal Skill
+
+Primary Actor:
+User
+
+Goal:
+Record the user's current proficiency in a skill.
+
+Preconditions:
+The skill exists.
+
+Trigger:
+User assesses their proficiency.
+
+Main Success Scenario:
+1. User selects a skill.
+2. User provides a proficiency level from 0 to 5.
+3. System validates the level.
+4. System stores the assessment.
+
+Extensions:
+3a. Level is outside 0 to 5:
+    System rejects the value.
+
+Postcondition:
+The user's current proficiency is stored.
+
+
+UC-23: Update Personal Skill Assessment
+
+Primary Actor:
+User
+
+Goal:
+Update proficiency after gaining experience or reconsidering an assessment.
+
+Preconditions:
+A personal assessment exists for the skill.
+
+Trigger:
+User changes the proficiency level.
+
+Main Success Scenario:
+1. User provides a new level.
+2. System validates the level.
+3. System updates the assessment.
+
+Extensions:
+2a. Level is invalid:
+    System rejects the change.
+
+Postcondition:
+The personal skill profile reflects the new assessment.
+
+
+UC-24: Remove Personal Skill Assessment
+
+Primary Actor:
+User
+
+Goal:
+Remove a personal proficiency assessment.
+
+Preconditions:
+An assessment exists.
+
+Trigger:
+User requests removal.
+
+Main Success Scenario:
+1. User requests removal.
+2. System removes the assessment.
+
+Extensions:
+None.
+
+Postcondition:
+No personal proficiency value exists for the skill.
+
+
+UC-25: View Personal Skill Profile
+
+Primary Actor:
+User
+
+Goal:
+View current proficiency assessments.
+
+Preconditions:
+None.
+
+Trigger:
+User requests the personal skill profile.
+
+Main Success Scenario:
+1. System retrieves the skills and existing assessments.
+2. System presents the proficiency levels.
+
+Extensions:
+1a. No assessments exist:
+    System returns an empty profile.
+
+Postcondition:
+No data is changed.
+
+
+MARKET ANALYSIS
+===============
+
+UC-26: Analyze Skill Demand
+
+Primary Actor:
+User
+
+Goal:
+Determine which skills occur most frequently in the collected job market sample.
+
+Preconditions:
+Jobs with skill associations exist.
+
+Trigger:
+User requests skill-demand analysis.
+
+Main Success Scenario:
+1. System analyzes active jobs in the dataset.
+2. System counts jobs mentioning each skill.
+3. System counts must-have occurrences.
+4. System counts nice-to-have occurrences.
+5. System calculates the percentage of jobs mentioning each skill.
+6. System returns the demand analysis.
+
+Extensions:
+1a. Dataset contains no analyzable jobs:
+    System reports that insufficient data is available.
+
+Postcondition:
+No persistent data is changed.
+
+
+UC-27: Analyze Skill Gaps
+
+Primary Actor:
+User
+
+Goal:
+Identify differences between market demand and the user's current skill levels.
+
+Preconditions:
+Job skill data and personal skill assessments exist.
+
+Trigger:
+User requests skill-gap analysis.
+
+Main Success Scenario:
+1. System obtains current market-demand data.
+2. System obtains the user's proficiency levels.
+3. System calculates the proficiency gap for relevant skills.
+4. System combines gaps with market demand.
+5. System returns the skill-gap analysis.
+
+Extensions:
+2a. A relevant skill has not been assessed:
+    System identifies the skill as unassessed.
+
+Postcondition:
+No persistent data is changed.
+
+
+UC-28: Calculate Skill Priority
+
+Primary Actor:
+User
+
+Goal:
+Determine which skills provide the greatest potential value for upskilling.
+
+Preconditions:
+Market-demand and personal proficiency data exist.
+
+Trigger:
+User requests prioritized skill-gap analysis.
+
+Main Success Scenario:
+1. System obtains skill demand.
+2. System obtains personal proficiency.
+3. System calculates the skill gap.
+4. System calculates demand weighting.
+5. System calculates the priority score.
+6. System returns the prioritized analysis.
+
+Extensions:
+1a. Insufficient data exists:
+    System reports which information is missing.
+
+Postcondition:
+No persistent data is changed.
+
+
+JOB MATCHING
+============
+
+UC-29: Calculate Job Match
+
+Primary Actor:
+User
+
+Goal:
+Determine how closely the user's current skill profile matches a job.
+
+Preconditions:
+The job has skill requirements.
+
+Trigger:
+User requests the match for a job.
+
+Main Success Scenario:
+1. System retrieves the job's required and preferred skills.
+2. System retrieves the user's proficiency levels.
+3. System applies the defined matching algorithm.
+4. System calculates the match result.
+5. System identifies relevant strengths and gaps.
+6. System returns the result.
+
+Extensions:
+2a. Some skills have not been assessed:
+    System identifies the missing assessments and handles them according to the matching rules.
+
+Postcondition:
+No persistent data is changed.
+
+
+UC-30: Compare Job Matches
+
+Primary Actor:
+User
+
+Goal:
+Compare opportunities according to their fit with the user's current profile.
+
+Preconditions:
+Multiple jobs exist.
+
+Trigger:
+User requests job-match analysis.
+
+Main Success Scenario:
+1. System selects the relevant jobs.
+2. System calculates or retrieves their current match results.
+3. System returns the jobs and comparable match information.
+
+Extensions:
+1a. No jobs qualify:
+    System returns an empty result.
+
+Postcondition:
+No persistent data is changed.
+
+
+UC-31: Calculate Projected Job Match
+
+Primary Actor:
+User
+
+Goal:
+Determine how a job match would change after improving selected skills.
+
+Preconditions:
+The job and personal skill profile exist.
+
+Trigger:
+User specifies proposed future skill levels.
+
+Main Success Scenario:
+1. User specifies one or more projected skill levels.
+2. System validates the levels.
+3. System calculates the current match.
+4. System calculates the projected match.
+5. System returns the difference and affected skill gaps.
+
+Extensions:
+2a. Proposed level is invalid:
+    System rejects the projection.
+
+Postcondition:
+The real personal skill profile remains unchanged.
+
+
+DASHBOARD AND OVERVIEW
+======================
+
+UC-32: View Analysis Dashboard
+
+Primary Actor:
+User
+
+Goal:
+Obtain an overview of the current job-market dataset and personal skill-gap position.
+
+Preconditions:
+None.
+
+Trigger:
+User opens the dashboard.
+
+Main Success Scenario:
+1. System obtains dataset statistics.
+2. System obtains skill-demand information.
+3. System obtains skill-gap information.
+4. System obtains relevant job-match information.
+5. System presents the combined overview.
+
+Extensions:
+1a. Dataset is empty:
+    System presents an appropriate empty state.
+
+Postcondition:
+No persistent data is changed.
+
+
+UC-33: View Dataset Statistics
+
+Primary Actor:
+User
+
+Goal:
+Understand the composition of the collected job sample.
+
+Preconditions:
+None.
+
+Trigger:
+User requests dataset statistics.
+
+Main Success Scenario:
+1. System analyzes the stored jobs.
+2. System calculates relevant counts and distributions.
+3. System returns the statistics.
+
+Extensions:
+1a. Dataset is empty:
+    System returns zero/empty statistics.
+
+Postcondition:
+No persistent data is changed.
+
+
+DATA IMPORT
+===========
+
+UC-34: Import Existing Job Dataset
+
+Primary Actor:
+User
+
+Goal:
+Import existing job data into the application.
+
+Preconditions:
+User has data in a supported import format.
+
+Trigger:
+User initiates an import.
+
+Main Success Scenario:
+1. User supplies the dataset.
+2. System validates the format.
+3. System parses the records.
+4. System validates job information.
+5. System normalizes skills.
+6. System creates jobs and skill associations.
+7. System reports the import result.
+
+Extensions:
+2a. Format is unsupported:
+    System rejects the import.
+
+3a. A record cannot be parsed:
+    System identifies the problematic record.
+
+4a. A record is invalid:
+    System identifies the validation problem.
+
+5a. A skill is ambiguous:
+    System identifies it for review.
+
+Postcondition:
+Successfully imported records participate in analysis.
+
+
+UC-35: Review Import Before Commit
+
+Primary Actor:
+User
+
+Goal:
+Review proposed imported data before it modifies the dataset.
+
+Preconditions:
+An import has been parsed.
+
+Trigger:
+System completes import analysis.
+
+Main Success Scenario:
+1. System presents proposed jobs and skills.
+2. System identifies warnings and conflicts.
+3. User reviews the proposed changes.
+4. User corrects or excludes problematic records.
+5. User approves the import.
+
+Extensions:
+3a. User cancels:
+    System discards the proposed import.
+
+Postcondition:
+An approved import is ready to be persisted.
+
+
+DATA EXPORT
+===========
+
+UC-36: Export Job Dataset
+
+Primary Actor:
+User
+
+Goal:
+Export the collected job-market data for backup or external analysis.
+
+Preconditions:
+None.
+
+Trigger:
+User requests an export.
+
+Main Success Scenario:
+1. User selects a supported export format.
+2. System retrieves the relevant data.
+3. System transforms it into the requested format.
+4. System returns the export.
+
+Extensions:
+1a. Requested format is unsupported:
+    System rejects the request.
+
+Postcondition:
+No persistent data is changed.
+
+
+CURRICULUM / UPSKILLING
+=======================
+
+UC-37: Generate Upskilling Curriculum
+
+Primary Actor:
+User
+
+Goal:
+Create an actionable learning plan based on identified skill gaps and market demand.
+
+Preconditions:
+Sufficient skill-demand and personal-skill information exists.
+
+Trigger:
+User requests an upskilling curriculum.
+
+Main Success Scenario:
+1. System obtains prioritized skill gaps.
+2. System identifies appropriate learning objectives.
+3. System orders the objectives into a curriculum.
+4. System explains the rationale for each curriculum item.
+5. System returns the proposed curriculum.
+
+Extensions:
+1a. Insufficient analysis data exists:
+    System reports what information is missing.
+
+Postcondition:
+A proposed curriculum is available for review.
+
+
+UC-38: Review and Modify Curriculum
+
+Primary Actor:
+User
+
+Goal:
+Adjust the generated curriculum to personal priorities.
+
+Preconditions:
+A curriculum has been generated.
+
+Trigger:
+User reviews the curriculum.
+
+Main Success Scenario:
+1. System presents the curriculum.
+2. User changes priorities, target levels or ordering.
+3. System validates the changes.
+4. System stores the accepted curriculum.
+
+Extensions:
+3a. A change is invalid:
+    System reports the validation problem.
+
+Postcondition:
+The curriculum reflects the user's accepted learning plan.
+
+
+UC-39: Track Curriculum Progress
+
+Primary Actor:
+User
+
+Goal:
+Track progress through the upskilling curriculum.
+
+Preconditions:
+A curriculum exists.
+
+Trigger:
+User records progress.
+
+Main Success Scenario:
+1. User selects a curriculum item.
+2. User records its progress or completion.
+3. System updates the curriculum.
+4. System reflects relevant changes in the learning overview.
+
+Extensions:
+2a. Progress value is invalid:
+    System rejects the update.
+
+Postcondition:
+Curriculum progress reflects the user's current state.
+
+
+UC-40: Recalculate Analysis After Skill Improvement
+
+Primary Actor:
+User
+
+Goal:
+See the effect of acquired skills on job-market fit.
+
+Preconditions:
+Personal skill levels have changed.
+
+Trigger:
+User requests updated analysis.
+
+Main Success Scenario:
+1. System obtains the current personal skill profile.
+2. System recalculates skill gaps.
+3. System recalculates skill priorities.
+4. System recalculates relevant job matches.
+5. System returns the updated analysis.
+
+Extensions:
+None.
+
+Postcondition:
+Analysis reflects the current skill profile.
+
+
+SYSTEM SUPPORT
+==============
+
+UC-41: Validate API Input
+
+Primary Actor:
+System
+
+Goal:
+Prevent malformed or invalid information from entering application logic.
+
+Preconditions:
+An API request containing data has been received.
+
+Trigger:
+An operation requiring validated input is invoked.
+
+Main Success Scenario:
+1. System validates the input against the operation's schema.
+2. System accepts valid input.
+3. System passes validated data to the application operation.
+
+Extensions:
+1a. Input is invalid:
+    System rejects the request and returns structured validation errors.
+
+Postcondition:
+Only validated input reaches the corresponding application operation.
+
+
+UC-42: Handle Application Error
+
+Primary Actor:
+System
+
+Goal:
+Return consistent and useful errors to API consumers.
+
+Preconditions:
+An application operation encounters an error.
+
+Trigger:
+An error occurs while processing a request.
+
+Main Success Scenario:
+1. System identifies the error category.
+2. System records appropriate diagnostic information.
+3. System maps the error to an appropriate API response.
+4. System returns a structured error without exposing inappropriate internal information.
+
+Extensions:
+1a. Error is unexpected:
+    System treats it as an internal application error.
+
+Postcondition:
+The API consumer receives a consistent error response.
+
+
+UC-43: Check Service Health
+
+Primary Actor:
+API Consumer
+
+Goal:
+Determine whether the backend and its required infrastructure are operational.
+
+Preconditions:
+Backend service is reachable.
+
+Trigger:
+Consumer requests service health.
+
+Main Success Scenario:
+1. System verifies backend operation.
+2. System verifies required database connectivity.
+3. System returns service health information.
+
+Extensions:
+2a. Database is unavailable:
+    System reports degraded/unhealthy service status.
+
+Postcondition:
+No application data is changed.
