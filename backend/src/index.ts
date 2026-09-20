@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 
+import { registerErrorHandler } from './errors/error-handler';
 import { healthRoutes } from './routes/health';
 import { jobRoutes } from './routes/jobs';
 import { skillRoutes } from './routes/skills';
@@ -8,6 +9,8 @@ import { userSkillRoutes } from './routes/user-skills';
 const fastify = Fastify({
     logger: true,
 });
+
+registerErrorHandler(fastify);
 
 fastify.register(healthRoutes, {
     prefix: '/api/v1/health',
