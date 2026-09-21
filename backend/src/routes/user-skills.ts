@@ -1,41 +1,57 @@
 import { FastifyPluginAsync } from 'fastify';
 
+import { UserSkillService } from '../services/user-skill-service';
 import { skillIdParamSchema } from '../schemas/common';
 import { userSkillSchema } from '../schemas/user-skill';
 
-export const userSkillRoutes: FastifyPluginAsync = async (fastify) => {
-    fastify.get('/', async () => {
-        return {
-            message: 'List user skills',
-        };
-    });
+export function createUserSkillRoutes(
+    userSkillService: UserSkillService
+): FastifyPluginAsync {
+    return async (fastify) => {
+        fastify.get('/', async () => {
+            return userSkillService.list();
+        });
 
-    fastify.get('/:skillId', async (request) => {
-        const params = skillIdParamSchema.parse(request.params);
+        fastify.get('/:skillId', async (request) => {
+            const { skillId } = skillIdParamSchema.parse(
+                request.params
+            );
 
-        return {
-            message: 'Get user skill',
-            skillId: params.skillId,
-        };
-    });
+            return userSkillService.get(skillId);
+        });
 
-    fastify.put('/:skillId', async (request) => {
-        const params = skillIdParamSchema.parse(request.params);
-        const input = userSkillSchema.parse(request.body);
+        fastify.put(
+            '/:skillId',
+            async (request) => {
+                const { skillId } =
+                    skillIdParamSchema.parse(
+                        request.params
+                    );
 
-        return {
-            message: 'Set user skill',
-            skillId: params.skillId,
-            input,
-        };
-    });
+                const { level } =
+                    userSkillSchema.parse(
+                        request.body
+                    );
 
-    fastify.delete('/:skillId', async (request) => {
-        const params = skillIdParamSchema.parse(request.params);
+                return userSkillService.setLevel(
+                    skillId,
+                    level
+                );
+            }
+        );
 
-        return {
-            message: 'Delete user skill',
-            skillId: params.skillId,
-        };
-    });
-};
+        fastify.delete(
+            '/:skillId',
+            async (request, reply) => {
+                const { skillId } =
+                    skillIdParamSchema.parse(
+                        request.params
+                    );
+
+                await userSkillService.delete(skillId);
+
+                return reply.status(204).send();
+            }
+        );
+    };
+}

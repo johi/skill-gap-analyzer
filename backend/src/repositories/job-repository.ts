@@ -99,4 +99,30 @@ export class JobRepository {
 
         return deleted.length > 0;
     }
+
+    async replaceSkills(
+        jobId: number,
+        assignedSkills: Array<{
+            skillId: number;
+            requirement: 'must_have' | 'nice_to_have';
+        }>
+    ): Promise<void> {
+        await this.db
+            .delete(jobSkills)
+            .where(eq(jobSkills.jobId, jobId));
+
+        if (assignedSkills.length === 0) {
+            return;
+        }
+
+        await this.db
+            .insert(jobSkills)
+            .values(
+                assignedSkills.map((skill) => ({
+                    jobId,
+                    skillId: skill.skillId,
+                    requirement: skill.requirement,
+                }))
+            );
+    }
 }
