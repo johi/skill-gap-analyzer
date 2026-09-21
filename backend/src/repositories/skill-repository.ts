@@ -1,21 +1,25 @@
 import { asc, eq, ilike } from 'drizzle-orm';
 
-import { db } from '../db';
 import { skills } from '../db/schema';
+import { DatabaseExecutor } from './types';
 
 export type Skill = typeof skills.$inferSelect;
 export type NewSkill = typeof skills.$inferInsert;
 
 export class SkillRepository {
+    constructor(
+        private readonly db: DatabaseExecutor
+    ) {}
+
     async findAll(): Promise<Skill[]> {
-        return db
+        return this.db
             .select()
             .from(skills)
             .orderBy(asc(skills.name));
     }
 
     async findById(id: number): Promise<Skill | undefined> {
-        const [skill] = await db
+        const [skill] = await this.db
             .select()
             .from(skills)
             .where(eq(skills.id, id))
@@ -25,7 +29,7 @@ export class SkillRepository {
     }
 
     async findByName(name: string): Promise<Skill | undefined> {
-        const [skill] = await db
+        const [skill] = await this.db
             .select()
             .from(skills)
             .where(ilike(skills.name, name))
@@ -35,7 +39,7 @@ export class SkillRepository {
     }
 
     async create(data: NewSkill): Promise<Skill> {
-        const [skill] = await db
+        const [skill] = await this.db
             .insert(skills)
             .values(data)
             .returning();
@@ -47,7 +51,7 @@ export class SkillRepository {
         id: number,
         data: Partial<NewSkill>
     ): Promise<Skill | undefined> {
-        const [skill] = await db
+        const [skill] = await this.db
             .update(skills)
             .set({
                 ...data,
@@ -60,7 +64,7 @@ export class SkillRepository {
     }
 
     async delete(id: number): Promise<boolean> {
-        const deleted = await db
+        const deleted = await this.db
             .delete(skills)
             .where(eq(skills.id, id))
             .returning({
@@ -70,5 +74,3 @@ export class SkillRepository {
         return deleted.length > 0;
     }
 }
-
-export const skillRepository = new SkillRepository();

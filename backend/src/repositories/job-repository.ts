@@ -1,11 +1,11 @@
 import { desc, eq } from 'drizzle-orm';
 
-import { db } from '../db';
 import {
     jobs,
     jobSkills,
     skills,
 } from '../db/schema';
+import { DatabaseExecutor } from './types';
 
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
@@ -22,15 +22,19 @@ export interface JobWithSkills extends Job {
 }
 
 export class JobRepository {
+    constructor(
+        private readonly db: DatabaseExecutor
+    ) {}
+
     async findAll(): Promise<Job[]> {
-        return db
+        return this.db
             .select()
             .from(jobs)
             .orderBy(desc(jobs.dateFound));
     }
 
     async findById(id: number): Promise<JobWithSkills | undefined> {
-        const [job] = await db
+        const [job] = await this.db
             .select()
             .from(jobs)
             .where(eq(jobs.id, id))
@@ -40,7 +44,7 @@ export class JobRepository {
             return undefined;
         }
 
-        const assignedSkills = await db
+        const assignedSkills = await this.db
             .select({
                 id: skills.id,
                 name: skills.name,
@@ -61,7 +65,7 @@ export class JobRepository {
     }
 
     async create(data: NewJob): Promise<Job> {
-        const [job] = await db
+        const [job] = await this.db
             .insert(jobs)
             .values(data)
             .returning();
@@ -73,7 +77,7 @@ export class JobRepository {
         id: number,
         data: Partial<NewJob>
     ): Promise<Job | undefined> {
-        const [job] = await db
+        const [job] = await this.db
             .update(jobs)
             .set({
                 ...data,
@@ -86,7 +90,7 @@ export class JobRepository {
     }
 
     async delete(id: number): Promise<boolean> {
-        const deleted = await db
+        const deleted = await this.db
             .delete(jobs)
             .where(eq(jobs.id, id))
             .returning({
@@ -96,5 +100,3 @@ export class JobRepository {
         return deleted.length > 0;
     }
 }
-
-export const jobRepository = new JobRepository();

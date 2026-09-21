@@ -1,14 +1,18 @@
 import { asc, eq } from 'drizzle-orm';
 
-import { db } from '../db';
 import { skills, userSkills } from '../db/schema';
+import { DatabaseExecutor } from './types';
 
 export type UserSkill = typeof userSkills.$inferSelect;
 export type NewUserSkill = typeof userSkills.$inferInsert;
 
 export class UserSkillRepository {
+    constructor(
+        private readonly db: DatabaseExecutor
+    ) {}
+
     async findAll() {
-        return db
+        return this.db
             .select({
                 skillId: userSkills.skillId,
                 name: skills.name,
@@ -24,8 +28,10 @@ export class UserSkillRepository {
             .orderBy(asc(skills.name));
     }
 
-    async findBySkillId(skillId: number): Promise<UserSkill | undefined> {
-        const [userSkill] = await db
+    async findBySkillId(
+        skillId: number
+    ): Promise<UserSkill | undefined> {
+        const [userSkill] = await this.db
             .select()
             .from(userSkills)
             .where(eq(userSkills.skillId, skillId))
@@ -38,7 +44,7 @@ export class UserSkillRepository {
         skillId: number,
         level: number
     ): Promise<UserSkill> {
-        const [userSkill] = await db
+        const [userSkill] = await this.db
             .insert(userSkills)
             .values({
                 skillId,
@@ -57,7 +63,7 @@ export class UserSkillRepository {
     }
 
     async delete(skillId: number): Promise<boolean> {
-        const deleted = await db
+        const deleted = await this.db
             .delete(userSkills)
             .where(eq(userSkills.skillId, skillId))
             .returning({
@@ -67,5 +73,3 @@ export class UserSkillRepository {
         return deleted.length > 0;
     }
 }
-
-export const userSkillRepository = new UserSkillRepository();
