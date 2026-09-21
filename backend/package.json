@@ -7,11 +7,14 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:test:migrate": "dotenv -e .env.test -o -- drizzle-kit migrate",
+    "test:repository": "dotenv -e .env.test -o -- vitest run --config vitest.repository.config.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
     "@types/pg": "^8.23.1",
+    "dotenv-cli": "^11.0.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",

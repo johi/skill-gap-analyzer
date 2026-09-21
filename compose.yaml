@@ -44,6 +44,20 @@ services:
       timeout: 5s
       retries: 5
 
+  db-test:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: app_test
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
 volumes:
   backend_node_modules:
   frontend_node_modules:
