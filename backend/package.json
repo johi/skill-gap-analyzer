@@ -3,13 +3,16 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "vitest run",
+
+    "test": "npm run test:endpoint && npm run test:repository",
+    "test:endpoint": "dotenv -e .env.test -o -- vitest run --config vitest.endpoint.config.ts",
+    "test:repository": "dotenv -e .env.test -o -- vitest run --config vitest.repository.config.ts",
     "test:watch": "vitest",
+
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:test:migrate": "dotenv -e .env.test -o -- drizzle-kit migrate",
-    "test:repository": "dotenv -e .env.test -o -- vitest run --config vitest.repository.config.ts"
+    "db:test:migrate": "dotenv -e .env.test -o -- drizzle-kit migrate"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
