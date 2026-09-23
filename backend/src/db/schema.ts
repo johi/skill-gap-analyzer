@@ -47,6 +47,7 @@ export const jobs = pgTable(
         originalMatch: numeric('original_match', {
             precision: 5,
             scale: 2,
+            mode: 'number',
         }),
 
         createdAt: timestamp('created_at', {

@@ -4,9 +4,10 @@
     "build": "tsc",
     "start": "node dist/index.js",
 
-    "test": "npm run test:endpoint && npm run test:repository",
-    "test:endpoint": "VITE_CONFIG_NATIVE_IGNORE_WARNING=true dotenv -e .env.test -o -- vitest run --config vitest.endpoint.config.ts",
-    "test:repository": "VITE_CONFIG_NATIVE_IGNORE_WARNING=true dotenv -e .env.test -o -- vitest run --config vitest.repository.config.ts",
+    "test": "npm run test:endpoint && npm run test:repository && npm run test:service",
+    "test:endpoint": "dotenv -e .env.test -o -- vitest run --config vitest.endpoint.config.mts",
+    "test:repository": "dotenv -e .env.test -o -- vitest run --config vitest.repository.config.mts",
+    "test:service": "vitest run --config vitest.service.config.mts",
     "test:watch": "vitest",
 
     "db:generate": "drizzle-kit generate",
