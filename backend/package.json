@@ -5,8 +5,8 @@
     "start": "node dist/index.js",
 
     "test": "npm run test:endpoint && npm run test:repository",
-    "test:endpoint": "dotenv -e .env.test -o -- vitest run --config vitest.endpoint.config.ts",
-    "test:repository": "dotenv -e .env.test -o -- vitest run --config vitest.repository.config.ts",
+    "test:endpoint": "VITE_CONFIG_NATIVE_IGNORE_WARNING=true dotenv -e .env.test -o -- vitest run --config vitest.endpoint.config.ts",
+    "test:repository": "VITE_CONFIG_NATIVE_IGNORE_WARNING=true dotenv -e .env.test -o -- vitest run --config vitest.repository.config.ts",
     "test:watch": "vitest",
 
     "db:generate": "drizzle-kit generate",
