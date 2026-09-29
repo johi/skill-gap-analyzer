@@ -21,3 +21,18 @@ export interface Job {
     createdAt: string;
     updatedAt: string;
 }
+
+export type JobSkillRequirement =
+    'must_have' |
+    'nice_to_have';
+
+export interface JobSkill {
+    id: number;
+    name: string;
+    category: string;
+    requirement: JobSkillRequirement;
+}
+
+export interface JobWithSkills extends Job {
+    skills: JobSkill[];
+}

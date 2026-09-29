@@ -1,1 +1,0 @@
-{"root":["./src/main.ts","./src/api/client.ts","./src/api/jobs.ts","./src/router/index.ts","./src/types/job.ts","./src/App.vue","./src/views/JobsView.vue","./src/views/SkillsView.vue","./src/views/UserSkillsView.vue","./vite.config.ts"],"version":"6.0.3"}

@@ -3,7 +3,7 @@ import {
   onMounted,
   ref,
 } from 'vue';
-
+import { RouterLink } from 'vue-router';
 import { getJobs } from '../api/jobs';
 import type { Job } from '../types/job';
 
@@ -59,7 +59,18 @@ onMounted(async () => {
       >
         <td>{{ job.dateFound }}</td>
         <td>{{ job.company }}</td>
-        <td>{{ job.title }}</td>
+        <td>
+          <RouterLink
+              :to="{
+            name: 'job-detail',
+            params: {
+                id: job.id,
+            },
+        }"
+          >
+            {{ job.title }}
+          </RouterLink>
+        </td>
         <td>{{ job.location ?? '—' }}</td>
         <td>
           {{ job.interest !== null
