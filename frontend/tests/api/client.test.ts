@@ -1,0 +1,183 @@
+import {
+    afterEach,
+    describe,
+    expect,
+    it,
+    vi,
+} from 'vitest';
+
+import {
+    ApiError,
+    apiRequest,
+} from '../../src/api/client';
+
+describe('apiRequest', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('returns JSON from a successful response', async () => {
+        const responseBody = {
+            id: 1,
+            name: 'TypeScript',
+        };
+
+        vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(
+                new Response(
+                    JSON.stringify(responseBody),
+                    {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+            );
+
+        const result = await apiRequest<typeof responseBody>(
+            '/api/v1/skills/1'
+        );
+
+        expect(result).toEqual(responseBody);
+
+        expect(fetch).toHaveBeenCalledWith(
+            '/api/v1/skills/1',
+            undefined
+        );
+    });
+
+    it('passes request options to fetch', async () => {
+        vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(
+                new Response(
+                    JSON.stringify({
+                        id: 1,
+                    }),
+                    {
+                        status: 201,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+            );
+
+        const options: RequestInit = {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: 'TypeScript',
+                category: 'language',
+            }),
+        };
+
+        await apiRequest(
+            '/api/v1/skills',
+            options
+        );
+
+        expect(fetch).toHaveBeenCalledWith(
+            '/api/v1/skills',
+            options
+        );
+    });
+
+    it('throws a structured API error', async () => {
+        vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(
+                new Response(
+                    JSON.stringify({
+                        error: 'not_found',
+                        message: 'Skill 99 not found',
+                    }),
+                    {
+                        status: 404,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+            );
+
+        try {
+            await apiRequest('/api/v1/skills/99');
+
+            expect.fail('Expected apiRequest to throw');
+        } catch (error) {
+            expect(error).toBeInstanceOf(ApiError);
+
+            const apiError = error as ApiError;
+
+            expect(apiError.status).toBe(404);
+            expect(apiError.error).toBe('not_found');
+            expect(apiError.message).toBe(
+                'Skill 99 not found'
+            );
+            expect(apiError.issues).toEqual([]);
+        }
+    });
+
+    it('preserves validation issues', async () => {
+        const issues = [
+            {
+                path: 'company',
+                message: 'Too small',
+                code: 'too_small',
+            },
+        ];
+
+        vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(
+                new Response(
+                    JSON.stringify({
+                        error: 'validation_error',
+                        message: 'Request validation failed',
+                        issues,
+                    }),
+                    {
+                        status: 400,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+            );
+
+        try {
+            await apiRequest('/api/v1/jobs');
+
+            expect.fail('Expected apiRequest to throw');
+        } catch (error) {
+            expect(error).toBeInstanceOf(ApiError);
+
+            const apiError = error as ApiError;
+
+            expect(apiError.status).toBe(400);
+            expect(apiError.error).toBe(
+                'validation_error'
+            );
+            expect(apiError.issues).toEqual(issues);
+        }
+    });
+
+    it('handles a 204 response without parsing JSON', async () => {
+        vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(
+                new Response(null, {
+                    status: 204,
+                })
+            );
+
+        const result = await apiRequest<void>(
+            '/api/v1/jobs/1',
+            {
+                method: 'DELETE',
+            }
+        );
+
+        expect(result).toBeUndefined();
+    });
+});
