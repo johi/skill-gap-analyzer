@@ -63,7 +63,18 @@ onMounted(async () => {
 
     <template v-else-if="job">
       <h1>{{ job.title }}</h1>
-
+      <p>
+        <RouterLink
+            :to="{
+            name: 'job-edit',
+            params: {
+                id: job.id,
+            },
+        }"
+        >
+          Edit job
+        </RouterLink>
+      </p>
       <dl>
         <dt>Company</dt>
         <dd>{{ job.company }}</dd>

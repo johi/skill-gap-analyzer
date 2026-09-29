@@ -8,6 +8,7 @@ import SkillsView from '../views/SkillsView.vue';
 import UserSkillsView from '../views/UserSkillsView.vue';
 import JobDetailView from '../views/JobDetailView.vue';
 import CreateJobView from '../views/CreateJobView.vue';
+import EditJobView from '../views/EditJobView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -26,6 +27,11 @@ const router = createRouter({
             path: '/jobs/new',
             name: 'job-create',
             component: CreateJobView,
+        },
+        {
+            path: '/jobs/:id/edit',
+            name: 'job-edit',
+            component: EditJobView,
         },
         {
             path: '/jobs/:id',

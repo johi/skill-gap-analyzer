@@ -10,7 +10,8 @@ const emit = defineEmits<{
   submit: [input: CreateJobInput];
 }>();
 
-defineProps<{
+const props = defineProps<{
+  initialValue?: CreateJobInput;
   submitting?: boolean;
 }>();
 
@@ -21,25 +22,29 @@ interface JobSkillForm {
 }
 
 const form = reactive({
-  dateFound: '',
-  company: '',
-  title: '',
-  sourceUrl: '',
-  originalText: '',
-  location: '',
-  workModel: '',
-  employmentType: '',
-  seniority: '',
-  primaryRole: '',
-  yearsRequired: '',
-  educationRequirement: '',
-  danishRequired: '',
-  salaryRate: '',
-  interest: null as number | null,
-  originalMatch: null as number | null,
-  applyStatus: '',
-  gapNotes: '',
-  skills: [] as JobSkillForm[],
+  dateFound: props.initialValue?.dateFound ?? '',
+  company: props.initialValue?.company ?? '',
+  title: props.initialValue?.title ?? '',
+  sourceUrl: props.initialValue?.sourceUrl ?? '',
+  originalText: props.initialValue?.originalText ?? '',
+  location: props.initialValue?.location ?? '',
+  workModel: props.initialValue?.workModel ?? '',
+  employmentType: props.initialValue?.employmentType ?? '',
+  seniority: props.initialValue?.seniority ?? '',
+  primaryRole: props.initialValue?.primaryRole ?? '',
+  yearsRequired: props.initialValue?.yearsRequired ?? '',
+  educationRequirement:
+      props.initialValue?.educationRequirement ?? '',
+  danishRequired: props.initialValue?.danishRequired ?? '',
+  salaryRate: props.initialValue?.salaryRate ?? '',
+  interest: props.initialValue?.interest ?? null,
+  applyStatus: props.initialValue?.applyStatus ?? '',
+  gapNotes: props.initialValue?.gapNotes ?? '',
+  originalMatch: props.initialValue?.originalMatch ?? null,
+
+  skills: props.initialValue?.skills.map((skill) => ({
+    ...skill,
+  })) ?? [] as JobSkillForm[],
 });
 
 function nullableString(value: string): string | null {

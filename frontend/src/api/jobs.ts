@@ -30,3 +30,19 @@ export function createJob(
         }
     );
 }
+
+export function updateJob(
+    id: number,
+    input: CreateJobInput
+): Promise<JobWithSkills> {
+    return apiRequest<JobWithSkills>(
+        `/api/v1/jobs/${id}`,
+        {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(input),
+        }
+    );
+}
