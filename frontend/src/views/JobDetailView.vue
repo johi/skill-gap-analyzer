@@ -3,17 +3,22 @@ import {
   onMounted,
   ref,
 } from 'vue';
+
 import {
   RouterLink,
   useRoute,
+  useRouter,
 } from 'vue-router';
 
-import { getJob } from '../api/jobs';
+import { deleteJob, getJob } from '../api/jobs';
 import { ApiError } from '../api/client';
 
 import type { JobWithSkills } from '../types/job';
 
 const route = useRoute();
+const router = useRouter();
+
+const deleting = ref(false);
 
 const job = ref<JobWithSkills | null>(null);
 const loading = ref(true);
@@ -43,6 +48,37 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+async function handleDelete(): Promise<void> {
+  if (!job.value) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+      `Delete "${job.value.title}" at ${job.value.company}?`
+  );
+
+  if (!confirmed) {
+    return;
+  }
+
+  deleting.value = true;
+  error.value = null;
+
+  try {
+    await deleteJob(job.value.id);
+
+    await router.push({
+      name: 'jobs',
+    });
+  } catch (err) {
+    error.value = err instanceof Error
+        ? err.message
+        : 'Unable to delete job';
+  } finally {
+    deleting.value = false;
+  }
+}
 </script>
 
 <template>
@@ -75,6 +111,13 @@ onMounted(async () => {
           Edit job
         </RouterLink>
       </p>
+      <button
+          type="button"
+          :disabled="deleting"
+          @click="handleDelete"
+      >
+        {{ deleting ? 'Deleting...' : 'Delete job' }}
+      </button>
       <dl>
         <dt>Company</dt>
         <dd>{{ job.company }}</dd>

@@ -46,3 +46,12 @@ export function updateJob(
         }
     );
 }
+
+export function deleteJob(id: number): Promise<void> {
+    return apiRequest<void>(
+        `/api/v1/jobs/${id}`,
+        {
+            method: 'DELETE',
+        }
+    );
+}
