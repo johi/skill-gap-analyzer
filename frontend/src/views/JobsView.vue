@@ -27,7 +27,11 @@ onMounted(async () => {
 <template>
   <section>
     <h1>Jobs</h1>
-
+    <p>
+      <RouterLink :to="{ name: 'job-create' }">
+        Create job
+      </RouterLink>
+    </p>
     <p v-if="loading">
       Loading jobs...
     </p>
@@ -35,11 +39,9 @@ onMounted(async () => {
     <p v-else-if="error">
       {{ error }}
     </p>
-
     <p v-else-if="jobs.length === 0">
       No jobs found.
     </p>
-
     <table v-else>
       <thead>
       <tr>
