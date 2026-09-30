@@ -19,6 +19,37 @@ import type {
   SkillInput,
 } from '../types/skill';
 
+import {
+  Pencil,
+  Plus,
+  Trash2,
+  X,
+} from 'lucide-vue-next';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 const skills = ref<Skill[]>([]);
 const loading = ref(true);
 const saving = ref(false);
@@ -188,129 +219,306 @@ function compareSkills(
 </script>
 
 <template>
-  <section>
-    <h1>Skills</h1>
-
-    <h2>
-      {{ editingId === null
-        ? 'Create skill'
-        : 'Edit skill'
-      }}
-    </h2>
-
-    <p v-if="error">
-      {{ error }}
-    </p>
-
-    <ul v-if="validationErrors.length">
-      <li
-          v-for="validationError in validationErrors"
-          :key="validationError"
+  <section class="space-y-6">
+    <div>
+      <h1
+          class="
+                    text-2xl font-semibold tracking-tight
+                    sm:text-3xl
+                "
       >
-        {{ validationError }}
-      </li>
-    </ul>
+        Skills
+      </h1>
 
-    <form @submit.prevent="handleSubmit">
-      <p>
-        <label>
-          Name
-          <input
-              v-model="form.name"
-              type="text"
-              required
-          >
-        </label>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Manage the skill catalogue used to analyze job
+        requirements and assess your own proficiency.
       </p>
+    </div>
 
-      <p>
-        <label>
-          Category
-          <input
-              v-model="form.category"
-              type="text"
-              required
+    <div
+        class="
+                grid gap-6
+                lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]
+            "
+    >
+      <Card class="min-w-0">
+        <CardHeader>
+          <CardTitle>Existing skills</CardTitle>
+
+          <CardDescription>
+            Skills available throughout the analyzer.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div
+              v-if="loading"
+              class="space-y-3"
           >
-        </label>
-      </p>
+            <Skeleton class="h-10 w-full" />
+            <Skeleton class="h-10 w-full" />
+            <Skeleton class="h-10 w-full" />
+          </div>
 
-      <button
-          type="submit"
-          :disabled="saving"
-      >
-        {{
-          saving
-              ? 'Saving...'
-              : editingId === null
-                  ? 'Create skill'
-                  : 'Save changes'
-        }}
-      </button>
-
-      <button
-          v-if="editingId !== null"
-          type="button"
-          :disabled="saving"
-          @click="cancelEdit"
-      >
-        Cancel
-      </button>
-    </form>
-
-    <h2>Existing skills</h2>
-
-    <p v-if="loading">
-      Loading skills...
-    </p>
-
-    <p v-else-if="skills.length === 0">
-      No skills found.
-    </p>
-
-    <table v-else>
-      <thead>
-      <tr>
-        <th>Name</th>
-        <th>Category</th>
-        <th>Actions</th>
-      </tr>
-      </thead>
-
-      <tbody>
-      <tr
-          v-for="skill in skills"
-          :key="skill.id"
-      >
-        <td>{{ skill.name }}</td>
-        <td>{{ skill.category }}</td>
-
-        <td>
-          <button
-              type="button"
-              :disabled="
-                                deletingId === skill.id
+          <div
+              v-else-if="skills.length === 0"
+              class="
+                            flex flex-col items-center
+                            justify-center py-12 text-center
+                        "
+          >
+            <div
+                class="
+                                mb-4 flex size-12 items-center
+                                justify-center rounded-full bg-muted
                             "
-              @click="startEdit(skill)"
-          >
-            Edit
-          </button>
+            >
+              <Plus
+                  class="
+                                    size-5
+                                    text-muted-foreground
+                                "
+              />
+            </div>
 
-          <button
-              type="button"
-              :disabled="
-                                deletingId === skill.id
+            <h2 class="font-medium">
+              No skills yet
+            </h2>
+
+            <p
+                class="
+                                mt-1 max-w-sm text-sm
+                                text-muted-foreground
                             "
-              @click="handleDelete(skill)"
+            >
+              Create your first skill using the form.
+            </p>
+          </div>
+
+          <div
+              v-else
+              class="overflow-x-auto"
           >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Category</TableHead>
+
+                  <TableHead class="text-right">
+                    Actions
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+
+              <TableBody>
+                <TableRow
+                    v-for="skill in skills"
+                    :key="skill.id"
+                    :class="{
+                                        'bg-muted/40':
+                                            editingId === skill.id,
+                                    }"
+                >
+                  <TableCell class="font-medium">
+                    {{ skill.name }}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {{ skill.category }}
+                    </Badge>
+                  </TableCell>
+
+                  <TableCell>
+                    <div
+                        class="
+                                                flex justify-end gap-1
+                                            "
+                    >
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          :disabled="
+                                                    deletingId ===
+                                                    skill.id
+                                                "
+                          @click="
+                                                    startEdit(skill)
+                                                "
+                      >
+                        <Pencil
+                            class="size-4"
+                        />
+
+                        Edit
+                      </Button>
+
+                      <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          :disabled="
+                                                    deletingId ===
+                                                    skill.id
+                                                "
+                          @click="
+                                                    handleDelete(
+                                                        skill
+                                                    )
+                                                "
+                      >
+                        <Trash2
+                            class="size-4"
+                        />
+
+                        {{
+                          deletingId ===
+                          skill.id
+                              ? 'Deleting...'
+                              : 'Delete'
+                        }}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card class="h-fit lg:sticky lg:top-8">
+        <CardHeader>
+          <CardTitle>
             {{
-              deletingId === skill.id
-                  ? 'Deleting...'
-                  : 'Delete'
+              editingId === null
+                  ? 'Create skill'
+                  : 'Edit skill'
             }}
-          </button>
-        </td>
-      </tr>
-      </tbody>
-    </table>
+          </CardTitle>
+
+          <CardDescription>
+            {{
+              editingId === null
+                  ? 'Add a skill to the catalogue.'
+                  : 'Update the selected skill.'
+            }}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div
+              v-if="error"
+              class="
+                            mb-4 rounded-md
+                            border border-destructive/30
+                            bg-destructive/5 p-3
+                        "
+          >
+            <p class="text-sm text-destructive">
+              {{ error }}
+            </p>
+          </div>
+
+          <div
+              v-if="validationErrors.length"
+              class="
+                            mb-4 rounded-md
+                            border border-destructive/30
+                            bg-destructive/5 p-3
+                        "
+          >
+            <ul
+                class="
+                                list-disc space-y-1 pl-4
+                                text-sm text-destructive
+                            "
+            >
+              <li
+                  v-for="
+                                    validationError
+                                    in validationErrors
+                                "
+                  :key="validationError"
+              >
+                {{ validationError }}
+              </li>
+            </ul>
+          </div>
+
+          <form
+              class="space-y-4"
+              @submit.prevent="handleSubmit"
+          >
+            <div class="space-y-2">
+              <Label for="skill-name">
+                Name
+              </Label>
+
+              <Input
+                  id="skill-name"
+                  v-model="form.name"
+                  type="text"
+                  placeholder="e.g. TypeScript"
+                  required
+              />
+            </div>
+
+            <div class="space-y-2">
+              <Label for="skill-category">
+                Category
+              </Label>
+
+              <Input
+                  id="skill-category"
+                  v-model="form.category"
+                  type="text"
+                  placeholder="e.g. Language"
+                  required
+              />
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-2">
+              <Button
+                  type="submit"
+                  :disabled="saving"
+              >
+                <Plus
+                    v-if="editingId === null"
+                    class="size-4"
+                />
+
+                <Pencil
+                    v-else
+                    class="size-4"
+                />
+
+                {{
+                  saving
+                      ? 'Saving...'
+                      : editingId === null
+                          ? 'Create skill'
+                          : 'Save changes'
+                }}
+              </Button>
+
+              <Button
+                  v-if="editingId !== null"
+                  type="button"
+                  variant="outline"
+                  :disabled="saving"
+                  @click="cancelEdit"
+              >
+                <X class="size-4" />
+                Cancel
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   </section>
 </template>
