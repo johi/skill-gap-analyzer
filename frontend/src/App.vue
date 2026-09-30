@@ -7,7 +7,9 @@ import {
 
 <template>
   <header>
-    <strong>Skill Gap Analyzer</strong>
+    <strong class="text-2xl font-bold">
+      Skill Gap Analyzer
+    </strong>
 
     <nav>
       <RouterLink to="/jobs">
