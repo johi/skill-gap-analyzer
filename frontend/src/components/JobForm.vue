@@ -23,6 +23,7 @@ const emit = defineEmits<{
 const props = defineProps<{
   initialValue?: CreateJobInput;
   submitting?: boolean;
+  submitLabel?: string;
 }>();
 
 interface JobSkillForm {
@@ -504,8 +505,8 @@ function submit(): void {
       >
         {{
           submitting
-              ? 'Creating...'
-              : 'Create job'
+              ? (submitLabel ? 'Saving...' : 'Creating...')
+              : (submitLabel ?? 'Create job')
         }}
       </Button>
     </div>

@@ -23,6 +23,19 @@ import type {
   CreateJobInput,
   JobWithSkills,
 } from '../types/job';
+import { ArrowLeft } from 'lucide-vue-next';
+
+import { Button } from '@/components/ui/button';
+
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+
+import { Skeleton } from '@/components/ui/skeleton';
 
 const route = useRoute();
 const router = useRouter();
@@ -99,53 +112,91 @@ async function handleSubmit(
 </script>
 
 <template>
-  <section>
-    <p>
+  <section class="mx-auto max-w-4xl space-y-6">
+    <Button variant="ghost" size="sm" as-child>
       <RouterLink
           v-if="job"
           :to="{
                     name: 'job-detail',
-                    params: {
-                        id: job.id,
-                    },
+                    params: { id: job.id },
                 }"
       >
-        ← Back to job
+        <ArrowLeft class="size-4" />
+        Back to job
       </RouterLink>
 
       <RouterLink
           v-else
           to="/jobs"
       >
-        ← Back to jobs
+        <ArrowLeft class="size-4" />
+        Back to jobs
       </RouterLink>
-    </p>
+    </Button>
 
-    <h1>Edit job</h1>
+    <div>
+      <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Edit job
+      </h1>
 
-    <p v-if="loading">
-      Loading job...
-    </p>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Update the opportunity, requirements and your assessment.
+      </p>
+    </div>
 
-    <p v-else-if="error">
-      {{ error }}
-    </p>
+    <div v-if="loading" class="space-y-4">
+      <Skeleton class="h-8 w-1/3" />
+      <Skeleton class="h-12 w-full" />
+      <Skeleton class="h-12 w-full" />
+      <Skeleton class="h-64 w-full" />
+    </div>
+
+    <div
+        v-else-if="error"
+        class="rounded-md border border-destructive/30 bg-destructive/5 p-4"
+    >
+      <p class="text-sm text-destructive">
+        {{ error }}
+      </p>
+    </div>
 
     <template v-else-if="job">
-      <ul v-if="validationErrors.length">
-        <li
-            v-for="validationError in validationErrors"
-            :key="validationError"
-        >
-          {{ validationError }}
-        </li>
-      </ul>
+      <div
+          v-if="validationErrors.length"
+          class="rounded-md border border-destructive/30 bg-destructive/5 p-4"
+      >
+        <p class="mb-2 text-sm font-medium text-destructive">
+          Please correct the following:
+        </p>
 
-      <JobForm
-          :initial-value="job"
-          :submitting="submitting"
-          @submit="handleSubmit"
-      />
+        <ul class="list-disc space-y-1 pl-5 text-sm text-destructive">
+          <li
+              v-for="validationError in validationErrors"
+              :key="validationError"
+          >
+            {{ validationError }}
+          </li>
+        </ul>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Job details</CardTitle>
+
+          <CardDescription>
+            Editing {{ job.title }} at {{ job.company }}.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <JobForm
+              :initial-value="job"
+              :submitting="submitting"
+              submit-label="Save changes"
+              @submit="handleSubmit"
+          />
+        </CardContent>
+      </Card>
     </template>
   </section>
 </template>
