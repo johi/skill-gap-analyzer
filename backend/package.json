@@ -5,15 +5,15 @@
     "start": "node dist/index.js",
 
     "test": "npm run test:endpoint && npm run test:repository && npm run test:service",
-    "test:endpoint": "dotenv -e .env.test -o -- vitest run --config vitest.endpoint.config.mts",
-    "test:repository": "dotenv -e .env.test -o -- vitest run --config vitest.repository.config.mts",
+    "test:endpoint": "dotenv -e .env.test --override -- vitest run --config vitest.endpoint.config.mts",
+    "test:repository": "dotenv -e .env.test --override -- vitest run --config vitest.repository.config.mts",
     "test:service": "vitest run --config vitest.service.config.mts",
     "test:watch": "vitest",
 
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
-    "db:test:migrate": "dotenv -e .env.test -o -- drizzle-kit migrate"
+    "db:test:migrate": "dotenv -e .env.test --override -- drizzle-kit migrate"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",
