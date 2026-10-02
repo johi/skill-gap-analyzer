@@ -1,10 +1,4 @@
-export interface Skill {
-    id: number;
-    name: string;
-    category: string;
-    createdAt: string;
-    updatedAt: string;
-}
+export type { Skill } from '../schemas/skill';
 
 export interface SkillInput {
     name: string;

@@ -1,19 +1,27 @@
 import { apiRequest } from './client';
+import {
+    skillSchema,
+    skillsSchema,
+} from '@/schemas/skill';
 
 import type {
     Skill,
     SkillInput,
-} from '../types/skill';
+} from '@/types/skill';
 
 export function getSkills(): Promise<Skill[]> {
-    return apiRequest<Skill[]>('/api/v1/skills');
+    return apiRequest(
+        '/api/v1/skills',
+        skillsSchema
+    );
 }
 
 export function createSkill(
     input: SkillInput
 ): Promise<Skill> {
-    return apiRequest<Skill>(
+    return apiRequest(
         '/api/v1/skills',
+        skillSchema,
         {
             method: 'POST',
             headers: {
@@ -28,8 +36,9 @@ export function updateSkill(
     id: number,
     input: SkillInput
 ): Promise<Skill> {
-    return apiRequest<Skill>(
+    return apiRequest(
         `/api/v1/skills/${id}`,
+        skillSchema,
         {
             method: 'PUT',
             headers: {
@@ -43,6 +52,7 @@ export function updateSkill(
 export function deleteSkill(id: number): Promise<void> {
     return apiRequest<void>(
         `/api/v1/skills/${id}`,
+        null,
         {
             method: 'DELETE',
         }

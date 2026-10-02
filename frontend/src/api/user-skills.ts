@@ -1,4 +1,8 @@
 import { apiRequest } from './client';
+import {
+    userSkillAssessmentSchema,
+    userSkillsSchema,
+} from '../schemas/user-skill';
 
 import type {
     UserSkill,
@@ -6,8 +10,9 @@ import type {
 } from '../types/user-skill';
 
 export function getUserSkills(): Promise<UserSkill[]> {
-    return apiRequest<UserSkill[]>(
-        '/api/v1/user-skills'
+    return apiRequest(
+        '/api/v1/user-skills',
+        userSkillsSchema
     );
 }
 
@@ -15,8 +20,9 @@ export function setUserSkillLevel(
     skillId: number,
     level: number
 ): Promise<UserSkillAssessment> {
-    return apiRequest<UserSkillAssessment>(
+    return apiRequest(
         `/api/v1/user-skills/${skillId}`,
+        userSkillAssessmentSchema,
         {
             method: 'PUT',
             headers: {
@@ -34,6 +40,7 @@ export function deleteUserSkill(
 ): Promise<void> {
     return apiRequest<void>(
         `/api/v1/user-skills/${skillId}`,
+        null,
         {
             method: 'DELETE',
         }

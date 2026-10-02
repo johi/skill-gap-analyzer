@@ -1,26 +1,35 @@
 import { apiRequest } from './client';
+import {
+    jobsSchema,
+    jobWithSkillsSchema,
+} from '@/schemas/job';
 
 import type {
     CreateJobInput,
     Job,
     JobWithSkills,
-} from '../types/job';
+} from '@/types/job';
 
 export function getJobs(): Promise<Job[]> {
-    return apiRequest<Job[]>('/api/v1/jobs');
+    return apiRequest(
+        '/api/v1/jobs',
+        jobsSchema
+    );
 }
 
 export function getJob(id: number): Promise<JobWithSkills> {
-    return apiRequest<JobWithSkills>(
-        `/api/v1/jobs/${id}`
+    return apiRequest(
+        `/api/v1/jobs/${id}`,
+        jobWithSkillsSchema
     );
 }
 
 export function createJob(
     input: CreateJobInput
 ): Promise<JobWithSkills> {
-    return apiRequest<JobWithSkills>(
+    return apiRequest(
         '/api/v1/jobs',
+        jobWithSkillsSchema,
         {
             method: 'POST',
             headers: {
@@ -35,8 +44,9 @@ export function updateJob(
     id: number,
     input: CreateJobInput
 ): Promise<JobWithSkills> {
-    return apiRequest<JobWithSkills>(
+    return apiRequest(
         `/api/v1/jobs/${id}`,
+        jobWithSkillsSchema,
         {
             method: 'PUT',
             headers: {
@@ -50,6 +60,7 @@ export function updateJob(
 export function deleteJob(id: number): Promise<void> {
     return apiRequest<void>(
         `/api/v1/jobs/${id}`,
+        null,
         {
             method: 'DELETE',
         }

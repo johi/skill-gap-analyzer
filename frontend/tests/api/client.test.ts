@@ -6,6 +6,8 @@ import {
     vi,
 } from 'vitest';
 
+import { z } from 'zod';
+
 import {
     ApiError,
     apiRequest,
@@ -16,11 +18,16 @@ describe('apiRequest', () => {
         vi.restoreAllMocks();
     });
 
-    it('returns JSON from a successful response', async () => {
+    it('returns validated JSON from a successful response', async () => {
         const responseBody = {
             id: 1,
             name: 'TypeScript',
         };
+
+        const schema = z.object({
+            id: z.number(),
+            name: z.string(),
+        });
 
         vi.spyOn(globalThis, 'fetch')
             .mockResolvedValue(
@@ -35,8 +42,9 @@ describe('apiRequest', () => {
                 )
             );
 
-        const result = await apiRequest<typeof responseBody>(
-            '/api/v1/skills/1'
+        const result = await apiRequest(
+            '/api/v1/skills/1',
+            schema
         );
 
         expect(result).toEqual(responseBody);
@@ -48,6 +56,10 @@ describe('apiRequest', () => {
     });
 
     it('passes request options to fetch', async () => {
+        const schema = z.object({
+            id: z.number(),
+        });
+
         vi.spyOn(globalThis, 'fetch')
             .mockResolvedValue(
                 new Response(
@@ -76,6 +88,7 @@ describe('apiRequest', () => {
 
         await apiRequest(
             '/api/v1/skills',
+            schema,
             options
         );
 
@@ -103,7 +116,10 @@ describe('apiRequest', () => {
             );
 
         try {
-            await apiRequest('/api/v1/skills/99');
+            await apiRequest(
+                '/api/v1/skills/99',
+                null
+            );
 
             expect.fail('Expected apiRequest to throw');
         } catch (error) {
@@ -147,7 +163,10 @@ describe('apiRequest', () => {
             );
 
         try {
-            await apiRequest('/api/v1/jobs');
+            await apiRequest(
+                '/api/v1/jobs',
+                null
+            );
 
             expect.fail('Expected apiRequest to throw');
         } catch (error) {
@@ -173,11 +192,42 @@ describe('apiRequest', () => {
 
         const result = await apiRequest<void>(
             '/api/v1/jobs/1',
+            null,
             {
                 method: 'DELETE',
             }
         );
 
         expect(result).toBeUndefined();
+    });
+
+    it('rejects an invalid successful response', async () => {
+        const schema = z.object({
+            id: z.number(),
+            name: z.string(),
+        });
+
+        vi.spyOn(globalThis, 'fetch')
+            .mockResolvedValue(
+                new Response(
+                    JSON.stringify({
+                        id: 'not-a-number',
+                        name: 'TypeScript',
+                    }),
+                    {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                )
+            );
+
+        await expect(
+            apiRequest(
+                '/api/v1/skills/1',
+                schema
+            )
+        ).rejects.toThrow();
     });
 });

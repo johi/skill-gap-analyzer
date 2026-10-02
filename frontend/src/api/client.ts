@@ -1,3 +1,4 @@
+import type { ZodType } from 'zod';
 
 export interface ApiValidationIssue {
     path: string;
@@ -26,6 +27,7 @@ export class ApiError extends Error {
 
 export async function apiRequest<T>(
     path: string,
+    schema: ZodType<T> | null,
     options?: RequestInit
 ): Promise<T> {
     const response = await fetch(path, options);
@@ -45,5 +47,13 @@ export async function apiRequest<T>(
         return undefined as T;
     }
 
-    return response.json() as Promise<T>;
+    const body: unknown = await response.json();
+
+    if (schema === null) {
+        throw new Error(
+            'API response schema is required for responses with content'
+        );
+    }
+
+    return schema.parse(body);
 }
