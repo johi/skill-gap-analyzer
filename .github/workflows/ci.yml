@@ -23,27 +23,26 @@ jobs:
       - name: Build containers
         run: docker compose build
 
-      - name: Start test database
-        run: docker compose up -d db-test
+      - name: Start services
+        run: docker compose up -d
 
       - name: Install backend dependencies
-        run: docker compose run --rm backend npm ci
+        run: docker compose exec -T backend npm ci
 
       - name: Install frontend dependencies
-        run: docker compose run --rm frontend npm ci
+        run: docker compose exec -T frontend npm ci
 
       - name: Migrate test database
-        run: docker compose run --rm backend npm run db:test:migrate
+        run: docker compose exec -T backend npm run db:test:migrate
 
       - name: Build backend
-        run: docker compose run --rm backend npm run build
+        run: docker compose exec -T backend npm run build
 
       - name: Test backend
-        run: docker compose run --rm backend npm test
+        run: docker compose exec -T backend npm test
 
       - name: Build frontend
-        run: docker compose run --rm frontend npm run build
+        run: docker compose exec -T frontend npm run build
 
       - name: Test frontend
-        run: docker compose run --rm frontend npm test
-
+        run: docker compose exec -T frontend npm test
