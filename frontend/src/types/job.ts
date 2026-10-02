@@ -1,12 +1,22 @@
 export type {
+    ApplicationStatus,
+    DanishRequirement,
+    EmploymentType,
     Job,
     JobSkill,
     JobSkillRequirement,
     JobWithSkills,
+    Seniority,
+    WorkModel,
 } from '@/schemas/job';
 
 import type {
+    ApplicationStatus,
+    DanishRequirement,
+    EmploymentType,
     JobSkillRequirement,
+    Seniority,
+    WorkModel,
 } from '@/schemas/job';
 
 export interface JobSkillInput {
@@ -22,16 +32,16 @@ export interface CreateJobInput {
     sourceUrl: string | null;
     originalText: string | null;
     location: string | null;
-    workModel: string | null;
-    employmentType: string | null;
-    seniority: string | null;
+    workModel: WorkModel | null;
+    employmentType: EmploymentType | null;
+    seniority: Seniority | null;
     primaryRole: string | null;
     yearsRequired: string | null;
     educationRequirement: string | null;
-    danishRequired: string | null;
+    danishRequired: DanishRequirement | null;
     salaryRate: string | null;
     interest: number | null;
-    applyStatus: string | null;
+    applyStatus: ApplicationStatus | null;
     gapNotes: string | null;
     originalMatch: number | null;
     skills: JobSkillInput[];

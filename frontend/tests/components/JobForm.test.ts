@@ -66,7 +66,7 @@ describe('JobForm', () => {
             .trigger('click');
 
         expect(
-            wrapper.find('select').exists()
+            wrapper.find('#skill-requirement-0').exists()
         ).toBe(false);
     });
 

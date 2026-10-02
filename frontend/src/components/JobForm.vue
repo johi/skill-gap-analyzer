@@ -2,9 +2,15 @@
 import { reactive } from 'vue';
 
 import type {
+  ApplicationStatus,
   CreateJobInput,
+  DanishRequirement,
+  EmploymentType,
   JobSkillRequirement,
-} from '../types/job';
+  Seniority,
+  WorkModel,
+} from '@/types/job';
+
 import {
   Plus,
   Trash2,
@@ -32,7 +38,29 @@ interface JobSkillForm {
   requirement: JobSkillRequirement;
 }
 
-const form = reactive({
+interface JobFormState {
+  dateFound: string;
+  company: string;
+  title: string;
+  sourceUrl: string;
+  originalText: string;
+  location: string;
+  workModel: WorkModel | '';
+  employmentType: EmploymentType | '';
+  seniority: Seniority | '';
+  primaryRole: string;
+  yearsRequired: string;
+  educationRequirement: string;
+  danishRequired: DanishRequirement | '';
+  salaryRate: string;
+  interest: number | null;
+  applyStatus: ApplicationStatus | '';
+  gapNotes: string;
+  originalMatch: number | null;
+  skills: JobSkillForm[];
+}
+
+const form = reactive<JobFormState>({
   dateFound: props.initialValue?.dateFound ?? '',
   company: props.initialValue?.company ?? '',
   title: props.initialValue?.title ?? '',
@@ -84,17 +112,17 @@ function submit(): void {
     sourceUrl: nullableString(form.sourceUrl),
     originalText: nullableString(form.originalText),
     location: nullableString(form.location),
-    workModel: nullableString(form.workModel),
-    employmentType: nullableString(form.employmentType),
-    seniority: nullableString(form.seniority),
+    workModel: form.workModel || null,
+    employmentType: form.employmentType || null,
+    seniority: form.seniority || null,
     primaryRole: nullableString(form.primaryRole),
     yearsRequired: nullableString(form.yearsRequired),
     educationRequirement:
         nullableString(form.educationRequirement),
-    danishRequired: nullableString(form.danishRequired),
+    danishRequired: form.danishRequired || null,
     salaryRate: nullableString(form.salaryRate),
     interest: form.interest,
-    applyStatus: nullableString(form.applyStatus),
+    applyStatus: form.applyStatus || null,
     gapNotes: nullableString(form.gapNotes),
     originalMatch: form.originalMatch,
     skills: form.skills.map((skill) => ({
@@ -196,12 +224,16 @@ function submit(): void {
         <div class="space-y-2">
           <Label for="work-model">Work model</Label>
 
-          <Input
+          <select
               id="work-model"
               v-model="form.workModel"
-              type="text"
-              placeholder="e.g. Hybrid"
-          />
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <option value="">Not specified</option>
+            <option value="onsite">On-site</option>
+            <option value="hybrid">Hybrid</option>
+            <option value="remote">Remote</option>
+          </select>
         </div>
 
         <div class="space-y-2">
@@ -209,23 +241,35 @@ function submit(): void {
             Employment type
           </Label>
 
-          <Input
+          <select
               id="employment-type"
               v-model="form.employmentType"
-              type="text"
-              placeholder="e.g. Full-time"
-          />
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <option value="">Not specified</option>
+            <option value="full_time">Full-time</option>
+            <option value="part_time">Part-time</option>
+            <option value="contract">Contract</option>
+            <option value="temporary">Temporary</option>
+          </select>
         </div>
 
         <div class="space-y-2">
           <Label for="seniority">Seniority</Label>
 
-          <Input
+          <select
               id="seniority"
               v-model="form.seniority"
-              type="text"
-              placeholder="e.g. Senior"
-          />
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <option value="">Not specified</option>
+            <option value="junior">Junior</option>
+            <option value="mid">Mid</option>
+            <option value="senior">Senior</option>
+            <option value="lead">Lead</option>
+            <option value="staff">Staff</option>
+            <option value="principal">Principal</option>
+          </select>
         </div>
 
         <div class="space-y-2">
@@ -257,12 +301,16 @@ function submit(): void {
             Danish required
           </Label>
 
-          <Input
+          <select
               id="danish-required"
               v-model="form.danishRequired"
-              type="text"
-              placeholder="e.g. No"
-          />
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <option value="">Not specified</option>
+            <option value="no">No</option>
+            <option value="preferred">Preferred</option>
+            <option value="required">Required</option>
+          </select>
         </div>
 
         <div class="space-y-2">
@@ -341,12 +389,19 @@ function submit(): void {
             Application status
           </Label>
 
-          <Input
+          <select
               id="application-status"
               v-model="form.applyStatus"
-              type="text"
-              placeholder="e.g. Considering, Applied, Interview"
-          />
+              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <option value="">Not specified</option>
+            <option value="not_applied">Not applied</option>
+            <option value="applied">Applied</option>
+            <option value="interview">Interview</option>
+            <option value="rejected">Rejected</option>
+            <option value="offer">Offer</option>
+            <option value="expired">Expired</option>
+          </select>
         </div>
 
         <div class="space-y-2 sm:col-span-2">

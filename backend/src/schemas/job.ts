@@ -18,6 +18,43 @@ export const jobSkillSchema = z.object({
     requirement: jobSkillRequirementSchema,
 });
 
+export const workModelSchema = z.enum([
+    'onsite',
+    'hybrid',
+    'remote',
+]);
+
+export const employmentTypeSchema = z.enum([
+    'full_time',
+    'part_time',
+    'contract',
+    'temporary',
+]);
+
+export const senioritySchema = z.enum([
+    'junior',
+    'mid',
+    'senior',
+    'lead',
+    'staff',
+    'principal',
+]);
+
+export const danishRequiredSchema = z.enum([
+    'no',
+    'preferred',
+    'required',
+]);
+
+export const applicationStatusSchema = z.enum([
+    'not_applied',
+    'applied',
+    'interview',
+    'rejected',
+    'offer',
+    'expired',
+]);
+
 export const createJobSchema = z.object({
     dateFound: z.iso.date(),
 
@@ -45,21 +82,15 @@ export const createJobSchema = z.object({
         .nullable()
         .optional(),
 
-    workModel: z.string()
-        .trim()
-        .max(50)
+    workModel: workModelSchema
         .nullable()
         .optional(),
 
-    employmentType: z.string()
-        .trim()
-        .max(100)
+    employmentType: employmentTypeSchema
         .nullable()
         .optional(),
 
-    seniority: z.string()
-        .trim()
-        .max(100)
+    seniority: senioritySchema
         .nullable()
         .optional(),
 
@@ -80,9 +111,7 @@ export const createJobSchema = z.object({
         .nullable()
         .optional(),
 
-    danishRequired: z.string()
-        .trim()
-        .max(100)
+    danishRequired: danishRequiredSchema
         .nullable()
         .optional(),
 
@@ -98,9 +127,7 @@ export const createJobSchema = z.object({
         .nullable()
         .optional(),
 
-    applyStatus: z.string()
-        .trim()
-        .max(50)
+    applyStatus: applicationStatusSchema
         .nullable()
         .optional(),
 
@@ -120,6 +147,11 @@ export const createJobSchema = z.object({
 });
 
 export const updateJobSchema = createJobSchema;
+export type WorkModel = z.infer<typeof workModelSchema>;
+export type EmploymentType = z.infer<typeof employmentTypeSchema>;
+export type Seniority = z.infer<typeof senioritySchema>;
+export type DanishRequirement = z.infer<typeof danishRequiredSchema>;
+export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
 
 export type JobSkillInput = z.infer<typeof jobSkillSchema>;
 export type CreateJobInput = z.infer<typeof createJobSchema>;
