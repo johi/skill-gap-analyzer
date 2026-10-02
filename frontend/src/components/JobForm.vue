@@ -64,14 +64,6 @@ function nullableString(value: string): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
-function nullableNumber(value: string): number | null {
-  if (value.trim() === '') {
-    return null;
-  }
-
-  return Number(value);
-}
-
 function addSkill(): void {
   form.skills.push({
     name: '',
