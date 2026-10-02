@@ -31,13 +31,13 @@ jobs:
 
       - name: Install frontend dependencies
         run: docker compose exec -T frontend npm ci
+
       - name: Diagnose test environment
         run: |
           docker compose exec -T backend pwd
           docker compose exec -T backend ls -la .env.test
           docker compose exec -T backend cat .env.test
           docker compose exec -T backend npm ls dotenv-cli
-          docker compose exec -T backend ./node_modules/.bin/dotenv --version
 
       - name: Migrate test database
         run: docker compose exec -T backend npm run db:test:migrate
