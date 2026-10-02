@@ -1,24 +1,24 @@
-import { db } from '../db';
+import { db } from '@/db';
 
 import {
     JobRepository,
     JobWithSkills,
-} from '../repositories/job-repository';
+} from '@/repositories/job-repository';
 
 import {
     SkillRepository,
-} from '../repositories/skill-repository';
+} from '@/repositories/skill-repository';
 
 import {
     CreateJobInput,
     JobSkillInput,
     UpdateJobInput,
-} from '../schemas/job';
+} from '@/schemas/job';
 
 import {
     ConflictError,
     NotFoundError,
-} from '../errors/application-errors';
+} from '@/errors/application-errors';
 
 export class JobService {
     async list() {

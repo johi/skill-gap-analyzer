@@ -1,10 +1,11 @@
 import {
     UserSkill,
     UserSkillRepository,
-} from '../repositories/user-skill-repository';
+} from '@/repositories/user-skill-repository';
 
-import { SkillRepository } from '../repositories/skill-repository';
-import { NotFoundError } from '../errors/application-errors';
+import { SkillRepository } from '@/repositories/skill-repository';
+import { NotFoundError } from '@/errors/application-errors';
+import type { SkillLevel } from '@/schemas/user-skill';
 
 export class UserSkillService {
     constructor(
@@ -31,7 +32,7 @@ export class UserSkillService {
 
     async setLevel(
         skillId: number,
-        level: number
+        level: SkillLevel
     ): Promise<UserSkill> {
         const skill = await this.skillRepository.findById(skillId);
 

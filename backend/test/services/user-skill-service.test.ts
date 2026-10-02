@@ -7,11 +7,12 @@ import {
     vi,
 } from 'vitest';
 
-import { UserSkillService } from '../../src/services/user-skill-service';
-import { SkillRepository } from '../../src/repositories/skill-repository';
-import { UserSkillRepository } from '../../src/repositories/user-skill-repository';
+import { UserSkillService } from '@/services/user-skill-service';
+import { SkillRepository } from '@/repositories/skill-repository';
+import { UserSkillRepository } from '@/repositories/user-skill-repository';
 
-import { NotFoundError } from '../../src/errors/application-errors';
+import { NotFoundError } from '@/errors/application-errors';
+import type { SkillLevel } from '@/schemas/user-skill';
 
 describe('UserSkillService', () => {
     const skill = {
@@ -114,7 +115,7 @@ describe('UserSkillService', () => {
             .not.toHaveBeenCalled();
     });
 
-    it.each([0, 1, 2, 3, 4, 5])(
+    it.each<SkillLevel>([0, 1, 2, 3, 4, 5])(
         'accepts proficiency level %i',
         async (level) => {
             skillRepository.findById.mockResolvedValue(

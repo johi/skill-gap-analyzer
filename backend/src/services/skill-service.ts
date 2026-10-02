@@ -2,12 +2,12 @@ import {
     NewSkill,
     Skill,
     SkillRepository,
-} from '../repositories/skill-repository';
+} from '@/repositories/skill-repository';
 
 import {
     ConflictError,
     NotFoundError,
-} from '../errors/application-errors';
+} from '@/errors/application-errors';
 
 export class SkillService {
     constructor(

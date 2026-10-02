@@ -1,7 +1,8 @@
 import { asc, eq } from 'drizzle-orm';
 
-import { skills, userSkills } from '../db/schema';
+import { skills, userSkills } from '@/db/schema';
 import { DatabaseExecutor } from './types';
+import type { SkillLevel } from '@/schemas/user-skill';
 
 export type UserSkill = typeof userSkills.$inferSelect;
 export type NewUserSkill = typeof userSkills.$inferInsert;
@@ -42,7 +43,7 @@ export class UserSkillRepository {
 
     async upsert(
         skillId: number,
-        level: number
+        level: SkillLevel
     ): Promise<UserSkill> {
         const [userSkill] = await this.db
             .insert(userSkills)
