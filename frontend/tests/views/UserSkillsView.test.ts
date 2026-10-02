@@ -21,6 +21,8 @@ import {
     setUserSkillLevel,
 } from '../../src/api/user-skills';
 
+import type { UserSkill } from '../../src/types/user-skill';
+
 vi.mock('../../src/api/skills', () => ({
     getSkills: vi.fn(),
 }));
@@ -48,7 +50,7 @@ const skills = [
     },
 ];
 
-const assessments = [
+const assessments: UserSkill[] = [
     {
         skillId: 1,
         name: 'TypeScript',

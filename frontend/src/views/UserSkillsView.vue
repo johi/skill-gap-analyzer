@@ -5,16 +5,20 @@ import {
   ref,
 } from 'vue';
 
-import {getSkills} from '../api/skills';
+import {getSkills} from '@/api/skills';
 
 import {
   deleteUserSkill,
   getUserSkills,
   setUserSkillLevel,
-} from '../api/user-skills';
+} from '@/api/user-skills';
 
-import type {Skill} from '../types/skill';
-import type {UserSkill} from '../types/user-skill';
+import type {Skill} from '@/types/skill';
+import type {
+  SkillLevel,
+  UserSkill,
+} from '@/types/user-skill';
+
 import {
   ChartNoAxesColumnIncreasing,
   CircleHelp,
@@ -41,11 +45,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
+import {skillLevelSchema} from '@/schemas/user-skill';
 interface SkillRow {
   id: number;
   name: string;
   category: string;
-  level: number | null;
+  level: SkillLevel | null;
 }
 
 const skills = ref<Skill[]>([]);
@@ -111,7 +116,9 @@ async function setLevel(
     return;
   }
 
-  const level = Number(value);
+  const level = skillLevelSchema.parse(
+      Number(value)
+  );
 
   savingSkillId.value = row.id;
   error.value = null;

@@ -2,12 +2,13 @@ import { apiRequest } from './client';
 import {
     userSkillAssessmentSchema,
     userSkillsSchema,
-} from '../schemas/user-skill';
+} from '@/schemas/user-skill';
 
 import type {
+    SkillLevel,
     UserSkill,
     UserSkillAssessment,
-} from '../types/user-skill';
+} from '@/types/user-skill';
 
 export function getUserSkills(): Promise<UserSkill[]> {
     return apiRequest(
@@ -18,7 +19,7 @@ export function getUserSkills(): Promise<UserSkill[]> {
 
 export function setUserSkillLevel(
     skillId: number,
-    level: number
+    level: SkillLevel
 ): Promise<UserSkillAssessment> {
     return apiRequest(
         `/api/v1/user-skills/${skillId}`,
