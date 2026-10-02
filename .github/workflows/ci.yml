@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build containers
+        run: docker compose build
+
+      - name: Start test database
+        run: docker compose up -d db-test
+
+      - name: Install backend dependencies
+        run: docker compose run --rm backend npm ci
+
+      - name: Install frontend dependencies
+        run: docker compose run --rm frontend npm ci
+
+      - name: Migrate test database
+        run: docker compose run --rm backend npm run db:test:migrate
+
+      - name: Build backend
+        run: docker compose run --rm backend npm run build
+
+      - name: Test backend
+        run: docker compose run --rm backend npm test
+
+      - name: Build frontend
+        run: docker compose run --rm frontend npm run build
+
+      - name: Test frontend
+        run: docker compose run --rm frontend npm test
+
