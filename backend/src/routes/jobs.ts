@@ -1,18 +1,22 @@
 import { FastifyPluginAsync } from 'fastify';
 
-import { JobService } from '../services/job-service';
-import { idParamSchema } from '../schemas/common';
+import { JobService } from '@/services/job-service';
+import { idParamSchema } from '@/schemas/common';
 import {
     createJobSchema,
     updateJobSchema,
-} from '../schemas/job';
+    jobResponseSchema,
+    jobsResponseSchema,
+} from '@/schemas/job';
 
 export function createJobRoutes(
     jobService: JobService
 ): FastifyPluginAsync {
     return async (fastify) => {
         fastify.get('/', async () => {
-            return jobService.list();
+            const jobs = await jobService.list();
+
+            return jobsResponseSchema.parse(jobs);
         });
 
         fastify.get('/:id', async (request) => {
@@ -20,7 +24,9 @@ export function createJobRoutes(
                 request.params
             );
 
-            return jobService.get(id);
+            const job = await jobService.get(id);
+
+            return jobResponseSchema.parse(job);
         });
 
         fastify.post('/', async (request, reply) => {

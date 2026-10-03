@@ -147,6 +147,31 @@ export const createJobSchema = z.object({
 });
 
 export const updateJobSchema = createJobSchema;
+export const jobResponseSchema = z.object({
+    id: z.number().int().positive(),
+    dateFound: z.iso.date(),
+    company: z.string(),
+    title: z.string(),
+    sourceUrl: z.string().nullable(),
+    originalText: z.string().nullable(),
+    location: z.string().nullable(),
+    workModel: workModelSchema.nullable(),
+    employmentType: employmentTypeSchema.nullable(),
+    seniority: senioritySchema.nullable(),
+    primaryRole: z.string().nullable(),
+    yearsRequired: z.string().nullable(),
+    educationRequirement: z.string().nullable(),
+    danishRequired: danishRequiredSchema.nullable(),
+    salaryRate: z.string().nullable(),
+    interest: z.number().int().min(0).max(100).nullable(),
+    applyStatus: applicationStatusSchema.nullable(),
+    gapNotes: z.string().nullable(),
+    originalMatch: z.number().min(0).max(100).nullable(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+});
+
+export const jobsResponseSchema = z.array(jobResponseSchema);
 export type WorkModel = z.infer<typeof workModelSchema>;
 export type EmploymentType = z.infer<typeof employmentTypeSchema>;
 export type Seniority = z.infer<typeof senioritySchema>;
