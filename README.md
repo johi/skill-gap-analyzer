@@ -46,7 +46,8 @@ The current application supports:
 - Associating required and optional skills with jobs
 - Maintaining a reusable skill catalogue
 - Assessing personal skill proficiency on a 0–5 scale
-- Recording structured job attributes such as seniority, work model and application status
+- Recording structured job attributes such as seniority, work model, application status and language requirements
+- Supporting multiple preferred or required languages per job using ISO 639-1 language codes
 - Runtime validation of API data using Zod
 - Separate development and test databases
 - Automated endpoint, repository, service and frontend tests
@@ -134,9 +135,7 @@ This starts:
 
 The frontend is then available at:
 
-```text
-http://localhost:5173
-```
+[http://localhost:5173](http://localhost:5173)
 
 ### 4. Run database migrations
 
@@ -224,4 +223,4 @@ The current CI status is shown by the badge at the top of this README.
 
 Skill Gap Analyzer is currently a demonstration project and is under active development.
 
-The current increment establishes the core full-stack architecture, job and skill management, runtime API validation, automated testing and continuous integration.
+The current application establishes the core full-stack architecture, job and skill management, structured job metadata, runtime API validation, automated testing and continuous integration.
