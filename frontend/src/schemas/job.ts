@@ -22,11 +22,17 @@ export const senioritySchema = z.enum([
     'principal',
 ]);
 
-export const danishRequiredSchema = z.enum([
-    'no',
+export const languageRequirementSchema = z.enum([
     'preferred',
     'required',
 ]);
+
+export const jobLanguageRequirementSchema = z.object({
+    language: z.string()
+        .regex(/^[a-z]{2}$/),
+
+    requirement: languageRequirementSchema,
+});
 
 export const applicationStatusSchema = z.enum([
     'not_applied',
@@ -63,7 +69,7 @@ export const jobSchema = z.object({
     primaryRole: z.string().nullable(),
     yearsRequired: z.string().nullable(),
     educationRequirement: z.string().nullable(),
-    danishRequired: danishRequiredSchema.nullable(),
+    languageRequirements: z.array(jobLanguageRequirementSchema),
     salaryRate: z.string().nullable(),
     interest: z.number().nullable(),
     applyStatus: applicationStatusSchema.nullable(),
@@ -73,11 +79,11 @@ export const jobSchema = z.object({
     updatedAt: z.string(),
 });
 
-export const jobsSchema = z.array(jobSchema);
-
 export const jobWithSkillsSchema = jobSchema.extend({
     skills: z.array(jobSkillSchema),
 });
+
+export const jobsSchema = z.array(jobWithSkillsSchema);
 
 export type Job = z.infer<typeof jobSchema>;
 export type JobSkillRequirement =
@@ -91,7 +97,9 @@ export type EmploymentType =
     z.infer<typeof employmentTypeSchema>;
 export type Seniority =
     z.infer<typeof senioritySchema>;
-export type DanishRequirement =
-    z.infer<typeof danishRequiredSchema>;
+export type LanguageRequirement =
+    z.infer<typeof languageRequirementSchema>;
+export type JobLanguageRequirement =
+    z.infer<typeof jobLanguageRequirementSchema>;
 export type ApplicationStatus =
     z.infer<typeof applicationStatusSchema>;

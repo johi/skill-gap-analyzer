@@ -27,6 +27,7 @@ const mocks = vi.hoisted(() => {
         update: vi.fn(),
         delete: vi.fn(),
         replaceSkills: vi.fn(),
+        replaceLanguageRequirements: vi.fn(),
     };
 
     const skillRepository = {
@@ -83,12 +84,14 @@ describe('JobService', () => {
     const jobWithSkills = {
         ...job,
         skills: [],
+        languageRequirements: [],
     };
 
     const input: CreateJobInput = {
         dateFound: '2026-09-21',
         company: 'Example Company',
         title: 'Senior Backend Developer',
+        languageRequirements: [],
         skills: [],
     };
 
@@ -162,13 +165,71 @@ describe('JobService', () => {
                 mocks.transactionExecutor
             );
 
-        const { skills, ...jobData } = input;
+        const {
+            skills,
+            languageRequirements,
+            ...jobData
+        } = input;
 
         expect(mocks.jobRepository.create)
             .toHaveBeenCalledWith(jobData);
 
         expect(mocks.jobRepository.replaceSkills)
             .toHaveBeenCalledWith(1, []);
+
+        expect(mocks.jobRepository.replaceLanguageRequirements)
+            .toHaveBeenCalledWith(1, []);
+    });
+
+    it('creates a job with language requirements', async () => {
+        mocks.jobRepository.create.mockResolvedValue(job);
+
+        const createdJob = {
+            ...jobWithSkills,
+            languageRequirements: [
+                {
+                    language: 'en',
+                    requirement: 'required',
+                },
+                {
+                    language: 'da',
+                    requirement: 'preferred',
+                },
+            ],
+        };
+
+        mocks.jobRepository.findById.mockResolvedValue(
+            createdJob
+        );
+
+        const result = await service.create({
+            ...input,
+            languageRequirements: [
+                {
+                    language: 'en',
+                    requirement: 'required',
+                },
+                {
+                    language: 'da',
+                    requirement: 'preferred',
+                },
+            ],
+        });
+
+        expect(
+            mocks.jobRepository.replaceLanguageRequirements
+        ).toHaveBeenCalledWith(1, [
+            {
+                language: 'en',
+                requirement: 'required',
+            },
+            {
+                language: 'da',
+                requirement: 'preferred',
+            },
+        ]);
+
+        expect(result).toEqual(createdJob);
     });
 
     it('reuses existing skills', async () => {
@@ -362,12 +423,19 @@ describe('JobService', () => {
         expect(mocks.transaction)
             .toHaveBeenCalledOnce();
 
-        const { skills, ...jobData } = updateInput;
+        const {
+            skills,
+            languageRequirements,
+            ...jobData
+        } = updateInput;
 
         expect(mocks.jobRepository.update)
             .toHaveBeenCalledWith(1, jobData);
 
         expect(mocks.jobRepository.replaceSkills)
+            .toHaveBeenCalledWith(1, []);
+
+        expect(mocks.jobRepository.replaceLanguageRequirements)
             .toHaveBeenCalledWith(1, []);
     });
 
@@ -384,6 +452,9 @@ describe('JobService', () => {
             .not.toHaveBeenCalled();
 
         expect(mocks.jobRepository.replaceSkills)
+            .not.toHaveBeenCalled();
+
+        expect(mocks.jobRepository.replaceLanguageRequirements)
             .not.toHaveBeenCalled();
     });
 

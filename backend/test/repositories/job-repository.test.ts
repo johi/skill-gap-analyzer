@@ -51,6 +51,7 @@ describe('JobRepository', () => {
             company: 'Example Company',
             title: 'Senior Backend Developer',
             skills: [],
+            languageRequirements: [],
         });
     });
 
@@ -105,6 +106,111 @@ describe('JobRepository', () => {
             title: 'Senior Backend Developer',
             interest: 90,
         });
+    });
+
+    it('replaces and returns language requirements', async () => {
+        const created = await repository.create({
+            dateFound: '2026-09-21',
+            company: 'Example Company',
+            title: 'Senior Backend Developer',
+        });
+
+        await repository.replaceLanguageRequirements(
+            created.id,
+            [
+                {
+                    language: 'en',
+                    requirement: 'required',
+                },
+                {
+                    language: 'da',
+                    requirement: 'preferred',
+                },
+            ]
+        );
+
+        const job = await repository.findById(created.id);
+
+        expect(job?.languageRequirements).toEqual(
+            expect.arrayContaining([
+                {
+                    language: 'en',
+                    requirement: 'required',
+                },
+                {
+                    language: 'da',
+                    requirement: 'preferred',
+                },
+            ])
+        );
+    });
+
+    it('replaces existing language requirements', async () => {
+        const created = await repository.create({
+            dateFound: '2026-09-21',
+            company: 'Example Company',
+            title: 'Senior Backend Developer',
+        });
+
+        await repository.replaceLanguageRequirements(
+            created.id,
+            [
+                {
+                    language: 'en',
+                    requirement: 'required',
+                },
+                {
+                    language: 'da',
+                    requirement: 'preferred',
+                },
+            ]
+        );
+
+        await repository.replaceLanguageRequirements(
+            created.id,
+            [
+                {
+                    language: 'de',
+                    requirement: 'required',
+                },
+            ]
+        );
+
+        const job = await repository.findById(created.id);
+
+        expect(job?.languageRequirements).toEqual([
+            {
+                language: 'de',
+                requirement: 'required',
+            },
+        ]);
+    });
+
+    it('removes language requirements when replaced with an empty list', async () => {
+        const created = await repository.create({
+            dateFound: '2026-09-21',
+            company: 'Example Company',
+            title: 'Senior Backend Developer',
+        });
+
+        await repository.replaceLanguageRequirements(
+            created.id,
+            [
+                {
+                    language: 'en',
+                    requirement: 'required',
+                },
+            ]
+        );
+
+        await repository.replaceLanguageRequirements(
+            created.id,
+            []
+        );
+
+        const job = await repository.findById(created.id);
+
+        expect(job?.languageRequirements).toEqual([]);
     });
 
     it('deletes a job', async () => {

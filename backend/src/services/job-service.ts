@@ -48,6 +48,7 @@ export class JobService {
 
             const {
                 skills,
+                languageRequirements,
                 ...jobData
             } = input;
 
@@ -62,6 +63,11 @@ export class JobService {
             await jobRepository.replaceSkills(
                 job.id,
                 assignedSkills
+            );
+
+            await jobRepository.replaceLanguageRequirements(
+                job.id,
+                languageRequirements
             );
 
             const created =
@@ -96,6 +102,7 @@ export class JobService {
 
             const {
                 skills,
+                languageRequirements,
                 ...jobData
             } = input;
 
@@ -110,6 +117,11 @@ export class JobService {
             await jobRepository.replaceSkills(
                 id,
                 assignedSkills
+            );
+
+            await jobRepository.replaceLanguageRequirements(
+                id,
+                languageRequirements
             );
 
             const updated =

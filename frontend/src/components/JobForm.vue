@@ -4,9 +4,9 @@ import { reactive } from 'vue';
 import type {
   ApplicationStatus,
   CreateJobInput,
-  DanishRequirement,
   EmploymentType,
   JobSkillRequirement,
+  LanguageRequirement,
   Seniority,
   WorkModel,
 } from '@/types/job';
@@ -38,6 +38,11 @@ interface JobSkillForm {
   requirement: JobSkillRequirement;
 }
 
+interface JobLanguageRequirementForm {
+  language: string;
+  requirement: LanguageRequirement;
+}
+
 interface JobFormState {
   dateFound: string;
   company: string;
@@ -51,7 +56,7 @@ interface JobFormState {
   primaryRole: string;
   yearsRequired: string;
   educationRequirement: string;
-  danishRequired: DanishRequirement | '';
+  languageRequirements: JobLanguageRequirementForm[];
   salaryRate: string;
   interest: number | null;
   applyStatus: ApplicationStatus | '';
@@ -74,7 +79,10 @@ const form = reactive<JobFormState>({
   yearsRequired: props.initialValue?.yearsRequired ?? '',
   educationRequirement:
       props.initialValue?.educationRequirement ?? '',
-  danishRequired: props.initialValue?.danishRequired ?? '',
+  languageRequirements:
+      props.initialValue?.languageRequirements.map((requirement) => ({
+        ...requirement,
+      })) ?? [],
   salaryRate: props.initialValue?.salaryRate ?? '',
   interest: props.initialValue?.interest ?? null,
   applyStatus: props.initialValue?.applyStatus ?? '',
@@ -90,6 +98,17 @@ function nullableString(value: string): string | null {
   const trimmed = value.trim();
 
   return trimmed === '' ? null : trimmed;
+}
+
+function addLanguageRequirement(): void {
+  form.languageRequirements.push({
+    language: '',
+    requirement: 'required',
+  });
+}
+
+function removeLanguageRequirement(index: number): void {
+  form.languageRequirements.splice(index, 1);
 }
 
 function addSkill(): void {
@@ -119,7 +138,10 @@ function submit(): void {
     yearsRequired: nullableString(form.yearsRequired),
     educationRequirement:
         nullableString(form.educationRequirement),
-    danishRequired: form.danishRequired || null,
+    languageRequirements: form.languageRequirements.map((requirement) => ({
+      language: requirement.language.trim().toLowerCase(),
+      requirement: requirement.requirement,
+    })),
     salaryRate: nullableString(form.salaryRate),
     interest: form.interest,
     applyStatus: form.applyStatus || null,
@@ -295,22 +317,90 @@ function submit(): void {
               placeholder="e.g. 5+ years"
           />
         </div>
+        <div class="space-y-4">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h3 class="text-sm font-medium">
+                Language requirements
+              </h3>
 
-        <div class="space-y-2">
-          <Label for="danish-required">
-            Danish required
-          </Label>
+              <p class="text-sm text-muted-foreground">
+                Languages preferred or required for the position.
+              </p>
+            </div>
 
-          <select
-              id="danish-required"
-              v-model="form.danishRequired"
-              class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                @click="addLanguageRequirement"
+            >
+              <Plus class="size-4" />
+              Add language
+            </Button>
+          </div>
+
+          <div
+              v-if="form.languageRequirements.length === 0"
+              class="rounded-lg border border-dashed p-6 text-center"
           >
-            <option value="">Not specified</option>
-            <option value="no">No</option>
-            <option value="preferred">Preferred</option>
-            <option value="required">Required</option>
-          </select>
+            <p class="text-sm text-muted-foreground">
+              No language requirements specified.
+            </p>
+          </div>
+
+          <div v-else class="space-y-3">
+            <div
+                v-for="(languageRequirement, index) in form.languageRequirements"
+                :key="index"
+                class="grid gap-3 rounded-lg border bg-muted/20 p-4 md:grid-cols-[1fr_180px_auto] md:items-end"
+            >
+              <div class="space-y-2">
+                <Label :for="`language-${index}`">
+                  Language
+                </Label>
+
+                <Input
+                    :id="`language-${index}`"
+                    v-model="languageRequirement.language"
+                    type="text"
+                    maxlength="2"
+                    placeholder="e.g. en"
+                    required
+                />
+              </div>
+
+              <div class="space-y-2">
+                <Label :for="`language-requirement-${index}`">
+                  Requirement
+                </Label>
+
+                <select
+                    :id="`language-requirement-${index}`"
+                    v-model="languageRequirement.requirement"
+                    class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                >
+                  <option value="required">
+                    Required
+                  </option>
+
+                  <option value="preferred">
+                    Preferred
+                  </option>
+                </select>
+              </div>
+
+              <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  @click="removeLanguageRequirement(index)"
+              >
+                <Trash2 class="size-4" />
+                Remove
+              </Button>
+            </div>
+          </div>
         </div>
 
         <div class="space-y-2">

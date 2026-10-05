@@ -30,6 +30,18 @@ export const employmentTypeSchema = z.enum([
     'contract',
     'temporary',
 ]);
+export const languageRequirementSchema = z.enum([
+    'preferred',
+    'required',
+]);
+
+export const jobLanguageRequirementSchema = z.object({
+    language: z.string()
+        .trim()
+        .regex(/^[a-z]{2}$/),
+
+    requirement: languageRequirementSchema,
+});
 
 export const senioritySchema = z.enum([
     'junior',
@@ -38,12 +50,6 @@ export const senioritySchema = z.enum([
     'lead',
     'staff',
     'principal',
-]);
-
-export const danishRequiredSchema = z.enum([
-    'no',
-    'preferred',
-    'required',
 ]);
 
 export const applicationStatusSchema = z.enum([
@@ -111,9 +117,15 @@ export const createJobSchema = z.object({
         .nullable()
         .optional(),
 
-    danishRequired: danishRequiredSchema
-        .nullable()
-        .optional(),
+    languageRequirements: z.array(jobLanguageRequirementSchema)
+        .refine(
+            (requirements) =>
+                new Set(requirements.map(({ language }) => language)).size === requirements.length,
+            {
+                message: 'Language requirements must contain unique languages',
+            }
+        )
+        .default([]),
 
     salaryRate: z.string()
         .trim()
@@ -161,7 +173,7 @@ export const jobResponseSchema = z.object({
     primaryRole: z.string().nullable(),
     yearsRequired: z.string().nullable(),
     educationRequirement: z.string().nullable(),
-    danishRequired: danishRequiredSchema.nullable(),
+    languageRequirements: z.array(jobLanguageRequirementSchema),
     salaryRate: z.string().nullable(),
     interest: z.number().int().min(0).max(100).nullable(),
     applyStatus: applicationStatusSchema.nullable(),
@@ -181,7 +193,8 @@ export const jobsResponseSchema = z.array(jobResponseSchema);
 export type WorkModel = z.infer<typeof workModelSchema>;
 export type EmploymentType = z.infer<typeof employmentTypeSchema>;
 export type Seniority = z.infer<typeof senioritySchema>;
-export type DanishRequirement = z.infer<typeof danishRequiredSchema>;
+export type LanguageRequirement = z.infer<typeof languageRequirementSchema>;
+export type JobLanguageRequirement = z.infer<typeof jobLanguageRequirementSchema>;
 export type ApplicationStatus = z.infer<typeof applicationStatusSchema>;
 
 export type JobSkillInput = z.infer<typeof jobSkillSchema>;

@@ -70,7 +70,6 @@ describe('Jobs API', () => {
         ['workModel', 'sometimes_remote'],
         ['employmentType', 'freelance-ish'],
         ['seniority', 'very_senior'],
-        ['danishRequired', 'maybe'],
         ['applyStatus', 'considering'],
     ])(
         'rejects invalid %s',
@@ -115,6 +114,84 @@ describe('Jobs API', () => {
 
         expect(response.statusCode).toBe(400);
     });
+    it('rejects an invalid language code', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs',
+            payload: {
+                dateFound: '2026-09-20',
+                company: 'Example Company',
+                title: 'Senior Backend Developer',
+                languageRequirements: [
+                    {
+                        language: 'danish',
+                        requirement: 'required',
+                    },
+                ],
+                skills: [],
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+        });
+    });
+
+    it('rejects an invalid language requirement', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs',
+            payload: {
+                dateFound: '2026-09-20',
+                company: 'Example Company',
+                title: 'Senior Backend Developer',
+                languageRequirements: [
+                    {
+                        language: 'da',
+                        requirement: 'maybe',
+                    },
+                ],
+                skills: [],
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+        });
+    });
+
+    it('rejects duplicate language requirements', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs',
+            payload: {
+                dateFound: '2026-09-20',
+                company: 'Example Company',
+                title: 'Senior Backend Developer',
+                languageRequirements: [
+                    {
+                        language: 'en',
+                        requirement: 'required',
+                    },
+                    {
+                        language: 'en',
+                        requirement: 'preferred',
+                    },
+                ],
+                skills: [],
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+        });
+    });
 
     it('rejects an invalid job id', async () => {
         const response = await app.inject({
@@ -136,7 +213,16 @@ describe('Jobs API', () => {
                 workModel: 'hybrid',
                 employmentType: 'full_time',
                 seniority: 'senior',
-                danishRequired: 'no',
+                languageRequirements: [
+                    {
+                        language: 'en',
+                        requirement: 'required',
+                    },
+                    {
+                        language: 'da',
+                        requirement: 'preferred',
+                    },
+                ],
                 applyStatus: 'not_applied',
                 skills: [],
             },
@@ -157,7 +243,16 @@ describe('Jobs API', () => {
                     workModel: 'hybrid',
                     employmentType: 'full_time',
                     seniority: 'senior',
-                    danishRequired: 'no',
+                    languageRequirements: [
+                        {
+                            language: 'en',
+                            requirement: 'required',
+                        },
+                        {
+                            language: 'da',
+                            requirement: 'preferred',
+                        },
+                    ],
                     applyStatus: 'not_applied',
                 }),
             ])

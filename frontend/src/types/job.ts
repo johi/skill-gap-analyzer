@@ -1,6 +1,7 @@
 export type {
     ApplicationStatus,
-    DanishRequirement,
+    JobLanguageRequirement,
+    LanguageRequirement,
     EmploymentType,
     Job,
     JobSkill,
@@ -12,7 +13,7 @@ export type {
 
 import type {
     ApplicationStatus,
-    DanishRequirement,
+    JobLanguageRequirement,
     EmploymentType,
     JobSkillRequirement,
     Seniority,
@@ -38,7 +39,7 @@ export interface CreateJobInput {
     primaryRole: string | null;
     yearsRequired: string | null;
     educationRequirement: string | null;
-    danishRequired: DanishRequirement | null;
+    languageRequirements: JobLanguageRequirement[];
     salaryRate: string | null;
     interest: number | null;
     applyStatus: ApplicationStatus | null;

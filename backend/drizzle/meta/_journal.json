@@ -15,6 +15,13 @@
       "when": 1789909161593,
       "tag": "0001_certain_preak",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791204623140,
+      "tag": "0002_generalize-language-requirements",
+      "breakpoints": true
     }
   ]
 }

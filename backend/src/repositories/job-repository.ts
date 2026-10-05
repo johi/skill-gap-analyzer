@@ -2,9 +2,11 @@ import { desc, eq } from 'drizzle-orm';
 
 import {
     jobs,
+    jobLanguageRequirements,
     jobSkills,
     skills,
-} from '../db/schema';
+} from '@/db/schema';
+
 import { DatabaseExecutor } from './types';
 
 export type Job = typeof jobs.$inferSelect;
@@ -17,8 +19,14 @@ export interface JobSkill {
     requirement: string;
 }
 
+export interface JobLanguageRequirement {
+    language: string;
+    requirement: string;
+}
+
 export interface JobWithSkills extends Job {
     skills: JobSkill[];
+    languageRequirements: JobLanguageRequirement[];
 }
 
 export class JobRepository {
@@ -26,11 +34,49 @@ export class JobRepository {
         private readonly db: DatabaseExecutor
     ) {}
 
-    async findAll(): Promise<Job[]> {
-        return this.db
+    async findAll(): Promise<JobWithSkills[]> {
+        const allJobs = await this.db
             .select()
             .from(jobs)
             .orderBy(desc(jobs.dateFound));
+
+        if (allJobs.length === 0) {
+            return [];
+        }
+
+        const assignedSkills = await this.db
+            .select({
+                jobId: jobSkills.jobId,
+                id: skills.id,
+                name: skills.name,
+                category: skills.category,
+                requirement: jobSkills.requirement,
+            })
+            .from(jobSkills)
+            .innerJoin(
+                skills,
+                eq(jobSkills.skillId, skills.id)
+            );
+
+        const languageRequirements = await this.db
+            .select({
+                jobId: jobLanguageRequirements.jobId,
+                language: jobLanguageRequirements.language,
+                requirement: jobLanguageRequirements.requirement,
+            })
+            .from(jobLanguageRequirements);
+
+        return allJobs.map((job) => ({
+            ...job,
+
+            skills: assignedSkills
+                .filter((skill) => skill.jobId === job.id)
+                .map(({ jobId: _, ...skill }) => skill),
+
+            languageRequirements: languageRequirements
+                .filter((requirement) => requirement.jobId === job.id)
+                .map(({ jobId: _, ...requirement }) => requirement),
+        }));
     }
 
     async findById(id: number): Promise<JobWithSkills | undefined> {
@@ -58,9 +104,17 @@ export class JobRepository {
             )
             .where(eq(jobSkills.jobId, id));
 
+        const languageRequirements = await this.db
+            .select({
+                language: jobLanguageRequirements.language,
+                requirement: jobLanguageRequirements.requirement,
+            })
+            .from(jobLanguageRequirements)
+            .where(eq(jobLanguageRequirements.jobId, id));
         return {
             ...job,
             skills: assignedSkills,
+            languageRequirements,
         };
     }
 
@@ -122,6 +176,32 @@ export class JobRepository {
                     jobId,
                     skillId: skill.skillId,
                     requirement: skill.requirement,
+                }))
+            );
+    }
+
+    async replaceLanguageRequirements(
+        jobId: number,
+        requirements: Array<{
+            language: string;
+            requirement: 'preferred' | 'required';
+        }>
+    ): Promise<void> {
+        await this.db
+            .delete(jobLanguageRequirements)
+            .where(eq(jobLanguageRequirements.jobId, jobId));
+
+        if (requirements.length === 0) {
+            return;
+        }
+
+        await this.db
+            .insert(jobLanguageRequirements)
+            .values(
+                requirements.map((requirement) => ({
+                    jobId,
+                    language: requirement.language,
+                    requirement: requirement.requirement,
                 }))
             );
     }

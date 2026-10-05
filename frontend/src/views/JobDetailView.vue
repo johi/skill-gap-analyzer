@@ -269,10 +269,31 @@ async function handleDelete(): Promise<void> {
 
               <div>
                 <dt class="text-sm text-muted-foreground">
-                  Danish required
+                  Language requirements
                 </dt>
-                <dd class="mt-1 text-sm font-medium">
-                  {{ job.danishRequired ?? '—' }}
+
+                <dd class="mt-1 flex flex-wrap gap-2">
+                  <span
+                      v-if="job.languageRequirements.length === 0"
+                      class="text-sm font-medium"
+                  >
+                    —
+                  </span>
+
+                  <Badge
+                      v-for="languageRequirement in job.languageRequirements"
+                      v-else
+                      :key="languageRequirement.language"
+                      variant="outline"
+                  >
+                    {{ languageRequirement.language.toUpperCase() }}
+                    ·
+                    {{
+                      languageRequirement.requirement === 'required'
+                          ? 'Required'
+                          : 'Preferred'
+                    }}
+                  </Badge>
                 </dd>
               </div>
 

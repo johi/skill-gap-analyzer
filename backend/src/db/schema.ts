@@ -37,7 +37,6 @@ export const jobs = pgTable(
 
         yearsRequired: varchar('years_required', { length: 100 }),
         educationRequirement: text('education_requirement'),
-        danishRequired: varchar('danish_required', { length: 100 }),
         salaryRate: text('salary_rate'),
 
         interest: smallint('interest'),
@@ -75,6 +74,45 @@ export const jobs = pgTable(
     ]
 );
 
+export const jobLanguageRequirements = pgTable(
+    'job_language_requirements',
+    {
+        jobId: bigint('job_id', { mode: 'number' })
+            .notNull()
+            .references(() => jobs.id, {
+                onDelete: 'cascade',
+            }),
+
+        language: varchar('language', {
+            length: 2,
+        }).notNull(),
+
+        requirement: varchar('requirement', {
+            length: 20,
+        }).notNull(),
+
+        createdAt: timestamp('created_at', {
+            withTimezone: true,
+        }).notNull().defaultNow(),
+    },
+    (table) => [
+        primaryKey({
+            columns: [table.jobId, table.language],
+        }),
+
+        check(
+            'job_language_requirements_language_check',
+            sql`${table.language} ~ '^[a-z]{2}$'`
+        ),
+
+        check(
+            'job_language_requirements_requirement_check',
+            sql`${table.requirement} IN ('preferred', 'required')`
+        ),
+
+        index('job_language_requirements_language_idx').on(table.language),
+    ]
+);
 
 export const skills = pgTable(
     'skills',
