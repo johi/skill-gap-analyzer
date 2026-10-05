@@ -169,6 +169,12 @@ export const jobResponseSchema = z.object({
     originalMatch: z.number().min(0).max(100).nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
+    skills: z.array(z.object({
+        id: z.number().int().positive(),
+        name: z.string(),
+        category: skillCategorySchema,
+        requirement: jobSkillRequirementSchema,
+    })).optional(),
 });
 
 export const jobsResponseSchema = z.array(jobResponseSchema);
