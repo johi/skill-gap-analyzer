@@ -1,5 +1,9 @@
 import { SkillRepository } from '@/repositories/skill-repository';
-import { JobDataset } from '@/schemas/job-dataset';
+import {
+    JobDataset,
+    JobImportAnalysis,
+} from '@/schemas/job-dataset';
+
 
 type SkillRequirement =
     'must_have' |
@@ -21,12 +25,6 @@ export interface AnalyzedSkill {
 export interface AnalyzedJob {
     job: JobDataset['jobs'][number];
     skills: AnalyzedSkill[];
-}
-
-export interface JobImportAnalysis {
-    version: 1;
-    totalJobs: number;
-    jobs: AnalyzedJob[];
 }
 
 export class JobImportService {
@@ -52,6 +50,14 @@ export class JobImportService {
         return {
             version: dataset.version,
             totalJobs: dataset.jobs.length,
+            requiresReview: jobs.some(
+                (job) =>
+                    job.skills.some(
+                        (skill) =>
+                            skill.resolution ===
+                            'review_required'
+                    )
+            ),
             jobs,
         };
     }

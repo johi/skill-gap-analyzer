@@ -15,6 +15,8 @@ import { healthRoutes } from './routes/health';
 import { createJobRoutes } from './routes/jobs';
 import { createSkillRoutes } from './routes/skills';
 import { createUserSkillRoutes } from './routes/user-skills';
+import { JobImportService } from './services/job-import-service';
+import { createJobImportRoutes } from './routes/job-import';
 
 export function buildApp(
     options: FastifyServerOptions = {
@@ -42,6 +44,16 @@ export function buildApp(
 
     const jobService = new JobService();
 
+    const jobImportService =
+        new JobImportService(skillRepository);
+
+    fastify.register(
+        createJobImportRoutes(jobImportService),
+        {
+            prefix: '/api/v1/job-import',
+        }
+    );
+    
     fastify.register(
         healthRoutes,
         {

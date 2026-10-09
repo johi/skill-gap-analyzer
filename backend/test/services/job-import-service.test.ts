@@ -33,6 +33,7 @@ describe('JobImportService', () => {
         expect(result).toEqual({
             version: 1,
             totalJobs: 0,
+            requiresReview: false,
             jobs: [],
         });
 
@@ -184,7 +185,7 @@ describe('JobImportService', () => {
                 ],
             }],
         });
-
+        expect(result.requiresReview).toBe(true);
         expect(result.jobs[0].skills).toHaveLength(1);
 
         expect(result.jobs[0].skills[0]).toMatchObject({
