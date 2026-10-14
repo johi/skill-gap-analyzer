@@ -258,4 +258,133 @@ describe('Jobs API', () => {
             ])
         );
     });
+
+    it('commits reviewed job imports', async () => {
+        const job = {
+            dateFound: '2026-10-14',
+            company: 'Import Test Company',
+            title: 'Senior Backend Developer',
+            languageRequirements: [],
+            skills: [],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [job],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+
+        expect(response.json()).toMatchObject({
+            imported: 1,
+            excluded: 0,
+            jobIds: [expect.any(Number)],
+        });
+    });
+
+    it('rejects an import commit with an invalid dataset version', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 2,
+                    jobs: [],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+        });
+    });
+
+    it('does not import excluded jobs', async () => {
+        const jobs = [
+            {
+                dateFound: '2026-10-14',
+                company: 'Included Company',
+                title: 'Backend Developer',
+                skills: [],
+            },
+            {
+                dateFound: '2026-10-14',
+                company: 'Excluded Company',
+                title: 'Frontend Developer',
+                skills: [],
+            },
+        ];
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs,
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: jobs.map((job, jobIndex) => ({
+                        jobIndex,
+                        excluded: jobIndex === 1,
+                        job,
+                    })),
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+
+        const result = response.json();
+
+        expect(result.imported).toBe(1);
+        expect(result.excluded).toBe(1);
+        expect(result.jobIds).toHaveLength(1);
+
+        const listResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(listResponse.statusCode).toBe(200);
+
+        const importedJob = listResponse.json().find(
+            (job: { id: number }) => job.id === result.jobIds[0]
+        );
+
+        expect(importedJob).toMatchObject({
+            company: 'Included Company',
+        });
+
+        expect(
+            listResponse.json().some(
+                (job: { id: number; company: string }) =>
+                    result.jobIds.includes(job.id) &&
+                    job.company === 'Excluded Company'
+            )
+        ).toBe(false);
+    });
 });

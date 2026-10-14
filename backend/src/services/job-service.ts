@@ -10,6 +10,10 @@ import {
 } from '@/repositories/skill-repository';
 
 import {
+    DatabaseExecutor,
+} from '@/repositories/types';
+
+import {
     CreateJobInput,
     JobSkillInput,
     UpdateJobInput,
@@ -43,44 +47,49 @@ export class JobService {
         input: CreateJobInput
     ): Promise<JobWithSkills> {
         return db.transaction(async (tx) => {
-            const jobRepository = new JobRepository(tx);
-            const skillRepository = new SkillRepository(tx);
-
-            const {
-                skills,
-                languageRequirements,
-                ...jobData
-            } = input;
-
-            const job = await jobRepository.create(jobData);
-
-            const assignedSkills =
-                await this.resolveSkills(
-                    skills,
-                    skillRepository
-                );
-
-            await jobRepository.replaceSkills(
-                job.id,
-                assignedSkills
-            );
-
-            await jobRepository.replaceLanguageRequirements(
-                job.id,
-                languageRequirements
-            );
-
-            const created =
-                await jobRepository.findById(job.id);
-
-            if (!created) {
-                throw new Error(
-                    `Created job ${job.id} could not be retrieved`
-                );
-            }
-
-            return created;
+            return this.createWithExecutor(input, tx);
         });
+    }
+
+    async createWithExecutor(
+        input: CreateJobInput,
+        executor: DatabaseExecutor
+    ): Promise<JobWithSkills> {
+        const jobRepository = new JobRepository(executor);
+        const skillRepository = new SkillRepository(executor);
+
+        const {
+            skills,
+            languageRequirements,
+            ...jobData
+        } = input;
+
+        const job = await jobRepository.create(jobData);
+
+        const assignedSkills = await this.resolveSkills(
+            skills,
+            skillRepository
+        );
+
+        await jobRepository.replaceSkills(
+            job.id,
+            assignedSkills
+        );
+
+        await jobRepository.replaceLanguageRequirements(
+            job.id,
+            languageRequirements
+        );
+
+        const created = await jobRepository.findById(job.id);
+
+        if (!created) {
+            throw new Error(
+                `Created job ${job.id} could not be retrieved`
+            );
+        }
+
+        return created;
     }
 
     async update(
@@ -91,8 +100,7 @@ export class JobService {
             const jobRepository = new JobRepository(tx);
             const skillRepository = new SkillRepository(tx);
 
-            const existing =
-                await jobRepository.findById(id);
+            const existing = await jobRepository.findById(id);
 
             if (!existing) {
                 throw new NotFoundError(
@@ -108,11 +116,10 @@ export class JobService {
 
             await jobRepository.update(id, jobData);
 
-            const assignedSkills =
-                await this.resolveSkills(
-                    skills,
-                    skillRepository
-                );
+            const assignedSkills = await this.resolveSkills(
+                skills,
+                skillRepository
+            );
 
             await jobRepository.replaceSkills(
                 id,
@@ -124,8 +131,7 @@ export class JobService {
                 languageRequirements
             );
 
-            const updated =
-                await jobRepository.findById(id);
+            const updated = await jobRepository.findById(id);
 
             if (!updated) {
                 throw new Error(
@@ -173,10 +179,9 @@ export class JobService {
 
             seen.add(normalizedName);
 
-            let skill =
-                await skillRepository.findByName(
-                    requestedSkill.name
-                );
+            let skill = await skillRepository.findByName(
+                requestedSkill.name
+            );
 
             if (!skill) {
                 skill = await skillRepository.create({

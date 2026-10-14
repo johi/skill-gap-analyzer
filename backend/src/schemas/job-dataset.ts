@@ -57,6 +57,39 @@ export const jobImportAnalysisSchema = z.object({
     jobs: z.array(analyzedJobSchema),
 });
 
+export const reviewedImportJobSchema = z.object({
+    jobIndex: z.number()
+        .int()
+        .nonnegative(),
+
+    excluded: z.boolean(),
+
+    job: createJobSchema,
+});
+
+export const reviewedImportSchema = z.object({
+    version: jobDatasetVersionSchema,
+
+    jobs: z.array(reviewedImportJobSchema),
+}).superRefine((data, ctx) => {
+    const seen = new Set<number>();
+
+    data.jobs.forEach((job, index) => {
+        if (seen.has(job.jobIndex)) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['jobs', index, 'jobIndex'],
+                message: 'Duplicate job index',
+            });
+        }
+
+        seen.add(job.jobIndex);
+    });
+});
+
+export type ReviewedImport =
+    z.infer<typeof reviewedImportSchema>;
+
 export type JobDataset =
     z.infer<typeof jobDatasetSchema>;
 

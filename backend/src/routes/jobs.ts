@@ -9,10 +9,34 @@ import {
     jobsResponseSchema,
 } from '@/schemas/job';
 
+import { JobImportCommitService } from '@/services/job-import-commit-service';
+import {
+    jobDatasetSchema,
+    reviewedImportSchema,
+} from '@/schemas/job-dataset';
+
 export function createJobRoutes(
     jobService: JobService
 ): FastifyPluginAsync {
     return async (fastify) => {
+        const importCommitService = new JobImportCommitService();
+
+        fastify.post('/import/commit', async (request, reply) => {
+            const body = request.body as Record<string, unknown>;
+
+            const dataset = jobDatasetSchema.parse(body.dataset);
+            const reviewedImport = reviewedImportSchema.parse(
+                body.reviewedImport
+            );
+
+            const result = await importCommitService.commit(
+                dataset,
+                reviewedImport
+            );
+
+            return reply.status(201).send(result);
+        });
+
         fastify.get('/', async () => {
             const jobs = await jobService.list();
 

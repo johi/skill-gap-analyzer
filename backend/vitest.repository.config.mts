@@ -13,6 +13,7 @@ export default defineConfig({
     test: {
         include: [
             'test/repositories/**/*.test.ts',
+            'test/services/job-import-commit-service.test.ts',
         ],
 
         fileParallelism: false,

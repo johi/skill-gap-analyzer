@@ -4,7 +4,10 @@ import {
     it,
 } from 'vitest';
 
-import { jobDatasetSchema } from '../../src/schemas/job-dataset';
+import {
+    jobDatasetSchema,
+    reviewedImportSchema,
+} from '@/schemas/job-dataset';
 
 describe('jobDatasetSchema', () => {
     const validJob = {
@@ -168,5 +171,111 @@ describe('jobDatasetSchema', () => {
         });
 
         expect(result.success).toBe(false);
+    });
+
+    describe('reviewedImportSchema', () => {
+        it('accepts reviewed jobs with exclusion decisions', () => {
+            const result = reviewedImportSchema.safeParse({
+                version: 1,
+                jobs: [
+                    {
+                        jobIndex: 0,
+                        excluded: false,
+                        job: {
+                            dateFound: '2026-10-05',
+                            company: 'Example Company',
+                            title: 'Senior Backend Developer',
+                            skills: [],
+                        },
+                    },
+                    {
+                        jobIndex: 1,
+                        excluded: true,
+                        job: {
+                            dateFound: '2026-10-06',
+                            company: 'Another Company',
+                            title: 'Backend Developer',
+                            skills: [],
+                        },
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(true);
+        });
+
+        it('rejects a negative job index', () => {
+            const result = reviewedImportSchema.safeParse({
+                version: 1,
+                jobs: [
+                    {
+                        jobIndex: -1,
+                        excluded: false,
+                        job: {
+                            dateFound: '2026-10-05',
+                            company: 'Example Company',
+                            title: 'Senior Backend Developer',
+                            skills: [],
+                        },
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+        });
+
+        it('rejects a missing exclusion decision', () => {
+            const result = reviewedImportSchema.safeParse({
+                version: 1,
+                jobs: [
+                    {
+                        jobIndex: 0,
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+        });
+        
+        it('rejects duplicate job indexes', () => {
+            const result = reviewedImportSchema.safeParse({
+                version: 1,
+                jobs: [
+                    {
+                        jobIndex: 0,
+                        excluded: false,
+                        job: {
+                            dateFound: '2026-10-05',
+                            company: 'Example Company',
+                            title: 'Senior Backend Developer',
+                            skills: [],
+                        },
+                    },
+                    {
+                        jobIndex: 0,
+                        excluded: true,
+                        job: {
+                            dateFound: '2026-10-06',
+                            company: 'Another Company',
+                            title: 'Backend Developer',
+                            skills: [],
+                        },
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+
+            if (!result.success) {
+                expect(result.error.issues).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            path: ['jobs', 1, 'jobIndex'],
+                            message: 'Duplicate job index',
+                        }),
+                    ])
+                );
+            }
+        });
     });
 });
