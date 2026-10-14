@@ -1,0 +1,955 @@
+{
+  "version": 1,
+  "exportedAt": "2026-10-14T10:00:00.000Z",
+  "jobs": [
+    {
+      "dateFound": "2026-10-01",
+      "company": "Nordic Ledger Labs",
+      "title": "Senior PHP Backend Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Senior PHP Backend Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "PHP",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Laravel",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "PostgreSQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        },
+        {
+          "name": "laravel",
+          "category": "framework",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 70,
+      "salaryRate": "DKK/month, negotiable"
+    },
+    {
+      "dateFound": "2026-10-02",
+      "company": "Harbor Commerce",
+      "title": "Full Stack Developer",
+      "location": "Aarhus, Denmark",
+      "workModel": "onsite",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "Full Stack Developer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "TypeScript",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Vue.js",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Node.js",
+          "category": "runtime",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-03",
+      "company": "Blue Grid Energy",
+      "title": "Platform Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Platform Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Go",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Kubernetes",
+          "category": "devops",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Terraform",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-04",
+      "company": "CarePath Systems",
+      "title": "Backend Developer",
+      "location": "Odense, Denmark",
+      "workModel": "remote",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "Backend Developer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Python",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "FastAPI",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "PostgreSQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-05",
+      "company": "Maple Fintech",
+      "title": "Lead Software Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "onsite",
+      "employmentType": "full_time",
+      "seniority": "lead",
+      "primaryRole": "Lead Software Engineer",
+      "yearsRequired": "7+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "TypeScript",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Node.js",
+          "category": "runtime",
+          "requirement": "must_have"
+        },
+        {
+          "name": "RabbitMQ",
+          "category": "messaging",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 74
+    },
+    {
+      "dateFound": "2026-10-06",
+      "company": "Greenfield Analytics",
+      "title": "Data Engineer",
+      "location": "Aalborg, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Data Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Python",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Apache Airflow",
+          "category": "data",
+          "requirement": "must_have"
+        },
+        {
+          "name": "SQL",
+          "category": "language",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "salaryRate": "DKK/month, negotiable"
+    },
+    {
+      "dateFound": "2026-10-07",
+      "company": "Fjord Retail",
+      "title": "Symfony Developer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Symfony Developer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "PHP",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Symfony",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "MySQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        },
+        {
+          "name": "symfony",
+          "category": "framework",
+          "requirement": "must_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-08",
+      "company": "Orbit Security",
+      "title": "Application Security Engineer",
+      "location": "Aarhus, Denmark",
+      "workModel": "remote",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Application Security Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "OWASP",
+          "category": "security",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Docker",
+          "category": "devops",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Linux",
+          "category": "operating_system",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-09",
+      "company": "Lighthouse Media",
+      "title": "Frontend Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "onsite",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "Frontend Engineer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "JavaScript",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Vue.js",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "CSS",
+          "category": "frontend",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 78
+    },
+    {
+      "dateFound": "2026-10-10",
+      "company": "Baltic Payments",
+      "title": "Staff Backend Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "staff",
+      "primaryRole": "Staff Backend Engineer",
+      "yearsRequired": "8+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Java",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Spring Boot",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Kafka",
+          "category": "messaging",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-11",
+      "company": "Northwind Mobility",
+      "title": "API Developer",
+      "location": "Odense, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "API Developer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "PHP",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "REST APIs",
+          "category": "architecture",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Docker",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "salaryRate": "DKK/month, negotiable"
+    },
+    {
+      "dateFound": "2026-10-12",
+      "company": "Cloudberry Health",
+      "title": "Full Stack Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "remote",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Full Stack Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "TypeScript",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "React",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "PostgreSQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-13",
+      "company": "Aurora Climate Tech",
+      "title": "DevOps Engineer",
+      "location": "Aarhus, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "DevOps Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "AWS",
+          "category": "cloud",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Terraform",
+          "category": "devops",
+          "requirement": "must_have"
+        },
+        {
+          "name": "CI/CD",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 82
+    },
+    {
+      "dateFound": "2026-10-01",
+      "company": "Pinecone Logistics",
+      "title": "Junior Backend Developer",
+      "location": "Esbjerg, Denmark",
+      "workModel": "onsite",
+      "employmentType": "part_time",
+      "seniority": "junior",
+      "primaryRole": "Junior Backend Developer",
+      "yearsRequired": "0-2 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Python",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "SQL",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Git",
+          "category": "tool",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-02",
+      "company": "Coastal Games",
+      "title": "Gameplay Services Developer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "onsite",
+      "employmentType": "temporary",
+      "seniority": "mid",
+      "primaryRole": "Gameplay Services Developer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "C#",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Redis",
+          "category": "database",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Docker",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-03",
+      "company": "Atlas Education",
+      "title": "Software Engineer",
+      "location": "Roskilde, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "Software Engineer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "PHP",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Laravel",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "MySQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "salaryRate": "DKK/month, negotiable"
+    },
+    {
+      "dateFound": "2026-10-04",
+      "company": "Mosaic Insurance",
+      "title": "Principal Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "principal",
+      "primaryRole": "Principal Engineer",
+      "yearsRequired": "10+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Java",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Microservices",
+          "category": "architecture",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Kubernetes",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 86
+    },
+    {
+      "dateFound": "2026-10-05",
+      "company": "Amber Travel",
+      "title": "Backend Integration Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "remote",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Backend Integration Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "PHP",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "RabbitMQ",
+          "category": "messaging",
+          "requirement": "must_have"
+        },
+        {
+          "name": "REST APIs",
+          "category": "architecture",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-06",
+      "company": "Signal Robotics",
+      "title": "Embedded Systems Developer",
+      "location": "Odense, Denmark",
+      "workModel": "onsite",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Embedded Systems Developer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "C++",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Linux",
+          "category": "operating_system",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Git",
+          "category": "tool",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-07",
+      "company": "Delta Food Systems",
+      "title": "Full Stack Developer",
+      "location": "Aalborg, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "Full Stack Developer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "TypeScript",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Vue.js",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "PostgreSQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-08",
+      "company": "Silverline Banking",
+      "title": "Cloud Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Cloud Engineer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Azure",
+          "category": "cloud",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Docker",
+          "category": "devops",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Terraform",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 90,
+      "salaryRate": "DKK/month, negotiable"
+    },
+    {
+      "dateFound": "2026-10-09",
+      "company": "Cedar Bioinformatics",
+      "title": "Data Platform Developer",
+      "location": "Aarhus, Denmark",
+      "workModel": "remote",
+      "employmentType": "full_time",
+      "seniority": "senior",
+      "primaryRole": "Data Platform Developer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Python",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "PostgreSQL",
+          "category": "database",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Docker",
+          "category": "devops",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-10",
+      "company": "Urban Transit Tech",
+      "title": "Backend Engineer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "onsite",
+      "employmentType": "full_time",
+      "seniority": "mid",
+      "primaryRole": "Backend Engineer",
+      "yearsRequired": "2-5 years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "preferred"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Node.js",
+          "category": "runtime",
+          "requirement": "must_have"
+        },
+        {
+          "name": "TypeScript",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Redis",
+          "category": "database",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-11",
+      "company": "Echo Digital Agency",
+      "title": "Contract Web Developer",
+      "location": "Copenhagen, Denmark",
+      "workModel": "remote",
+      "employmentType": "contract",
+      "seniority": "senior",
+      "primaryRole": "Contract Web Developer",
+      "yearsRequired": "5+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "PHP",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Drupal",
+          "category": "cms",
+          "requirement": "must_have"
+        },
+        {
+          "name": "JavaScript",
+          "category": "language",
+          "requirement": "nice_to_have"
+        }
+      ]
+    },
+    {
+      "dateFound": "2026-10-12",
+      "company": "Summit Enterprise",
+      "title": "Technical Lead",
+      "location": "Aarhus, Denmark",
+      "workModel": "hybrid",
+      "employmentType": "full_time",
+      "seniority": "lead",
+      "primaryRole": "Technical Lead",
+      "yearsRequired": "7+ years",
+      "languageRequirements": [
+        {
+          "language": "en",
+          "requirement": "required"
+        },
+        {
+          "language": "da",
+          "requirement": "required"
+        }
+      ],
+      "applyStatus": "not_applied",
+      "skills": [
+        {
+          "name": "Java",
+          "category": "language",
+          "requirement": "must_have"
+        },
+        {
+          "name": "Spring Boot",
+          "category": "framework",
+          "requirement": "must_have"
+        },
+        {
+          "name": "PostgreSQL",
+          "category": "database",
+          "requirement": "nice_to_have"
+        }
+      ],
+      "interest": 94
+    }
+  ]
+}
