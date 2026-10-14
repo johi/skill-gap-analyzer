@@ -317,7 +317,7 @@ function submit(): void {
               placeholder="e.g. 5+ years"
           />
         </div>
-        <div class="space-y-4">
+        <div class="space-y-4 sm:col-span-2">
           <div class="flex items-center justify-between gap-4">
             <div>
               <h3 class="text-sm font-medium">
@@ -353,7 +353,7 @@ function submit(): void {
             <div
                 v-for="(languageRequirement, index) in form.languageRequirements"
                 :key="index"
-                class="grid gap-3 rounded-lg border bg-muted/20 p-4 md:grid-cols-[1fr_180px_auto] md:items-end"
+                class="grid gap-3 rounded-lg border bg-muted/20 p-4 sm:grid-cols-[minmax(0,1fr)_180px_auto] sm:items-end"
             >
               <div class="space-y-2">
                 <Label :for="`language-${index}`">
