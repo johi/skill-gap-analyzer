@@ -1,6 +1,8 @@
+
 <script setup lang="ts">
 import {
   BriefcaseBusiness,
+  FileInput,
   Plus,
 } from 'lucide-vue-next';
 
@@ -57,16 +59,16 @@ onMounted(async () => {
   <section class="space-y-6">
     <div
         class="
-                flex flex-col gap-4
-                sm:flex-row sm:items-center sm:justify-between
-            "
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      "
     >
       <div>
         <h1
             class="
-                        text-2xl font-semibold tracking-tight
-                        sm:text-3xl
-                    "
+            text-2xl font-semibold tracking-tight
+            sm:text-3xl
+          "
         >
           Jobs
         </h1>
@@ -77,12 +79,21 @@ onMounted(async () => {
         </p>
       </div>
 
-      <Button as-child>
-        <RouterLink :to="{ name: 'job-create' }">
-          <Plus class="size-4" />
-          Create job
-        </RouterLink>
-      </Button>
+      <div class="flex flex-wrap items-center gap-2">
+        <Button variant="outline" as-child>
+          <RouterLink :to="{ name: 'job-import' }">
+            <FileInput class="size-4" />
+            Import jobs
+          </RouterLink>
+        </Button>
+
+        <Button as-child>
+          <RouterLink :to="{ name: 'job-create' }">
+            <Plus class="size-4" />
+            Create job
+          </RouterLink>
+        </Button>
+      </div>
     </div>
 
     <Card>
@@ -90,9 +101,9 @@ onMounted(async () => {
         <div class="flex items-center gap-3">
           <div
               class="
-                            flex size-9 items-center justify-center
-                            rounded-lg bg-muted
-                        "
+              flex size-9 items-center justify-center
+              rounded-lg bg-muted
+            "
           >
             <BriefcaseBusiness class="size-4" />
           </div>
@@ -120,9 +131,9 @@ onMounted(async () => {
         <div
             v-else-if="error"
             class="
-                        rounded-md border border-destructive/30
-                        bg-destructive/5 p-4
-                    "
+            rounded-md border border-destructive/30
+            bg-destructive/5 p-4
+          "
         >
           <p class="text-sm text-destructive">
             {{ error }}
@@ -132,20 +143,18 @@ onMounted(async () => {
         <div
             v-else-if="jobs.length === 0"
             class="
-                        flex flex-col items-center justify-center
-                        py-12 text-center
-                    "
+            flex flex-col items-center justify-center
+            py-12 text-center
+          "
         >
           <div
               class="
-                            mb-4 flex size-12 items-center
-                            justify-center rounded-full bg-muted
-                        "
+              mb-4 flex size-12 items-center
+              justify-center rounded-full bg-muted
+            "
           >
             <BriefcaseBusiness
-                class="
-                                size-5 text-muted-foreground
-                            "
+                class="size-5 text-muted-foreground"
             />
           </div>
 
@@ -155,25 +164,29 @@ onMounted(async () => {
 
           <p
               class="
-                            mt-1 max-w-sm text-sm
-                            text-muted-foreground
-                        "
+              mt-1 max-w-sm text-sm
+              text-muted-foreground
+            "
           >
             Add your first job opportunity to start
             comparing requirements with your skills.
           </p>
 
-          <Button
-              class="mt-4"
-              as-child
-          >
-            <RouterLink
-                :to="{ name: 'job-create' }"
-            >
-              <Plus class="size-4" />
-              Create job
-            </RouterLink>
-          </Button>
+          <div class="mt-4 flex flex-wrap justify-center gap-2">
+            <Button variant="outline" as-child>
+              <RouterLink :to="{ name: 'job-import' }">
+                <FileInput class="size-4" />
+                Import jobs
+              </RouterLink>
+            </Button>
+
+            <Button as-child>
+              <RouterLink :to="{ name: 'job-create' }">
+                <Plus class="size-4" />
+                Create job
+              </RouterLink>
+            </Button>
+          </div>
         </div>
 
         <div
@@ -199,9 +212,9 @@ onMounted(async () => {
               >
                 <TableCell
                     class="
-                                        whitespace-nowrap
-                                        text-muted-foreground
-                                    "
+                    whitespace-nowrap
+                    text-muted-foreground
+                  "
                 >
                   {{ job.dateFound }}
                 </TableCell>
@@ -212,16 +225,13 @@ onMounted(async () => {
 
                 <TableCell>
                   <RouterLink
-                      class="
-                                            font-medium
-                                            hover:underline
-                                        "
+                      class="font-medium hover:underline"
                       :to="{
-                                            name: 'job-detail',
-                                            params: {
-                                                id: job.id,
-                                            },
-                                        }"
+                      name: 'job-detail',
+                      params: {
+                        id: job.id,
+                      },
+                    }"
                   >
                     {{ job.title }}
                   </RouterLink>
@@ -243,8 +253,8 @@ onMounted(async () => {
                       v-else
                       class="text-muted-foreground"
                   >
-                                        —
-                                    </span>
+                    —
+                  </span>
                 </TableCell>
 
                 <TableCell>
@@ -259,8 +269,8 @@ onMounted(async () => {
                       v-else
                       class="text-muted-foreground"
                   >
-                                        —
-                                    </span>
+                    —
+                  </span>
                 </TableCell>
               </TableRow>
             </TableBody>
