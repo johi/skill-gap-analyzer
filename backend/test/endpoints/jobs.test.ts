@@ -1,3 +1,4 @@
+
 import {
     afterEach,
     beforeEach,
@@ -6,17 +7,22 @@ import {
     it,
 } from 'vitest';
 
-import { buildApp } from '../src/app';
+import { buildApp } from '@/app';
+import { cleanDatabase } from '../helpers/database';
 
 describe('Jobs API', () => {
     let app: ReturnType<typeof buildApp>;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        await cleanDatabase();
+
         app = buildApp();
+        await app.ready();
     });
 
     afterEach(async () => {
         await app.close();
+        await cleanDatabase();
     });
 
     it('accepts a valid job', async () => {
@@ -114,6 +120,7 @@ describe('Jobs API', () => {
 
         expect(response.statusCode).toBe(400);
     });
+
     it('rejects an invalid language code', async () => {
         const response = await app.inject({
             method: 'POST',
@@ -386,5 +393,216 @@ describe('Jobs API', () => {
                     job.company === 'Excluded Company'
             )
         ).toBe(false);
+    });
+
+    it('persists corrections made during import review', async () => {
+        const originalJob = {
+            dateFound: '2026-10-14',
+            company: 'Example Company',
+            title: 'Backend Developer',
+            skills: [],
+        };
+
+        const correctedJob = {
+            ...originalJob,
+            title: 'Senior Backend Developer',
+            interest: 90,
+            skills: [
+                {
+                    name: 'TypeScript',
+                    category: 'language',
+                    requirement: 'must_have',
+                },
+            ],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [originalJob],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job: correctedJob,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+
+        const { jobIds } = response.json();
+
+        expect(jobIds).toHaveLength(1);
+
+        const getResponse = await app.inject({
+            method: 'GET',
+            url: `/api/v1/jobs/${jobIds[0]}`,
+        });
+
+        expect(getResponse.statusCode).toBe(200);
+
+        expect(getResponse.json()).toMatchObject({
+            company: 'Example Company',
+            title: 'Senior Backend Developer',
+            interest: 90,
+            skills: [
+                expect.objectContaining({
+                    name: 'TypeScript',
+                    category: 'language',
+                    requirement: 'must_have',
+                }),
+            ],
+        });
+    });
+
+    it('reuses existing skills during import', async () => {
+        const skillName = 'ImportReuseEndpointTestSkill20261014';
+
+        const existingSkillResponse = await app.inject({
+            method: 'POST',
+            url: '/api/v1/skills',
+            payload: {
+                name: skillName,
+                category: 'framework',
+            },
+        });
+
+        expect(existingSkillResponse.statusCode).toBe(201);
+
+        const existingSkillId = existingSkillResponse.json().id;
+
+        const job = {
+            dateFound: '2026-10-14',
+            company: 'Skill Reuse Test Company',
+            title: 'Backend Developer',
+            skills: [
+                {
+                    name: skillName,
+                    category: 'framework',
+                    requirement: 'must_have',
+                },
+            ],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [job],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+
+        const { jobIds } = response.json();
+
+        const getResponse = await app.inject({
+            method: 'GET',
+            url: `/api/v1/jobs/${jobIds[0]}`,
+        });
+
+        expect(getResponse.statusCode).toBe(200);
+
+        expect(getResponse.json().skills).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: existingSkillId,
+                    name: skillName,
+                    requirement: 'must_have',
+                }),
+            ])
+        );
+    });
+
+    it('normalizes skill names during import', async () => {
+        const existingSkillResponse = await app.inject({
+            method: 'POST',
+            url: '/api/v1/skills',
+            payload: {
+                name: 'ImportCaseTestSkill20261014',
+                category: 'language',
+            },
+        });
+
+        expect(existingSkillResponse.statusCode).toBe(201);
+
+        const existingSkillId = existingSkillResponse.json().id;
+
+        const job = {
+            dateFound: '2026-10-14',
+            company: 'Skill Normalization Test Company',
+            title: 'Backend Developer',
+            skills: [
+                {
+                    name: 'importcasetestskill20261014',
+                    category: 'language',
+                    requirement: 'must_have',
+                },
+            ],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [job],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+
+        const { jobIds } = response.json();
+
+        const getResponse = await app.inject({
+            method: 'GET',
+            url: `/api/v1/jobs/${jobIds[0]}`,
+        });
+
+        expect(getResponse.statusCode).toBe(200);
+
+        expect(getResponse.json().skills).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    id: existingSkillId,
+                    name: 'ImportCaseTestSkill20261014',
+                    requirement: 'must_have',
+                }),
+            ])
+        );
     });
 });

@@ -6,16 +6,19 @@ import {
     it,
 } from 'vitest';
 
-import { buildApp } from '../src/app';
+import { buildApp } from '@/app';
+import { cleanDatabase } from '../helpers/database';
 
 describe('Health API', () => {
-    let app: ReturnType<typeof buildApp>;
+    const app = buildApp();
 
-    beforeEach(() => {
-        app = buildApp();
+    beforeEach(async () => {
+        await app.ready();
+        await cleanDatabase();
     });
 
     afterEach(async () => {
+        await cleanDatabase();
         await app.close();
     });
 

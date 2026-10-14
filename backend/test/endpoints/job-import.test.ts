@@ -1,22 +1,28 @@
+
 import {
-    afterAll,
-    beforeAll,
+    afterEach,
+    beforeEach,
     describe,
     expect,
     it,
 } from 'vitest';
 
 import { buildApp } from '@/app';
+import { cleanDatabase } from '../helpers/database';
 
 describe('Job import endpoints', () => {
-    const app = buildApp();
+    let app: ReturnType<typeof buildApp>;
 
-    beforeAll(async () => {
+    beforeEach(async () => {
+        await cleanDatabase();
+
+        app = buildApp();
         await app.ready();
     });
 
-    afterAll(async () => {
+    afterEach(async () => {
         await app.close();
+        await cleanDatabase();
     });
 
     it('analyzes a valid dataset', async () => {
@@ -103,39 +109,18 @@ describe('Job import endpoints', () => {
     it('resolves an imported skill against the existing skill catalogue', async () => {
         const skillName = 'ImportCanonicalSkill';
 
-        const skillsResponse = await app.inject({
-            method: 'GET',
+        const createSkillResponse = await app.inject({
+            method: 'POST',
             url: '/api/v1/skills',
+            payload: {
+                name: skillName,
+                category: 'test',
+            },
         });
 
-        expect(skillsResponse.statusCode).toBe(200);
+        expect(createSkillResponse.statusCode).toBe(201);
 
-        const existingSkill = skillsResponse
-            .json()
-            .find(
-                (skill: { id: number; name: string }) =>
-                    skill.name.toLowerCase() ===
-                    skillName.toLowerCase()
-            );
-
-        let skillId: number;
-
-        if (existingSkill) {
-            skillId = existingSkill.id;
-        } else {
-            const createSkillResponse = await app.inject({
-                method: 'POST',
-                url: '/api/v1/skills',
-                payload: {
-                    name: skillName,
-                    category: 'test',
-                },
-            });
-
-            expect(createSkillResponse.statusCode).toBe(201);
-
-            skillId = createSkillResponse.json().id;
-        }
+        const skillId = createSkillResponse.json().id;
 
         const response = await app.inject({
             method: 'POST',

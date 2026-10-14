@@ -1,6 +1,6 @@
 import { sql } from 'drizzle-orm';
 
-import { db } from '../../src/db';
+import { db } from '@/db';
 
 export async function cleanDatabase(): Promise<void> {
     await db.execute(sql`

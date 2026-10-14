@@ -6,9 +6,10 @@ import {
     it,
 } from 'vitest';
 
-import { db } from '../../src/db';
-import { SkillRepository } from '../../src/repositories/skill-repository';
-import { cleanDatabase } from './helpers';
+import { db } from '@/db';
+import { SkillRepository } from '@/repositories/skill-repository';
+import { cleanDatabase } from '../helpers/database';
+
 
 describe('SkillRepository', () => {
     let repository: SkillRepository;

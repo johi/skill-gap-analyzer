@@ -6,9 +6,9 @@ import {
     it,
 } from 'vitest';
 
-import { db } from '../../src/db';
-import { JobRepository } from '../../src/repositories/job-repository';
-import { cleanDatabase } from './helpers';
+import { db } from '@/db';
+import { JobRepository } from '@/repositories/job-repository';
+import { cleanDatabase } from '../helpers/database';
 
 describe('JobRepository', () => {
     let repository: JobRepository;

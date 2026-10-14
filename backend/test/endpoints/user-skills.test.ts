@@ -1,3 +1,4 @@
+
 import {
     afterEach,
     beforeEach,
@@ -6,11 +7,12 @@ import {
     it,
 } from 'vitest';
 
-import { buildApp } from '../src/app';
-import { db } from '../src/db';
+import { buildApp } from '@/app';
+import { db } from '@/db';
 
-import { SkillRepository } from '../src/repositories/skill-repository';
-import { UserSkillRepository } from '../src/repositories/user-skill-repository';
+import { SkillRepository } from '@/repositories/skill-repository';
+import { UserSkillRepository } from '@/repositories/user-skill-repository';
+import { cleanDatabase } from '../helpers/database';
 
 describe('User Skills API', () => {
     let app: ReturnType<typeof buildApp>;
@@ -21,17 +23,13 @@ describe('User Skills API', () => {
     const testSkillName = '__endpoint_test_user_skill__';
 
     beforeEach(async () => {
+        await cleanDatabase();
+
         app = buildApp();
+        await app.ready();
 
         skillRepository = new SkillRepository(db);
         userSkillRepository = new UserSkillRepository(db);
-
-        const existing =
-            await skillRepository.findByName(testSkillName);
-
-        if (existing) {
-            await skillRepository.delete(existing.id);
-        }
 
         const skill = await skillRepository.create({
             name: testSkillName,
@@ -42,14 +40,8 @@ describe('User Skills API', () => {
     });
 
     afterEach(async () => {
-        const existing =
-            await skillRepository.findByName(testSkillName);
-
-        if (existing) {
-            await skillRepository.delete(existing.id);
-        }
-
         await app.close();
+        await cleanDatabase();
     });
 
     it('lists user skills', async () => {

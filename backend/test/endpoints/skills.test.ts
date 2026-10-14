@@ -1,3 +1,4 @@
+
 import {
     afterEach,
     beforeEach,
@@ -6,37 +7,24 @@ import {
     it,
 } from 'vitest';
 
-import { buildApp } from '../src/app';
-import { db } from '../src/db';
-import { SkillRepository } from '../src/repositories/skill-repository';
+import { buildApp } from '@/app';
+import { cleanDatabase } from '../helpers/database';
 
 describe('Skills API', () => {
     let app: ReturnType<typeof buildApp>;
-    let skillRepository: SkillRepository;
 
     const testSkillName = '__endpoint_test_postgresql__';
 
     beforeEach(async () => {
+        await cleanDatabase();
+
         app = buildApp();
-        skillRepository = new SkillRepository(db);
-
-        const existing =
-            await skillRepository.findByName(testSkillName);
-
-        if (existing) {
-            await skillRepository.delete(existing.id);
-        }
+        await app.ready();
     });
 
     afterEach(async () => {
-        const existing =
-            await skillRepository.findByName(testSkillName);
-
-        if (existing) {
-            await skillRepository.delete(existing.id);
-        }
-
         await app.close();
+        await cleanDatabase();
     });
 
     it('creates a valid skill', async () => {

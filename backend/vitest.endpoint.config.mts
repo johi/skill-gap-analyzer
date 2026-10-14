@@ -12,8 +12,8 @@ export default defineConfig({
 
     test: {
         include: [
-            'test/*.test.ts',
+            'test/endpoints/*.test.ts',
         ],
-        fileParallelism: true,
+        fileParallelism: false,
     },
 });
