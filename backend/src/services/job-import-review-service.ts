@@ -1,7 +1,10 @@
+
 import {
     JobImportAnalysis,
     ReviewedImport,
 } from '@/schemas/job-dataset';
+
+import { ValidationError } from '@/errors/application-errors';
 
 export class JobImportReviewService {
     validate(
@@ -9,7 +12,7 @@ export class JobImportReviewService {
         reviewedImport: ReviewedImport
     ): void {
         if (reviewedImport.version !== analysis.version) {
-            throw new Error(
+            throw new ValidationError(
                 'Reviewed import version does not match analyzed import version'
             );
         }
@@ -18,7 +21,7 @@ export class JobImportReviewService {
             reviewedImport.jobs.length !==
             analysis.jobs.length
         ) {
-            throw new Error(
+            throw new ValidationError(
                 'Reviewed import must contain exactly one decision for every analyzed job'
             );
         }
@@ -33,7 +36,7 @@ export class JobImportReviewService {
             );
 
             if (!reviewedJob) {
-                throw new Error(
+                throw new ValidationError(
                     `Missing review decision for job index ${jobIndex}`
                 );
             }
@@ -59,12 +62,12 @@ export class JobImportReviewService {
                         previousRequirement !==
                         skill.requirement
                     ) {
-                        throw new Error(
+                        throw new ValidationError(
                             `Job index ${reviewedJob.jobIndex} contains unresolved skill conflicts`
                         );
                     }
 
-                    throw new Error(
+                    throw new ValidationError(
                         `Job index ${reviewedJob.jobIndex} contains duplicate canonical skills`
                     );
                 }

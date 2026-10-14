@@ -305,6 +305,143 @@ describe('Jobs API', () => {
         });
     });
 
+    it('rejects an import commit with incomplete review decisions', async () => {
+        const jobs = [
+            {
+                dateFound: '2026-10-14',
+                company: 'Company A',
+                title: 'Backend Developer',
+                skills: [],
+            },
+            {
+                dateFound: '2026-10-14',
+                company: 'Company B',
+                title: 'Frontend Developer',
+                skills: [],
+            },
+        ];
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs,
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job: jobs[0],
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        const jobsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(jobsResponse.statusCode).toBe(200);
+        expect(jobsResponse.json()).toEqual([]);
+    });
+
+    it('rejects duplicate review decisions', async () => {
+        const job = {
+            dateFound: '2026-10-14',
+            company: 'Example Company',
+            title: 'Backend Developer',
+            skills: [],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [job],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job,
+                        },
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        const jobsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(jobsResponse.statusCode).toBe(200);
+        expect(jobsResponse.json()).toEqual([]);
+    });
+
+    it('rejects an import commit with an unknown job index', async () => {
+        const job = {
+            dateFound: '2026-10-14',
+            company: 'Example Company',
+            title: 'Backend Developer',
+            skills: [],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [job],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 99,
+                            excluded: false,
+                            job,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+            message: 'Missing review decision for job index 0',
+        });
+
+        const jobsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(jobsResponse.statusCode).toBe(200);
+        expect(jobsResponse.json()).toEqual([]);
+    });
+
     it('rejects an import commit with an invalid dataset version', async () => {
         const response = await app.inject({
             method: 'POST',
@@ -393,6 +530,57 @@ describe('Jobs API', () => {
                     job.company === 'Excluded Company'
             )
         ).toBe(false);
+    });
+
+    it('accepts an import with all jobs excluded', async () => {
+        const jobs = [
+            {
+                dateFound: '2026-10-14',
+                company: 'Company A',
+                title: 'Backend Developer',
+                skills: [],
+            },
+            {
+                dateFound: '2026-10-14',
+                company: 'Company B',
+                title: 'Frontend Developer',
+                skills: [],
+            },
+        ];
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs,
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: jobs.map((job, jobIndex) => ({
+                        jobIndex,
+                        excluded: true,
+                        job,
+                    })),
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+        expect(response.json()).toEqual({
+            imported: 0,
+            excluded: 2,
+            jobIds: [],
+        });
+
+        const jobsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(jobsResponse.statusCode).toBe(200);
+        expect(jobsResponse.json()).toEqual([]);
     });
 
     it('persists corrections made during import review', async () => {
@@ -604,5 +792,139 @@ describe('Jobs API', () => {
                 }),
             ])
         );
+    });
+
+    it('rejects an import with unresolved skill conflicts', async () => {
+        const job = {
+            dateFound: '2026-10-14',
+            company: 'Example Company',
+            title: 'Backend Developer',
+            skills: [
+                {
+                    name: 'Fastify',
+                    category: 'framework',
+                    requirement: 'must_have',
+                },
+                {
+                    name: 'fastify',
+                    category: 'framework',
+                    requirement: 'nice_to_have',
+                },
+            ],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [job],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+            message: 'Job index 0 contains unresolved skill conflicts',
+        });
+
+        const jobsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(jobsResponse.statusCode).toBe(200);
+        expect(jobsResponse.json()).toEqual([]);
+    });
+
+    it('commits an import after resolving skill conflicts during review', async () => {
+        const originalJob = {
+            dateFound: '2026-10-14',
+            company: 'Example Company',
+            title: 'Backend Developer',
+            skills: [
+                {
+                    name: 'Fastify',
+                    category: 'framework',
+                    requirement: 'must_have',
+                },
+                {
+                    name: 'fastify',
+                    category: 'framework',
+                    requirement: 'nice_to_have',
+                },
+            ],
+        };
+
+        const reviewedJob = {
+            ...originalJob,
+            skills: [
+                {
+                    name: 'Fastify',
+                    category: 'framework',
+                    requirement: 'must_have',
+                },
+            ],
+        };
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/jobs/import/commit',
+            payload: {
+                dataset: {
+                    version: 1,
+                    jobs: [originalJob],
+                },
+                reviewedImport: {
+                    version: 1,
+                    jobs: [
+                        {
+                            jobIndex: 0,
+                            excluded: false,
+                            job: reviewedJob,
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(response.statusCode).toBe(201);
+        expect(response.json()).toMatchObject({
+            imported: 1,
+            excluded: 0,
+        });
+
+        const { jobIds } = response.json();
+
+        expect(jobIds).toHaveLength(1);
+
+        const jobResponse = await app.inject({
+            method: 'GET',
+            url: `/api/v1/jobs/${jobIds[0]}`,
+        });
+
+        expect(jobResponse.statusCode).toBe(200);
+        expect(jobResponse.json()).toMatchObject({
+            company: 'Example Company',
+            title: 'Backend Developer',
+            skills: [
+                {
+                    name: 'Fastify',
+                    requirement: 'must_have',
+                },
+            ],
+        });
     });
 });

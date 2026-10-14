@@ -60,6 +60,115 @@ describe('Job import endpoints', () => {
         });
     });
 
+    it('does not persist jobs during import analysis', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/job-import/analyze',
+            payload: {
+                version: 1,
+                jobs: [{
+                    dateFound: '2026-10-05',
+                    company: 'Read Only Test Company',
+                    title: 'Backend Developer',
+                    languageRequirements: [],
+                    skills: [],
+                }],
+            },
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        const jobsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs',
+        });
+
+        expect(jobsResponse.statusCode).toBe(200);
+        expect(jobsResponse.json()).toEqual([]);
+    });
+
+    it('does not persist new skills during import analysis', async () => {
+        const skillName = '__import_analysis_new_skill__';
+
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/job-import/analyze',
+            payload: {
+                version: 1,
+                jobs: [{
+                    dateFound: '2026-10-05',
+                    company: 'Example Company',
+                    title: 'Backend Developer',
+                    languageRequirements: [],
+                    skills: [{
+                        name: skillName,
+                        category: 'framework',
+                        requirement: 'must_have',
+                    }],
+                }],
+            },
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        expect(response.json().jobs[0].skills).toEqual([
+            expect.objectContaining({
+                name: skillName,
+                resolution: 'new',
+                canonicalSkillId: null,
+            }),
+        ]);
+
+        const skillsResponse = await app.inject({
+            method: 'GET',
+            url: '/api/v1/skills',
+        });
+
+        expect(skillsResponse.statusCode).toBe(200);
+        expect(skillsResponse.json()).toEqual([]);
+    });
+
+    it('analyzes an empty dataset', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/job-import/analyze',
+            payload: {
+                version: 1,
+                jobs: [],
+            },
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        expect(response.json()).toEqual({
+            version: 1,
+            totalJobs: 0,
+            requiresReview: false,
+            jobs: [],
+        });
+    });
+
+    it('rejects a dataset with a missing jobs property', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/job-import/analyze',
+            payload: {
+                version: 1,
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+            issues: expect.arrayContaining([
+                expect.objectContaining({
+                    path: 'jobs',
+                }),
+            ]),
+        });
+    });
+
     it('rejects an unsupported dataset version', async () => {
         const response = await app.inject({
             method: 'POST',
@@ -195,6 +304,65 @@ describe('Job import endpoints', () => {
                     ],
                 }],
             }],
+        });
+    });
+
+    it('rejects an imported job with a missing required field', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/job-import/analyze',
+            payload: {
+                version: 1,
+                jobs: [{
+                    dateFound: '2026-10-05',
+                    title: 'Senior Backend Developer',
+                    languageRequirements: [],
+                    skills: [],
+                }],
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+            issues: expect.arrayContaining([
+                expect.objectContaining({
+                    path: 'jobs.0.company',
+                }),
+            ]),
+        });
+    });
+
+    it('rejects an imported job with an invalid skill requirement', async () => {
+        const response = await app.inject({
+            method: 'POST',
+            url: '/api/v1/job-import/analyze',
+            payload: {
+                version: 1,
+                jobs: [{
+                    dateFound: '2026-10-05',
+                    company: 'Example Company',
+                    title: 'Senior Backend Developer',
+                    languageRequirements: [],
+                    skills: [{
+                        name: 'TypeScript',
+                        category: 'language',
+                        requirement: 'optional',
+                    }],
+                }],
+            },
+        });
+
+        expect(response.statusCode).toBe(400);
+
+        expect(response.json()).toMatchObject({
+            error: 'validation_error',
+            issues: expect.arrayContaining([
+                expect.objectContaining({
+                    path: 'jobs.0.skills.0.requirement',
+                }),
+            ]),
         });
     });
 });

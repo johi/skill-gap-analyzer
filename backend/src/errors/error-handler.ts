@@ -1,15 +1,22 @@
+
 import { FastifyError, FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
 import {
     ConflictError,
     NotFoundError,
+    ValidationError,
 } from './application-errors';
 
 export function registerErrorHandler(fastify: FastifyInstance): void {
     fastify.setErrorHandler(
         (
-            error: FastifyError | ZodError | NotFoundError | ConflictError,
+            error:
+                | FastifyError
+                | ZodError
+                | NotFoundError
+                | ConflictError
+                | ValidationError,
             request,
             reply
         ) => {
@@ -22,6 +29,13 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
                         message: issue.message,
                         code: issue.code,
                     })),
+                });
+            }
+
+            if (error instanceof ValidationError) {
+                return reply.status(400).send({
+                    error: 'validation_error',
+                    message: error.message,
                 });
             }
 
