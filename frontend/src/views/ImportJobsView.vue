@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
@@ -28,10 +27,13 @@ import type {
   JobImportAnalysis,
 } from '@/schemas/job-import';
 
+type AnalyzedJob = JobImportAnalysis['jobs'][number];
+
 interface ReviewedJob {
   jobIndex: number;
   excluded: boolean;
   job: ImportedJob;
+  analysis: AnalyzedJob | null;
 }
 
 interface JobReviewStatus {
@@ -46,6 +48,7 @@ const reviewedJobs = ref<ReviewedJob[]>([]);
 
 const editingJobIndex = ref<number | null>(null);
 const analyzing = ref(false);
+const savingJob = ref(false);
 
 const error = ref<string | null>(null);
 const validationErrors = ref<string[]>([]);
@@ -65,12 +68,12 @@ const skillCounts = computed(() => {
     reviewRequired: 0,
   };
 
-  if (!analysis.value) {
-    return counts;
-  }
+  for (const reviewedJob of reviewedJobs.value) {
+    if (reviewedJob.excluded || !reviewedJob.analysis) {
+      continue;
+    }
 
-  for (const analyzedJob of analysis.value.jobs) {
-    for (const skill of analyzedJob.skills) {
+    for (const skill of reviewedJob.analysis.skills) {
       switch (skill.resolution) {
         case 'existing':
           counts.existing++;
@@ -90,10 +93,13 @@ const skillCounts = computed(() => {
   return counts;
 });
 
-function validateReviewedJob(job: ImportedJob): JobReviewStatus {
-  const errors: string[] = [];
+function validateReviewedJob(reviewedJob: ReviewedJob): JobReviewStatus {
+  if (reviewedJob.excluded) {
+    return { valid: true, errors: [] };
+  }
 
-  const result = importedJobSchema.safeParse(job);
+  const errors: string[] = [];
+  const result = importedJobSchema.safeParse(reviewedJob.job);
 
   if (!result.success) {
     for (const issue of result.error.issues) {
@@ -105,32 +111,36 @@ function validateReviewedJob(job: ImportedJob): JobReviewStatus {
     }
   }
 
-  const skillsByName = new Map<string, Set<string>>();
+  if (!reviewedJob.analysis) {
+    errors.push('This job requires analysis.');
+    return { valid: false, errors };
+  }
 
-  for (const skill of job.skills) {
-    const name = skill.name.trim().toLowerCase();
+  const canonicalNames = new Map<string, number>();
 
-    if (!name) {
+  for (const skill of reviewedJob.analysis.skills) {
+    if (skill.resolution === 'review_required') {
+      errors.push(
+          `Skill "${skill.name}" requires normalization review.`
+      );
+    }
+
+    const canonicalName = skill.canonicalName.trim().toLowerCase();
+
+    if (!canonicalName) {
       continue;
     }
 
-    const requirements =
-        skillsByName.get(name) ?? new Set<string>();
-
-    requirements.add(skill.requirement);
-    skillsByName.set(name, requirements);
+    canonicalNames.set(
+        canonicalName,
+        (canonicalNames.get(canonicalName) ?? 0) + 1
+    );
   }
 
-  for (const [name, requirements] of skillsByName) {
-    const occurrences = job.skills.filter(
-        skill => skill.name.trim().toLowerCase() === name
-    ).length;
-
-    if (occurrences > 1) {
+  for (const [canonicalName, count] of canonicalNames) {
+    if (count > 1) {
       errors.push(
-          requirements.size > 1
-              ? `Conflicting requirements for skill "${name}".`
-              : `Duplicate skill "${name}".`
+          `Duplicate canonical skill "${canonicalName}".`
       );
     }
   }
@@ -142,11 +152,7 @@ function validateReviewedJob(job: ImportedJob): JobReviewStatus {
 }
 
 const reviewStatuses = computed<JobReviewStatus[]>(() =>
-    reviewedJobs.value.map(reviewedJob =>
-        reviewedJob.excluded
-            ? { valid: true, errors: [] }
-            : validateReviewedJob(reviewedJob.job)
-    )
+    reviewedJobs.value.map(validateReviewedJob)
 );
 
 const unresolvedJobCount = computed(
@@ -154,20 +160,20 @@ const unresolvedJobCount = computed(
 );
 
 const readyToImport = computed(
-    () => includedCount.value > 0 && unresolvedJobCount.value === 0
+    () =>
+        includedCount.value > 0 &&
+        unresolvedJobCount.value === 0 &&
+        !savingJob.value
 );
 
 function resolutionLabel(resolution: string): string {
   switch (resolution) {
     case 'existing':
       return 'Existing';
-
     case 'new':
       return 'New';
-
     case 'review_required':
       return 'Review required';
-
     default:
       return resolution;
   }
@@ -182,9 +188,11 @@ function requirementLabel(requirement: string): string {
 function setExcluded(jobIndex: number, excluded: boolean): void {
   const reviewedJob = reviewedJobs.value[jobIndex];
 
-  if (reviewedJob) {
-    reviewedJob.excluded = excluded;
+  if (!reviewedJob || savingJob.value) {
+    return;
   }
+
+  reviewedJob.excluded = excluded;
 
   if (excluded && editingJobIndex.value === jobIndex) {
     editingJobIndex.value = null;
@@ -192,28 +200,42 @@ function setExcluded(jobIndex: number, excluded: boolean): void {
 }
 
 function startEditing(jobIndex: number): void {
+  if (savingJob.value) {
+    return;
+  }
+
   editingJobIndex.value = jobIndex;
   error.value = null;
   validationErrors.value = [];
 }
 
 function cancelEditing(): void {
+  if (savingJob.value) {
+    return;
+  }
+
   editingJobIndex.value = null;
   error.value = null;
   validationErrors.value = [];
 }
 
-function saveReviewedJob(jobIndex: number, job: ImportedJob): void {
+async function saveReviewedJob(
+    jobIndex: number,
+    job: ImportedJob
+): Promise<void> {
   const reviewedJob = reviewedJobs.value[jobIndex];
 
-  if (!reviewedJob || reviewedJob.excluded) {
+  if (!reviewedJob || reviewedJob.excluded || savingJob.value) {
     return;
   }
 
-  const result = importedJobSchema.safeParse(job);
+  error.value = null;
+  validationErrors.value = [];
 
-  if (!result.success) {
-    validationErrors.value = result.error.issues.map(issue => {
+  const parsed = importedJobSchema.safeParse(job);
+
+  if (!parsed.success) {
+    validationErrors.value = parsed.error.issues.map(issue => {
       const path = issue.path.join('.');
 
       return path
@@ -224,11 +246,52 @@ function saveReviewedJob(jobIndex: number, job: ImportedJob): void {
     return;
   }
 
-  reviewedJob.job = structuredClone(result.data);
+  savingJob.value = true;
 
-  editingJobIndex.value = null;
-  error.value = null;
-  validationErrors.value = [];
+  try {
+    const updatedJob = structuredClone(parsed.data);
+
+    const result = await analyzeJobImport({
+      version: 1,
+      jobs: [updatedJob],
+    });
+
+    const analyzedJob = result.jobs[0];
+
+    if (!analyzedJob || result.totalJobs !== 1) {
+      throw new Error(
+          'The analysis service returned an unexpected result.'
+      );
+    }
+
+    reviewedJob.job = updatedJob;
+    reviewedJob.analysis = analyzedJob;
+
+    editingJobIndex.value = null;
+  } catch (err) {
+    if (
+        err instanceof ApiError &&
+        err.error === 'validation_error'
+    ) {
+      validationErrors.value = err.issues.map(issue =>
+          issue.path
+              ? `${issue.path}: ${issue.message}`
+              : issue.message
+      );
+
+      if (validationErrors.value.length === 0) {
+        error.value = err.message;
+      }
+
+      return;
+    }
+
+    error.value = err instanceof Error
+        ? err.message
+        : 'Unable to re-analyze the edited job.';
+  } finally {
+    savingJob.value = false;
+  }
 }
 
 async function handleFileChange(event: Event): Promise<void> {
@@ -236,7 +299,6 @@ async function handleFileChange(event: Event): Promise<void> {
   const file = input.files?.[0];
 
   selectedFileName.value = file?.name ?? null;
-
   dataset.value = null;
   analysis.value = null;
   reviewedJobs.value = [];
@@ -274,12 +336,11 @@ async function handleFileChange(event: Event): Promise<void> {
 }
 
 async function handleAnalyze(): Promise<void> {
-  if (!dataset.value || analyzing.value) {
+  if (!dataset.value || analyzing.value || savingJob.value) {
     return;
   }
 
   analyzing.value = true;
-
   analysis.value = null;
   reviewedJobs.value = [];
   editingJobIndex.value = null;
@@ -297,6 +358,7 @@ async function handleAnalyze(): Promise<void> {
           jobIndex,
           excluded: false,
           job: structuredClone(analyzedJob.job),
+          analysis: analyzedJob,
         })
     );
   } catch (err) {
@@ -349,9 +411,7 @@ async function handleAnalyze(): Promise<void> {
         v-if="error"
         class="rounded-md border border-destructive/30 bg-destructive/5 p-4"
     >
-      <p class="text-sm text-destructive">
-        {{ error }}
-      </p>
+      <p class="text-sm text-destructive">{{ error }}</p>
     </div>
 
     <div
@@ -375,7 +435,6 @@ async function handleAnalyze(): Promise<void> {
     <Card>
       <CardHeader>
         <CardTitle>Select dataset</CardTitle>
-
         <CardDescription>
           Choose a version 1 JSON job dataset.
         </CardDescription>
@@ -383,10 +442,7 @@ async function handleAnalyze(): Promise<void> {
 
       <CardContent class="space-y-5">
         <div class="space-y-2">
-          <label
-              for="job-import-file"
-              class="text-sm font-medium"
-          >
+          <label for="job-import-file" class="text-sm font-medium">
             JSON file
           </label>
 
@@ -395,7 +451,7 @@ async function handleAnalyze(): Promise<void> {
               type="file"
               accept=".json,application/json"
               class="block w-full rounded-md border p-3 text-sm"
-              :disabled="analyzing"
+              :disabled="analyzing || savingJob"
               @change="handleFileChange"
           />
         </div>
@@ -410,7 +466,6 @@ async function handleAnalyze(): Promise<void> {
             <p class="text-sm font-medium">
               {{ selectedFileName }}
             </p>
-
             <p class="text-sm text-muted-foreground">
               {{ dataset.jobs.length }} jobs ready for analysis
             </p>
@@ -418,11 +473,10 @@ async function handleAnalyze(): Promise<void> {
         </div>
 
         <Button
-            :disabled="!dataset || analyzing"
+            :disabled="!dataset || analyzing || savingJob"
             @click="handleAnalyze"
         >
           <Upload class="size-4" />
-
           {{ analyzing ? 'Analyzing...' : 'Analyze dataset' }}
         </Button>
       </CardContent>
@@ -432,7 +486,6 @@ async function handleAnalyze(): Promise<void> {
       <Card>
         <CardHeader>
           <CardTitle>Analysis results</CardTitle>
-
           <CardDescription>
             No jobs have been imported yet.
           </CardDescription>
@@ -444,7 +497,6 @@ async function handleAnalyze(): Promise<void> {
               <p class="text-sm text-muted-foreground">
                 Analyzed
               </p>
-
               <p class="text-2xl font-semibold">
                 {{ analysis.totalJobs }}
               </p>
@@ -454,7 +506,6 @@ async function handleAnalyze(): Promise<void> {
               <p class="text-sm text-muted-foreground">
                 Included
               </p>
-
               <p class="text-2xl font-semibold">
                 {{ includedCount }}
               </p>
@@ -464,7 +515,6 @@ async function handleAnalyze(): Promise<void> {
               <p class="text-sm text-muted-foreground">
                 Excluded
               </p>
-
               <p class="text-2xl font-semibold">
                 {{ excludedCount }}
               </p>
@@ -498,7 +548,6 @@ async function handleAnalyze(): Promise<void> {
       <Card>
         <CardHeader>
           <CardTitle>Review jobs</CardTitle>
-
           <CardDescription>
             Include, exclude, or edit jobs before importing.
           </CardDescription>
@@ -506,23 +555,20 @@ async function handleAnalyze(): Promise<void> {
 
         <CardContent class="space-y-3">
           <div
-              v-for="(analyzedJob, index) in analysis.jobs"
-              :key="index"
+              v-for="(reviewedJob, index) in reviewedJobs"
+              :key="reviewedJob.jobIndex"
               class="rounded-md border"
-              :class="
-                            reviewedJobs[index]?.excluded
-                                ? 'opacity-60'
-                                : ''
-                        "
+              :class="reviewedJob.excluded ? 'opacity-60' : ''"
           >
             <div class="flex items-start gap-3 px-4 py-3">
               <input
                   :id="`include-job-${index}`"
                   type="checkbox"
                   class="mt-1 size-4 shrink-0"
-                  :checked="!reviewedJobs[index]?.excluded"
+                  :checked="!reviewedJob.excluded"
+                  :disabled="savingJob"
                   :aria-label="
-                                    `Include ${reviewedJobs[index]?.job.company} — ${reviewedJobs[index]?.job.title}`
+                                    `Include ${reviewedJob.job.company} — ${reviewedJob.job.title}`
                                 "
                   @change="
                                     setExcluded(
@@ -535,11 +581,11 @@ async function handleAnalyze(): Promise<void> {
               <details class="min-w-0 flex-1">
                 <summary class="cursor-pointer">
                                     <span class="font-medium">
-                                        {{ reviewedJobs[index]?.job.company }}
+                                        {{ reviewedJob.job.company }}
                                     </span>
 
                   <span class="text-muted-foreground">
-                                        — {{ reviewedJobs[index]?.job.title }}
+                                        — {{ reviewedJob.job.title }}
                                     </span>
 
                   <span class="ml-2 text-xs text-muted-foreground">
@@ -547,7 +593,7 @@ async function handleAnalyze(): Promise<void> {
                                     </span>
 
                   <span
-                      v-if="reviewedJobs[index]?.excluded"
+                      v-if="reviewedJob.excluded"
                       class="ml-2 text-xs text-muted-foreground"
                   >
                                         Excluded
@@ -571,7 +617,7 @@ async function handleAnalyze(): Promise<void> {
                 <div class="space-y-4 pt-4">
                   <div
                       v-if="
-                                            !reviewedJobs[index]?.excluded &&
+                                            !reviewedJob.excluded &&
                                             !reviewStatuses[index]?.valid
                                         "
                       class="rounded-md border border-destructive/30 bg-destructive/5 p-3"
@@ -591,25 +637,33 @@ async function handleAnalyze(): Promise<void> {
                   </div>
 
                   <template v-if="editingJobIndex === index">
-                    <JobImportReviewForm
-                        v-if="reviewedJobs[index]"
-                        :key="index"
-                        :job="reviewedJobs[index]!.job"
-                        @save="saveReviewedJob(index, $event)"
-                        @cancel="cancelEditing"
-                    />
+                    <p
+                        v-if="savingJob"
+                        class="text-sm text-muted-foreground"
+                    >
+                      Re-analyzing edited job...
+                    </p>
+
+                    <div :class="savingJob ? 'pointer-events-none opacity-60' : ''">
+                      <JobImportReviewForm
+                          :key="index"
+                          :job="reviewedJob.job"
+                          @save="saveReviewedJob(index, $event)"
+                          @cancel="cancelEditing"
+                      />
+                    </div>
                   </template>
 
                   <template v-else>
                     <div class="flex items-center justify-between gap-3">
                       <p class="text-sm text-muted-foreground">
                         {{
-                          reviewedJobs[index]?.job.location
+                          reviewedJob.job.location
                           || 'Location unspecified'
                         }}
                         ·
                         {{
-                          reviewedJobs[index]?.job.seniority
+                          reviewedJob.job.seniority
                           || 'Seniority unspecified'
                         }}
                       </p>
@@ -618,7 +672,7 @@ async function handleAnalyze(): Promise<void> {
                           type="button"
                           variant="outline"
                           size="sm"
-                          :disabled="reviewedJobs[index]?.excluded"
+                          :disabled="reviewedJob.excluded || savingJob"
                           @click="startEditing(index)"
                       >
                         Edit job
@@ -626,14 +680,14 @@ async function handleAnalyze(): Promise<void> {
                     </div>
 
                     <p
-                        v-if="analyzedJob.skills.length === 0"
+                        v-if="!reviewedJob.analysis?.skills.length"
                         class="text-sm text-muted-foreground"
                     >
                       No skills specified.
                     </p>
 
                     <div
-                        v-for="(skill, skillIndex) in analyzedJob.skills"
+                        v-for="(skill, skillIndex) in reviewedJob.analysis?.skills ?? []"
                         :key="skillIndex"
                         class="rounded-md bg-muted/50 p-3 text-sm"
                     >
@@ -690,7 +744,7 @@ async function handleAnalyze(): Promise<void> {
           </div>
 
           <p
-              v-if="analysis.jobs.length === 0"
+              v-if="reviewedJobs.length === 0"
               class="text-sm text-muted-foreground"
           >
             The dataset contains no jobs.
