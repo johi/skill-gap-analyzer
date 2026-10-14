@@ -1,4 +1,3 @@
-
 import {
     afterEach,
     beforeEach,
@@ -244,13 +243,13 @@ describe('Jobs API', () => {
 
         expect(response.statusCode).toBe(200);
 
-        expect(response.json()).toEqual(
+        expect(response.json().data).toEqual(
             expect.arrayContaining([
                 expect.objectContaining({
                     workModel: 'hybrid',
                     employmentType: 'full_time',
                     seniority: 'senior',
-                    languageRequirements: [
+                    languageRequirements: expect.arrayContaining([
                         {
                             language: 'en',
                             requirement: 'required',
@@ -259,7 +258,7 @@ describe('Jobs API', () => {
                             language: 'da',
                             requirement: 'preferred',
                         },
-                    ],
+                    ]),
                     applyStatus: 'not_applied',
                 }),
             ])
@@ -350,7 +349,7 @@ describe('Jobs API', () => {
         });
 
         expect(jobsResponse.statusCode).toBe(200);
-        expect(jobsResponse.json()).toEqual([]);
+        expect(jobsResponse.json().data).toEqual([]);
     });
 
     it('rejects duplicate review decisions', async () => {
@@ -395,7 +394,7 @@ describe('Jobs API', () => {
         });
 
         expect(jobsResponse.statusCode).toBe(200);
-        expect(jobsResponse.json()).toEqual([]);
+        expect(jobsResponse.json().data).toEqual([]);
     });
 
     it('rejects an import commit with an unknown job index', async () => {
@@ -439,7 +438,7 @@ describe('Jobs API', () => {
         });
 
         expect(jobsResponse.statusCode).toBe(200);
-        expect(jobsResponse.json()).toEqual([]);
+        expect(jobsResponse.json().data).toEqual([]);
     });
 
     it('rejects an import commit with an invalid dataset version', async () => {
@@ -515,7 +514,7 @@ describe('Jobs API', () => {
 
         expect(listResponse.statusCode).toBe(200);
 
-        const importedJob = listResponse.json().find(
+        const importedJob = listResponse.json().data.find(
             (job: { id: number }) => job.id === result.jobIds[0]
         );
 
@@ -524,7 +523,7 @@ describe('Jobs API', () => {
         });
 
         expect(
-            listResponse.json().some(
+            listResponse.json().data.some(
                 (job: { id: number; company: string }) =>
                     result.jobIds.includes(job.id) &&
                     job.company === 'Excluded Company'
@@ -580,7 +579,7 @@ describe('Jobs API', () => {
         });
 
         expect(jobsResponse.statusCode).toBe(200);
-        expect(jobsResponse.json()).toEqual([]);
+        expect(jobsResponse.json().data).toEqual([]);
     });
 
     it('persists corrections made during import review', async () => {
@@ -846,7 +845,7 @@ describe('Jobs API', () => {
         });
 
         expect(jobsResponse.statusCode).toBe(200);
-        expect(jobsResponse.json()).toEqual([]);
+        expect(jobsResponse.json().data).toEqual([]);
     });
 
     it('commits an import after resolving skill conflicts during review', async () => {
@@ -927,4 +926,37 @@ describe('Jobs API', () => {
             ],
         });
     });
+    it('filters, sorts and paginates jobs', async () => {
+        for (const [company, interest, workModel] of [
+            ['Alpha', 60, 'hybrid'],
+            ['Beta', 90, 'hybrid'],
+            ['Gamma', 70, 'remote'],
+        ] as const) {
+            const response = await app.inject({
+                method: 'POST', url: '/api/v1/jobs',
+                payload: { dateFound: '2026-10-14', company,
+                    title: 'Backend Engineer', interest, workModel, skills: [] },
+            });
+            expect(response.statusCode).toBe(201);
+        }
+
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/jobs?search=backend&workModel=hybrid&sortBy=interest&sortOrder=desc&page=1&pageSize=10',
+        });
+        expect(response.statusCode).toBe(200);
+        expect(response.json().data.map((job: { company: string }) => job.company))
+            .toEqual(['Beta', 'Alpha']);
+        expect(response.json().pagination).toEqual({
+            page: 1, pageSize: 10, totalItems: 2, totalPages: 1,
+        });
+    });
+
+    it('rejects invalid pagination and sorting parameters', async () => {
+        for (const query of ['page=0', 'pageSize=7', 'sortBy=salary', 'sortOrder=random']) {
+            const response = await app.inject({ method: 'GET', url: `/api/v1/jobs?${query}` });
+            expect(response.statusCode).toBe(400);
+        }
+    });
+
 });

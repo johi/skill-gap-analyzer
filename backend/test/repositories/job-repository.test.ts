@@ -234,4 +234,21 @@ describe('JobRepository', () => {
 
         expect(deleted).toBe(false);
     });
+    it('filters and paginates without losing totals', async () => {
+        for (const [company, workModel] of [
+            ['Alpha', 'hybrid'], ['Beta', 'hybrid'], ['Gamma', 'remote'],
+        ]) {
+            await repository.create({ dateFound: '2026-10-14', company,
+                title: 'Developer', workModel });
+        }
+        const result = await repository.findPage({
+            search: '', workModel: 'hybrid', sortBy: 'company',
+            sortOrder: 'asc', page: 1, pageSize: 10,
+        });
+        expect(result.data.map((job) => job.company)).toEqual(['Alpha', 'Beta']);
+        expect(result.pagination).toEqual({
+            page: 1, pageSize: 10, totalItems: 2, totalPages: 1,
+        });
+    });
+
 });

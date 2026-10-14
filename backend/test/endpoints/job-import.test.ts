@@ -1,4 +1,3 @@
-
 import {
     afterEach,
     beforeEach,
@@ -84,7 +83,15 @@ describe('Job import endpoints', () => {
         });
 
         expect(jobsResponse.statusCode).toBe(200);
-        expect(jobsResponse.json()).toEqual([]);
+        expect(jobsResponse.json()).toMatchObject({
+            data: [],
+            pagination: {
+                page: 1,
+                pageSize: 25,
+                totalItems: 0,
+                totalPages: 0,
+            },
+        });
     });
 
     it('does not persist new skills during import analysis', async () => {

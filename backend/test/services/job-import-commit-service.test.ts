@@ -14,7 +14,7 @@ import {
     JobDataset,
     ReviewedImport,
 } from '@/schemas/job-dataset';
-import { cleanDatabase } from '../repositories/helpers';
+import { cleanDatabase } from '../helpers/database';
 
 describe('JobImportCommitService', () => {
     const service = new JobImportCommitService();

@@ -189,7 +189,32 @@ export const jobResponseSchema = z.object({
     })).optional(),
 });
 
-export const jobsResponseSchema = z.array(jobResponseSchema);
+export const listJobsQuerySchema = z.object({
+    search: z.string().trim().max(255).optional().default(''),
+    workModel: workModelSchema.optional(),
+    seniority: senioritySchema.optional(),
+    employmentType: employmentTypeSchema.optional(),
+    applyStatus: applicationStatusSchema.optional(),
+    sortBy: z.enum(['dateFound', 'company', 'interest', 'originalMatch'])
+        .optional().default('dateFound'),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+    page: z.coerce.number().int().positive().optional().default(1),
+    pageSize: z.coerce.number().pipe(z.union([
+        z.literal(10), z.literal(25), z.literal(50),
+    ])).optional().default(25),
+});
+
+export const jobsResponseSchema = z.object({
+    data: z.array(jobResponseSchema),
+    pagination: z.object({
+        page: z.number().int().positive(),
+        pageSize: z.union([z.literal(10), z.literal(25), z.literal(50)]),
+        totalItems: z.number().int().nonnegative(),
+        totalPages: z.number().int().nonnegative(),
+    }),
+});
+
+export type ListJobsQuery = z.infer<typeof listJobsQuerySchema>;
 export type WorkModel = z.infer<typeof workModelSchema>;
 export type EmploymentType = z.infer<typeof employmentTypeSchema>;
 export type Seniority = z.infer<typeof senioritySchema>;

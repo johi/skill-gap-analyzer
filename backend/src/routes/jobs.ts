@@ -7,6 +7,7 @@ import {
     updateJobSchema,
     jobResponseSchema,
     jobsResponseSchema,
+    listJobsQuerySchema,
 } from '@/schemas/job';
 
 import { JobImportCommitService } from '@/services/job-import-commit-service';
@@ -37,8 +38,9 @@ export function createJobRoutes(
             return reply.status(201).send(result);
         });
 
-        fastify.get('/', async () => {
-            const jobs = await jobService.list();
+        fastify.get('/', async (request) => {
+            const query = listJobsQuerySchema.parse(request.query);
+            const jobs = await jobService.list(query);
 
             return jobsResponseSchema.parse(jobs);
         });

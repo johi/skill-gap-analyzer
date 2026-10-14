@@ -111,6 +111,47 @@ const skillCounts = computed(() => {
   return counts;
 });
 
+/**
+ * Apply safe, same-requirement canonicalization to the actual commit payload.
+ * Conflicting requirements remain untouched and require an explicit edit.
+ */
+function normalizeReviewedJob(job: ImportedJob, analyzed: AnalyzedJob): ImportedJob {
+  const normalized = structuredClone(job);
+  const requirementsByKey = new Map<string, Set<string>>();
+
+  for (const skill of normalized.skills) {
+    const key = skill.name.trim().toLowerCase();
+    const requirements = requirementsByKey.get(key) ?? new Set<string>();
+    requirements.add(skill.requirement);
+    requirementsByKey.set(key, requirements);
+  }
+
+  const canonicalByKey = new Map(
+      analyzed.skills.map(skill => [skill.canonicalName.trim().toLowerCase(), skill])
+  );
+  const seen = new Set<string>();
+
+  normalized.skills = normalized.skills.filter(skill => {
+    const key = skill.name.trim().toLowerCase();
+    const canonical = canonicalByKey.get(key);
+    const canonicalKey = canonical?.canonicalName.trim().toLowerCase() ?? key;
+
+    // Never choose a requirement on behalf of the user.
+    if (requirementsByKey.get(key)?.size !== 1 ||
+        canonical?.resolution === 'review_required') {
+      return true;
+    }
+
+    if (seen.has(canonicalKey)) {
+      return false;
+    }
+    seen.add(canonicalKey);
+    return true;
+  });
+
+  return normalized;
+}
+
 function validateReviewedJob(reviewedJob: ReviewedJob): JobReviewStatus {
   if (reviewedJob.excluded) {
     return { valid: true, errors: [] };
@@ -134,32 +175,23 @@ function validateReviewedJob(reviewedJob: ReviewedJob): JobReviewStatus {
     return { valid: false, errors };
   }
 
-  const canonicalNames = new Map<string, number>();
-
   for (const skill of reviewedJob.analysis.skills) {
     if (skill.resolution === 'review_required') {
-      errors.push(
-          `Skill "${skill.name}" requires normalization review.`
-      );
+      errors.push(`Skill "${skill.name}" requires normalization review.`);
     }
-
-    const canonicalName = skill.canonicalName.trim().toLowerCase();
-
-    if (!canonicalName) {
-      continue;
-    }
-
-    canonicalNames.set(
-        canonicalName,
-        (canonicalNames.get(canonicalName) ?? 0) + 1
-    );
   }
 
-  for (const [canonicalName, count] of canonicalNames) {
-    if (count > 1) {
-      errors.push(
-          `Duplicate canonical skill "${canonicalName}".`
-      );
+  // Validate the exact payload that will be committed, not just its analysis.
+  const requirementsBySkill = new Map<string, string>();
+  for (const skill of reviewedJob.job.skills) {
+    const key = skill.name.trim().toLowerCase();
+    const previous = requirementsBySkill.get(key);
+    if (previous !== undefined) {
+      errors.push(previous === skill.requirement
+          ? `Duplicate canonical skill "${skill.name}".`
+          : `Conflicting requirements for skill "${skill.name}".`);
+    } else {
+      requirementsBySkill.set(key, skill.requirement);
     }
   }
 
@@ -294,7 +326,7 @@ async function saveReviewedJob(
       );
     }
 
-    reviewedJob.job = updatedJob;
+    reviewedJob.job = normalizeReviewedJob(updatedJob, analyzedJob);
     reviewedJob.analysis = analyzedJob;
 
     editingJobIndex.value = null;
@@ -403,7 +435,7 @@ async function handleAnalyze(): Promise<void> {
         (analyzedJob, jobIndex) => ({
           jobIndex,
           excluded: false,
-          job: structuredClone(analyzedJob.job),
+          job: normalizeReviewedJob(analyzedJob.job, analyzedJob),
           analysis: analyzedJob,
         })
     );

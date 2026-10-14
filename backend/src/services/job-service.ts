@@ -17,6 +17,7 @@ import {
     CreateJobInput,
     JobSkillInput,
     UpdateJobInput,
+    ListJobsQuery,
 } from '@/schemas/job';
 
 import {
@@ -25,10 +26,10 @@ import {
 } from '@/errors/application-errors';
 
 export class JobService {
-    async list() {
+    async list(query: ListJobsQuery) {
         const repository = new JobRepository(db);
 
-        return repository.findAll();
+        return repository.findPage(query);
     }
 
     async get(id: number): Promise<JobWithSkills> {
