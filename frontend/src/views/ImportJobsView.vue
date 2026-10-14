@@ -34,6 +34,11 @@ interface ReviewedJob {
   job: ImportedJob;
 }
 
+interface JobReviewStatus {
+  valid: boolean;
+  errors: string[];
+}
+
 const selectedFileName = ref<string | null>(null);
 const dataset = ref<JobDataset | null>(null);
 const analysis = ref<JobImportAnalysis | null>(null);
@@ -84,6 +89,73 @@ const skillCounts = computed(() => {
 
   return counts;
 });
+
+function validateReviewedJob(job: ImportedJob): JobReviewStatus {
+  const errors: string[] = [];
+
+  const result = importedJobSchema.safeParse(job);
+
+  if (!result.success) {
+    for (const issue of result.error.issues) {
+      const path = issue.path.join('.');
+
+      errors.push(
+          path ? `${path}: ${issue.message}` : issue.message
+      );
+    }
+  }
+
+  const skillsByName = new Map<string, Set<string>>();
+
+  for (const skill of job.skills) {
+    const name = skill.name.trim().toLowerCase();
+
+    if (!name) {
+      continue;
+    }
+
+    const requirements =
+        skillsByName.get(name) ?? new Set<string>();
+
+    requirements.add(skill.requirement);
+    skillsByName.set(name, requirements);
+  }
+
+  for (const [name, requirements] of skillsByName) {
+    const occurrences = job.skills.filter(
+        skill => skill.name.trim().toLowerCase() === name
+    ).length;
+
+    if (occurrences > 1) {
+      errors.push(
+          requirements.size > 1
+              ? `Conflicting requirements for skill "${name}".`
+              : `Duplicate skill "${name}".`
+      );
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+const reviewStatuses = computed<JobReviewStatus[]>(() =>
+    reviewedJobs.value.map(reviewedJob =>
+        reviewedJob.excluded
+            ? { valid: true, errors: [] }
+            : validateReviewedJob(reviewedJob.job)
+    )
+);
+
+const unresolvedJobCount = computed(
+    () => reviewStatuses.value.filter(status => !status.valid).length
+);
+
+const readyToImport = computed(
+    () => includedCount.value > 0 && unresolvedJobCount.value === 0
+);
 
 function resolutionLabel(resolution: string): string {
   switch (resolution) {
@@ -475,19 +547,49 @@ async function handleAnalyze(): Promise<void> {
                                     </span>
 
                   <span
-                      v-if="
-                                            analyzedJob.skills.some(
-                                                skill =>
-                                                    skill.resolution === 'review_required'
-                                            )
-                                        "
+                      v-if="reviewedJobs[index]?.excluded"
+                      class="ml-2 text-xs text-muted-foreground"
+                  >
+                                        Excluded
+                                    </span>
+
+                  <span
+                      v-else-if="!reviewStatuses[index]?.valid"
                       class="ml-2 text-xs font-medium text-destructive"
                   >
                                         Review required
                                     </span>
+
+                  <span
+                      v-else
+                      class="ml-2 text-xs font-medium text-green-600"
+                  >
+                                        Ready to import
+                                    </span>
                 </summary>
 
                 <div class="space-y-4 pt-4">
+                  <div
+                      v-if="
+                                            !reviewedJobs[index]?.excluded &&
+                                            !reviewStatuses[index]?.valid
+                                        "
+                      class="rounded-md border border-destructive/30 bg-destructive/5 p-3"
+                  >
+                    <p class="mb-2 text-sm font-medium text-destructive">
+                      Issues to resolve
+                    </p>
+
+                    <ul class="list-disc space-y-1 pl-5 text-sm text-destructive">
+                      <li
+                          v-for="(message, errorIndex) in reviewStatuses[index]?.errors"
+                          :key="errorIndex"
+                      >
+                        {{ message }}
+                      </li>
+                    </ul>
+                  </div>
+
                   <template v-if="editingJobIndex === index">
                     <JobImportReviewForm
                         v-if="reviewedJobs[index]"
@@ -593,6 +695,35 @@ async function handleAnalyze(): Promise<void> {
           >
             The dataset contains no jobs.
           </p>
+
+          <div class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+            <div class="text-sm">
+              <p>
+                <strong>{{ includedCount }}</strong>
+                jobs included
+              </p>
+
+              <p
+                  v-if="unresolvedJobCount > 0"
+                  class="text-destructive"
+              >
+                {{ unresolvedJobCount }}
+                jobs require review
+              </p>
+
+              <p v-else class="text-green-600">
+                All included jobs are ready to import.
+              </p>
+            </div>
+
+            <Button disabled>
+              {{
+                readyToImport
+                    ? 'Ready to import'
+                    : 'Resolve issues before import'
+              }}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </template>
