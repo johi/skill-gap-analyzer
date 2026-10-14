@@ -1,12 +1,16 @@
+
 import { apiRequest } from './client';
 
 import {
     jobImportAnalysisSchema,
+    jobImportCommitResponseSchema,
 } from '@/schemas/job-import';
 
 import type {
     JobDataset,
     JobImportAnalysis,
+    JobImportCommitResponse,
+    ReviewedImport,
 } from '@/schemas/job-import';
 
 export function analyzeJobImport(
@@ -21,6 +25,26 @@ export function analyzeJobImport(
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(dataset),
+        }
+    );
+}
+
+export function commitJobImport(
+    dataset: JobDataset,
+    reviewedImport: ReviewedImport
+): Promise<JobImportCommitResponse> {
+    return apiRequest(
+        '/api/v1/jobs/import/commit',
+        jobImportCommitResponseSchema,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                dataset,
+                reviewedImport,
+            }),
         }
     );
 }

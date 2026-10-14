@@ -1,8 +1,14 @@
+
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ZodError } from 'zod';
-import { ArrowLeft, FileJson, Upload } from 'lucide-vue-next';
+import {
+  ArrowLeft,
+  CheckCircle2,
+  FileJson,
+  Upload,
+} from 'lucide-vue-next';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -15,16 +21,22 @@ import {
 
 import JobImportReviewForm from '@/components/JobImportReviewForm.vue';
 import { ApiError } from '@/api/client';
-import { analyzeJobImport } from '@/api/job-import';
+import {
+  analyzeJobImport,
+  commitJobImport,
+} from '@/api/job-import';
+
 import {
   importedJobSchema,
   jobDatasetSchema,
+  reviewedImportSchema,
 } from '@/schemas/job-import';
 
 import type {
   ImportedJob,
   JobDataset,
   JobImportAnalysis,
+  JobImportCommitResponse,
 } from '@/schemas/job-import';
 
 type AnalyzedJob = JobImportAnalysis['jobs'][number];
@@ -49,9 +61,17 @@ const reviewedJobs = ref<ReviewedJob[]>([]);
 const editingJobIndex = ref<number | null>(null);
 const analyzing = ref(false);
 const savingJob = ref(false);
+const committing = ref(false);
+const showConfirmation = ref(false);
+
+const commitResult = ref<JobImportCommitResponse | null>(null);
 
 const error = ref<string | null>(null);
 const validationErrors = ref<string[]>([]);
+
+const busy = computed(
+    () => analyzing.value || savingJob.value || committing.value
+);
 
 const includedCount = computed(
     () => reviewedJobs.value.filter(job => !job.excluded).length
@@ -78,11 +98,9 @@ const skillCounts = computed(() => {
         case 'existing':
           counts.existing++;
           break;
-
         case 'new':
           counts.new++;
           break;
-
         case 'review_required':
           counts.reviewRequired++;
           break;
@@ -161,9 +179,12 @@ const unresolvedJobCount = computed(
 
 const readyToImport = computed(
     () =>
+        analysis.value !== null &&
         includedCount.value > 0 &&
         unresolvedJobCount.value === 0 &&
-        !savingJob.value
+        editingJobIndex.value === null &&
+        !busy.value &&
+        commitResult.value === null
 );
 
 function resolutionLabel(resolution: string): string {
@@ -185,14 +206,20 @@ function requirementLabel(requirement: string): string {
       : 'Nice to have';
 }
 
+function resetMessages(): void {
+  error.value = null;
+  validationErrors.value = [];
+}
+
 function setExcluded(jobIndex: number, excluded: boolean): void {
   const reviewedJob = reviewedJobs.value[jobIndex];
 
-  if (!reviewedJob || savingJob.value) {
+  if (!reviewedJob || busy.value || commitResult.value) {
     return;
   }
 
   reviewedJob.excluded = excluded;
+  showConfirmation.value = false;
 
   if (excluded && editingJobIndex.value === jobIndex) {
     editingJobIndex.value = null;
@@ -200,13 +227,13 @@ function setExcluded(jobIndex: number, excluded: boolean): void {
 }
 
 function startEditing(jobIndex: number): void {
-  if (savingJob.value) {
+  if (busy.value || commitResult.value) {
     return;
   }
 
   editingJobIndex.value = jobIndex;
-  error.value = null;
-  validationErrors.value = [];
+  showConfirmation.value = false;
+  resetMessages();
 }
 
 function cancelEditing(): void {
@@ -215,8 +242,7 @@ function cancelEditing(): void {
   }
 
   editingJobIndex.value = null;
-  error.value = null;
-  validationErrors.value = [];
+  resetMessages();
 }
 
 async function saveReviewedJob(
@@ -225,12 +251,16 @@ async function saveReviewedJob(
 ): Promise<void> {
   const reviewedJob = reviewedJobs.value[jobIndex];
 
-  if (!reviewedJob || reviewedJob.excluded || savingJob.value) {
+  if (
+      !reviewedJob ||
+      reviewedJob.excluded ||
+      busy.value ||
+      commitResult.value
+  ) {
     return;
   }
 
-  error.value = null;
-  validationErrors.value = [];
+  resetMessages();
 
   const parsed = importedJobSchema.safeParse(job);
 
@@ -268,33 +298,42 @@ async function saveReviewedJob(
     reviewedJob.analysis = analyzedJob;
 
     editingJobIndex.value = null;
+    showConfirmation.value = false;
   } catch (err) {
-    if (
-        err instanceof ApiError &&
-        err.error === 'validation_error'
-    ) {
-      validationErrors.value = err.issues.map(issue =>
-          issue.path
-              ? `${issue.path}: ${issue.message}`
-              : issue.message
-      );
-
-      if (validationErrors.value.length === 0) {
-        error.value = err.message;
-      }
-
-      return;
-    }
-
-    error.value = err instanceof Error
-        ? err.message
-        : 'Unable to re-analyze the edited job.';
+    handleApiError(err, 'Unable to re-analyze the edited job.');
   } finally {
     savingJob.value = false;
   }
 }
 
+function handleApiError(err: unknown, fallback: string): void {
+  if (
+      err instanceof ApiError &&
+      err.error === 'validation_error'
+  ) {
+    validationErrors.value = err.issues.map(issue =>
+        issue.path
+            ? `${issue.path}: ${issue.message}`
+            : issue.message
+    );
+
+    if (validationErrors.value.length === 0) {
+      error.value = err.message;
+    }
+
+    return;
+  }
+
+  error.value = err instanceof Error
+      ? err.message
+      : fallback;
+}
+
 async function handleFileChange(event: Event): Promise<void> {
+  if (busy.value) {
+    return;
+  }
+
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
 
@@ -303,9 +342,10 @@ async function handleFileChange(event: Event): Promise<void> {
   analysis.value = null;
   reviewedJobs.value = [];
   editingJobIndex.value = null;
+  showConfirmation.value = false;
+  commitResult.value = null;
 
-  error.value = null;
-  validationErrors.value = [];
+  resetMessages();
 
   if (!file) {
     return;
@@ -336,7 +376,7 @@ async function handleFileChange(event: Event): Promise<void> {
 }
 
 async function handleAnalyze(): Promise<void> {
-  if (!dataset.value || analyzing.value || savingJob.value) {
+  if (!dataset.value || busy.value || commitResult.value) {
     return;
   }
 
@@ -344,12 +384,18 @@ async function handleAnalyze(): Promise<void> {
   analysis.value = null;
   reviewedJobs.value = [];
   editingJobIndex.value = null;
+  showConfirmation.value = false;
 
-  error.value = null;
-  validationErrors.value = [];
+  resetMessages();
 
   try {
     const result = await analyzeJobImport(dataset.value);
+
+    if (result.jobs.length !== dataset.value.jobs.length) {
+      throw new Error(
+          'The analysis returned an unexpected number of jobs.'
+      );
+    }
 
     analysis.value = result;
 
@@ -362,28 +408,69 @@ async function handleAnalyze(): Promise<void> {
         })
     );
   } catch (err) {
-    if (
-        err instanceof ApiError &&
-        err.error === 'validation_error'
-    ) {
-      validationErrors.value = err.issues.map(issue =>
-          issue.path
-              ? `${issue.path}: ${issue.message}`
-              : issue.message
-      );
-
-      if (validationErrors.value.length === 0) {
-        error.value = err.message;
-      }
-
-      return;
-    }
-
-    error.value = err instanceof Error
-        ? err.message
-        : 'Unable to analyze the selected dataset.';
+    handleApiError(err, 'Unable to analyze the selected dataset.');
   } finally {
     analyzing.value = false;
+  }
+}
+
+function requestCommit(): void {
+  if (!readyToImport.value) {
+    return;
+  }
+
+  resetMessages();
+  showConfirmation.value = true;
+}
+
+async function handleCommit(): Promise<void> {
+  if (
+      !readyToImport.value ||
+      !showConfirmation.value ||
+      !dataset.value
+  ) {
+    return;
+  }
+
+  resetMessages();
+
+  const reviewedImport = reviewedImportSchema.safeParse({
+    version: 1,
+    jobs: reviewedJobs.value.map(reviewedJob => ({
+      jobIndex: reviewedJob.jobIndex,
+      excluded: reviewedJob.excluded,
+      job: reviewedJob.job,
+    })),
+  });
+
+  if (!reviewedImport.success) {
+    validationErrors.value = reviewedImport.error.issues.map(issue => {
+      const path = issue.path.join('.');
+
+      return path
+          ? `${path}: ${issue.message}`
+          : issue.message;
+    });
+
+    showConfirmation.value = false;
+    return;
+  }
+
+  committing.value = true;
+
+  try {
+    const result = await commitJobImport(
+        dataset.value,
+        reviewedImport.data
+    );
+
+    commitResult.value = result;
+    showConfirmation.value = false;
+  } catch (err) {
+    showConfirmation.value = false;
+    handleApiError(err, 'Unable to commit the reviewed import.');
+  } finally {
+    committing.value = false;
   }
 }
 </script>
@@ -401,9 +488,8 @@ async function handleAnalyze(): Promise<void> {
       <h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">
         Import jobs
       </h1>
-
       <p class="mt-1 text-sm text-muted-foreground">
-        Analyze and review jobs before importing them.
+        Analyze, review, and import jobs from a JSON dataset.
       </p>
     </div>
 
@@ -421,7 +507,6 @@ async function handleAnalyze(): Promise<void> {
       <p class="mb-2 text-sm font-medium text-destructive">
         Validation failed:
       </p>
-
       <ul class="list-disc space-y-1 pl-5 text-sm text-destructive">
         <li
             v-for="(message, index) in validationErrors"
@@ -432,6 +517,37 @@ async function handleAnalyze(): Promise<void> {
       </ul>
     </div>
 
+    <Card v-if="commitResult">
+      <CardHeader>
+        <CardTitle class="flex items-center gap-2">
+          <CheckCircle2 class="size-5 text-green-600" />
+          Import completed
+        </CardTitle>
+        <CardDescription>
+          The reviewed dataset was committed successfully.
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-3">
+        <p>
+          <strong>{{ commitResult.imported }}</strong>
+          jobs imported.
+        </p>
+        <p>
+          <strong>{{ commitResult.excluded }}</strong>
+          jobs excluded.
+        </p>
+        <p class="text-sm text-muted-foreground">
+          This import has been completed. Select another file
+          to begin a new import.
+        </p>
+        <Button variant="outline" as-child>
+          <RouterLink to="/jobs">
+            View jobs
+          </RouterLink>
+        </Button>
+      </CardContent>
+    </Card>
+
     <Card>
       <CardHeader>
         <CardTitle>Select dataset</CardTitle>
@@ -439,19 +555,17 @@ async function handleAnalyze(): Promise<void> {
           Choose a version 1 JSON job dataset.
         </CardDescription>
       </CardHeader>
-
       <CardContent class="space-y-5">
         <div class="space-y-2">
           <label for="job-import-file" class="text-sm font-medium">
             JSON file
           </label>
-
           <input
               id="job-import-file"
               type="file"
               accept=".json,application/json"
               class="block w-full rounded-md border p-3 text-sm"
-              :disabled="analyzing || savingJob"
+              :disabled="busy"
               @change="handleFileChange"
           />
         </div>
@@ -461,19 +575,18 @@ async function handleAnalyze(): Promise<void> {
             class="flex items-center gap-3 rounded-md border p-4"
         >
           <FileJson class="size-5 text-muted-foreground" />
-
           <div>
             <p class="text-sm font-medium">
               {{ selectedFileName }}
             </p>
             <p class="text-sm text-muted-foreground">
-              {{ dataset.jobs.length }} jobs ready for analysis
+              {{ dataset.jobs.length }} jobs in dataset
             </p>
           </div>
         </div>
 
         <Button
-            :disabled="!dataset || analyzing || savingJob"
+            :disabled="!dataset || busy || !!commitResult"
             @click="handleAnalyze"
         >
           <Upload class="size-4" />
@@ -482,7 +595,7 @@ async function handleAnalyze(): Promise<void> {
       </CardContent>
     </Card>
 
-    <template v-if="analysis">
+    <template v-if="analysis && !commitResult">
       <Card>
         <CardHeader>
           <CardTitle>Analysis results</CardTitle>
@@ -490,7 +603,6 @@ async function handleAnalyze(): Promise<void> {
             No jobs have been imported yet.
           </CardDescription>
         </CardHeader>
-
         <CardContent class="space-y-4">
           <div class="grid gap-3 sm:grid-cols-3">
             <div class="rounded-md border p-3">
@@ -501,7 +613,6 @@ async function handleAnalyze(): Promise<void> {
                 {{ analysis.totalJobs }}
               </p>
             </div>
-
             <div class="rounded-md border p-3">
               <p class="text-sm text-muted-foreground">
                 Included
@@ -510,7 +621,6 @@ async function handleAnalyze(): Promise<void> {
                 {{ includedCount }}
               </p>
             </div>
-
             <div class="rounded-md border p-3">
               <p class="text-sm text-muted-foreground">
                 Excluded
@@ -525,11 +635,9 @@ async function handleAnalyze(): Promise<void> {
                         <span class="rounded-md bg-muted px-3 py-2">
                             Existing skills: {{ skillCounts.existing }}
                         </span>
-
             <span class="rounded-md bg-muted px-3 py-2">
                             New skills: {{ skillCounts.new }}
                         </span>
-
             <span
                 class="rounded-md px-3 py-2"
                 :class="
@@ -549,7 +657,7 @@ async function handleAnalyze(): Promise<void> {
         <CardHeader>
           <CardTitle>Review jobs</CardTitle>
           <CardDescription>
-            Include, exclude, or edit jobs before importing.
+            Include, exclude, or edit jobs before committing.
           </CardDescription>
         </CardHeader>
 
@@ -566,7 +674,7 @@ async function handleAnalyze(): Promise<void> {
                   type="checkbox"
                   class="mt-1 size-4 shrink-0"
                   :checked="!reviewedJob.excluded"
-                  :disabled="savingJob"
+                  :disabled="busy"
                   :aria-label="
                                     `Include ${reviewedJob.job.company} — ${reviewedJob.job.title}`
                                 "
@@ -583,11 +691,9 @@ async function handleAnalyze(): Promise<void> {
                                     <span class="font-medium">
                                         {{ reviewedJob.job.company }}
                                     </span>
-
                   <span class="text-muted-foreground">
                                         — {{ reviewedJob.job.title }}
                                     </span>
-
                   <span class="ml-2 text-xs text-muted-foreground">
                                         #{{ index + 1 }}
                                     </span>
@@ -598,14 +704,12 @@ async function handleAnalyze(): Promise<void> {
                   >
                                         Excluded
                                     </span>
-
                   <span
                       v-else-if="!reviewStatuses[index]?.valid"
                       class="ml-2 text-xs font-medium text-destructive"
                   >
                                         Review required
                                     </span>
-
                   <span
                       v-else
                       class="ml-2 text-xs font-medium text-green-600"
@@ -625,7 +729,6 @@ async function handleAnalyze(): Promise<void> {
                     <p class="mb-2 text-sm font-medium text-destructive">
                       Issues to resolve
                     </p>
-
                     <ul class="list-disc space-y-1 pl-5 text-sm text-destructive">
                       <li
                           v-for="(message, errorIndex) in reviewStatuses[index]?.errors"
@@ -643,8 +746,13 @@ async function handleAnalyze(): Promise<void> {
                     >
                       Re-analyzing edited job...
                     </p>
-
-                    <div :class="savingJob ? 'pointer-events-none opacity-60' : ''">
+                    <div
+                        :class="
+                                                savingJob
+                                                    ? 'pointer-events-none opacity-60'
+                                                    : ''
+                                            "
+                    >
                       <JobImportReviewForm
                           :key="index"
                           :job="reviewedJob.job"
@@ -667,12 +775,11 @@ async function handleAnalyze(): Promise<void> {
                           || 'Seniority unspecified'
                         }}
                       </p>
-
                       <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          :disabled="reviewedJob.excluded || savingJob"
+                          :disabled="reviewedJob.excluded || busy"
                           @click="startEditing(index)"
                       >
                         Edit job
@@ -695,11 +802,9 @@ async function handleAnalyze(): Promise<void> {
                                                 <span class="font-medium">
                                                     {{ skill.name }}
                                                 </span>
-
                         <span class="text-muted-foreground">
                                                     ({{ skill.category }})
                                                 </span>
-
                         <span
                             class="rounded px-2 py-1 text-xs"
                             :class="
@@ -711,12 +816,10 @@ async function handleAnalyze(): Promise<void> {
                                                     {{ resolutionLabel(skill.resolution) }}
                                                 </span>
                       </div>
-
                       <p class="mt-2 text-muted-foreground">
                         Requirement:
                         {{ requirementLabel(skill.requirement) }}
                       </p>
-
                       <p
                           v-if="skill.canonicalName !== skill.name"
                           class="mt-1 text-muted-foreground"
@@ -724,7 +827,6 @@ async function handleAnalyze(): Promise<void> {
                         Canonical name:
                         {{ skill.canonicalName }}
                       </p>
-
                       <p
                           v-if="skill.conflictingRequirements?.length"
                           class="mt-1 text-destructive"
@@ -750,33 +852,80 @@ async function handleAnalyze(): Promise<void> {
             The dataset contains no jobs.
           </p>
 
-          <div class="mt-6 flex flex-wrap items-center justify-between gap-4 border-t pt-4">
-            <div class="text-sm">
-              <p>
-                <strong>{{ includedCount }}</strong>
-                jobs included
-              </p>
+          <div class="mt-6 space-y-4 border-t pt-4">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+              <div class="text-sm">
+                <p>
+                  <strong>{{ includedCount }}</strong>
+                  jobs included,
+                  <strong>{{ excludedCount }}</strong>
+                  excluded
+                </p>
+                <p
+                    v-if="unresolvedJobCount > 0"
+                    class="text-destructive"
+                >
+                  {{ unresolvedJobCount }}
+                  jobs require review
+                </p>
+                <p
+                    v-else-if="editingJobIndex !== null"
+                    class="text-muted-foreground"
+                >
+                  Save or cancel the current edit to continue.
+                </p>
+                <p v-else class="text-green-600">
+                  All included jobs are ready to import.
+                </p>
+              </div>
 
-              <p
-                  v-if="unresolvedJobCount > 0"
-                  class="text-destructive"
+              <Button
+                  :disabled="!readyToImport"
+                  @click="requestCommit"
               >
-                {{ unresolvedJobCount }}
-                jobs require review
-              </p>
-
-              <p v-else class="text-green-600">
-                All included jobs are ready to import.
-              </p>
+                Commit reviewed import
+              </Button>
             </div>
 
-            <Button disabled>
-              {{
-                readyToImport
-                    ? 'Ready to import'
-                    : 'Resolve issues before import'
-              }}
-            </Button>
+            <div
+                v-if="showConfirmation"
+                class="space-y-4 rounded-md border p-4"
+            >
+              <h3 class="font-semibold">
+                Confirm import
+              </h3>
+              <p class="text-sm">
+                You are about to import
+                <strong>{{ includedCount }}</strong>
+                jobs into the database and exclude
+                <strong>{{ excludedCount }}</strong>
+                jobs.
+              </p>
+              <p class="text-sm text-muted-foreground">
+                This operation creates persistent job records.
+                Review your selection before proceeding.
+              </p>
+
+              <div class="flex flex-wrap gap-3">
+                <Button
+                    :disabled="committing || !readyToImport"
+                    @click="handleCommit"
+                >
+                  {{
+                    committing
+                        ? 'Importing...'
+                        : 'Confirm import'
+                  }}
+                </Button>
+                <Button
+                    variant="outline"
+                    :disabled="committing"
+                    @click="showConfirmation = false"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
