@@ -50,6 +50,8 @@ The current application supports:
 - Supporting multiple preferred or required languages per job using ISO 639-1 language codes
 - Runtime validation of API data using Zod
 - Separate development and test databases
+- Searching, filtering, sorting and paginating job opportunities with URL-backed filters
+- Importing jobs from a versioned JSON dataset with validation, skill normalization and review before commit
 - Automated endpoint, repository, service and frontend tests
 
 ## Architecture
@@ -72,7 +74,15 @@ skill-gap-analyzer/
 │   ├── src/
 │   │   ├── api/
 │   │   ├── components/
+│   │   │   ├── job-import/
+│   │   │   ├── jobs/
+│   │   │   ├── skills/
+│   │   │   ├── ui/
+│   │   │   └── user-skills/
+│   │   ├── composables/
 │   │   ├── schemas/
+│   │   ├── services/
+│   │   │   └── job-import/
 │   │   ├── types/
 │   │   └── views/
 │   └── tests/
@@ -83,7 +93,7 @@ skill-gap-analyzer/
 
 The backend follows a layered structure separating HTTP routes, application services, repositories, validation schemas and persistence.
 
-The frontend communicates with the backend through a dedicated API layer and validates API responses at runtime using Zod.
+The frontend communicates with the backend through a dedicated API layer and validates API responses at runtime using Zod. Views compose feature-specific components, composables manage reactive workflows, and services hold reusable domain logic. Shared UI primitives are kept separate from feature components.
 
 ## Running locally
 
@@ -142,6 +152,18 @@ The frontend is then available at:
 ```bash
 docker compose exec backend npm run db:migrate
 ```
+
+## Importing the sample job dataset
+
+The import screen accepts a version 1 JSON dataset. To try the sample dataset:
+
+1. Open [http://localhost:5173](http://localhost:5173) and navigate to **Import Jobs**.
+2. Under **Select dataset**, choose the file at `backend/test/fixtures/sample.import.json` (relative to the project root).
+3. The file picker opens on your computer; select that file and upload it through the application.
+4. Click **Analyze dataset**. Review the jobs, skill matches, and any items requiring manual resolution.
+5. Edit or exclude jobs as needed, then confirm the import to save the included jobs.
+
+**Note:** Importing commits jobs to the development database. Running the sample more than once may create duplicate records. JSON export is not implemented yet.
 
 ## Development
 
@@ -223,4 +245,4 @@ The current CI status is shown by the badge at the top of this README.
 
 Skill Gap Analyzer is currently a demonstration project and is under active development.
 
-The current application establishes the core full-stack architecture, job and skill management, structured job metadata, runtime API validation, automated testing and continuous integration.
+The current application establishes the core full-stack architecture, job and skill management, structured job metadata, JSON import with review and skill normalization, URL-driven job-list controls, runtime API validation, automated testing and continuous integration.
