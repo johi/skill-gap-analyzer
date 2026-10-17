@@ -191,3 +191,50 @@ describe('UserSkillsView', () => {
         );
     });
 });
+describe('UserSkillsView additional states', () => {
+    beforeEach(() => {
+        vi.resetAllMocks();
+        vi.mocked(getSkills).mockResolvedValue(skills);
+        vi.mocked(getUserSkills).mockResolvedValue(assessments);
+    });
+
+    it('shows an error when initial loading fails', async () => {
+        vi.mocked(getSkills).mockRejectedValue(new Error('Catalogue unavailable'));
+        const wrapper = mount(UserSkillsView);
+        await flushPromises();
+        expect(wrapper.text()).toContain('Catalogue unavailable');
+    });
+
+    it('shows the empty state for an empty catalogue', async () => {
+        vi.mocked(getSkills).mockResolvedValue([]);
+        const wrapper = mount(UserSkillsView);
+        await flushPromises();
+        expect(wrapper.text()).toContain('No skills available');
+        expect(wrapper.findAll('select')).toHaveLength(0);
+    });
+
+    it('shows an error and retains the assessment when removal fails', async () => {
+        vi.mocked(deleteUserSkill).mockRejectedValue(new Error('Removal failed'));
+        const wrapper = mount(UserSkillsView);
+        await flushPromises();
+        await wrapper.findAll('select')[0].setValue('');
+        await flushPromises();
+        expect(wrapper.text()).toContain('Removal failed');
+        expect((wrapper.findAll('select')[0].element as HTMLSelectElement).value).toBe('3');
+    });
+
+    it('disables the affected selector while saving', async () => {
+        let resolveSave!: (value: {skillId: number; level: 4; updatedAt: string}) => void;
+        vi.mocked(setUserSkillLevel).mockImplementation(() => new Promise((resolve) => {
+            resolveSave = resolve;
+        }));
+        const wrapper = mount(UserSkillsView);
+        await flushPromises();
+        await wrapper.findAll('select')[1].setValue('4');
+        expect((wrapper.findAll('select')[1].element as HTMLSelectElement).disabled).toBe(true);
+        expect((wrapper.findAll('select')[0].element as HTMLSelectElement).disabled).toBe(false);
+        resolveSave({skillId: 2, level: 4, updatedAt: '2026-09-29T12:00:00.000Z'});
+        await flushPromises();
+        expect((wrapper.findAll('select')[1].element as HTMLSelectElement).disabled).toBe(false);
+    });
+});
