@@ -7,7 +7,6 @@ import {
 import {
   RouterLink,
   useRoute,
-  useRouter,
 } from 'vue-router';
 
 import JobForm from '../components/JobForm.vue';
@@ -19,10 +18,8 @@ import {
 
 import { ApiError } from '../api/client';
 
-import type {
-  CreateJobInput,
-  JobWithSkills,
-} from '../types/job';
+import type { JobWithSkills } from '../types/job';
+import { useJobFormSubmit } from '@/composables/useJobFormSubmit';
 import { ArrowLeft } from 'lucide-vue-next';
 
 import { Button } from '@/components/ui/button';
@@ -38,19 +35,18 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 const route = useRoute();
-const router = useRouter();
 
 const job = ref<JobWithSkills | null>(null);
 const loading = ref(true);
-const submitting = ref(false);
-const error = ref<string | null>(null);
-const validationErrors = ref<string[]>([]);
+const loadError = ref<string | null>(null);
 
 const id = Number(route.params.id);
+const { submitting, error, validationErrors, handleSubmit } =
+  useJobFormSubmit((input) => updateJob(id, input), 'Unable to update job');
 
 onMounted(async () => {
   if (!Number.isInteger(id) || id <= 0) {
-    error.value = 'Invalid job ID';
+    loadError.value = 'Invalid job ID';
     loading.value = false;
 
     return;
@@ -60,9 +56,9 @@ onMounted(async () => {
     job.value = await getJob(id);
   } catch (err) {
     if (err instanceof ApiError && err.status === 404) {
-      error.value = 'Job not found';
+      loadError.value = 'Job not found';
     } else {
-      error.value = err instanceof Error
+      loadError.value = err instanceof Error
           ? err.message
           : 'Unable to load job';
     }
@@ -71,44 +67,6 @@ onMounted(async () => {
   }
 });
 
-async function handleSubmit(
-    input: CreateJobInput
-): Promise<void> {
-  submitting.value = true;
-  error.value = null;
-  validationErrors.value = [];
-
-  try {
-    const updated = await updateJob(id, input);
-
-    await router.push({
-      name: 'job-detail',
-      params: {
-        id: updated.id,
-      },
-    });
-  } catch (err) {
-    if (
-        err instanceof ApiError &&
-        err.error === 'validation_error'
-    ) {
-      validationErrors.value = err.issues.map(
-          (issue) =>
-              issue.path
-                  ? `${issue.path}: ${issue.message}`
-                  : issue.message
-      );
-
-      return;
-    }
-
-    error.value = err instanceof Error
-        ? err.message
-        : 'Unable to update job';
-  } finally {
-    submitting.value = false;
-  }
-}
 </script>
 
 <template>
@@ -152,15 +110,21 @@ async function handleSubmit(
     </div>
 
     <div
-        v-else-if="error"
+        v-else-if="loadError && !job"
         class="rounded-md border border-destructive/30 bg-destructive/5 p-4"
     >
       <p class="text-sm text-destructive">
-        {{ error }}
+        {{ loadError }}
       </p>
     </div>
 
     <template v-else-if="job">
+      <div
+          v-if="error"
+          class="rounded-md border border-destructive/30 bg-destructive/5 p-4"
+      >
+        <p class="text-sm text-destructive">{{ error }}</p>
+      </div>
       <div
           v-if="validationErrors.length"
           class="rounded-md border border-destructive/30 bg-destructive/5 p-4"

@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import {
   RouterLink,
-  useRouter,
 } from 'vue-router';
 
 import JobForm from '../components/JobForm.vue';
 
 import { createJob } from '../api/jobs';
-import { ApiError } from '../api/client';
+import { useJobFormSubmit } from '@/composables/useJobFormSubmit';
 
-import type { CreateJobInput } from '../types/job';
 import { ArrowLeft } from 'lucide-vue-next';
 
 import { Button } from '@/components/ui/button';
@@ -23,50 +20,8 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-const router = useRouter();
-
-const submitting = ref(false);
-const error = ref<string | null>(null);
-const validationErrors = ref<string[]>([]);
-
-async function handleSubmit(
-    input: CreateJobInput
-): Promise<void> {
-  submitting.value = true;
-  error.value = null;
-  validationErrors.value = [];
-
-  try {
-    const job = await createJob(input);
-
-    await router.push({
-      name: 'job-detail',
-      params: {
-        id: job.id,
-      },
-    });
-  } catch (err) {
-    if (
-        err instanceof ApiError &&
-        err.error === 'validation_error'
-    ) {
-      validationErrors.value = err.issues.map(
-          (issue) =>
-              issue.path
-                  ? `${issue.path}: ${issue.message}`
-                  : issue.message
-      );
-
-      return;
-    }
-
-    error.value = err instanceof Error
-        ? err.message
-        : 'Unable to create job';
-  } finally {
-    submitting.value = false;
-  }
-}
+const { submitting, error, validationErrors, handleSubmit } =
+  useJobFormSubmit(createJob, 'Unable to create job');
 </script>
 
 <template>
