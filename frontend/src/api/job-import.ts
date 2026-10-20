@@ -31,7 +31,8 @@ export function analyzeJobImport(
 
 export function commitJobImport(
     dataset: JobDataset,
-    reviewedImport: ReviewedImport
+    reviewedImport: ReviewedImport,
+    replaceExisting = false
 ): Promise<JobImportCommitResponse> {
     return apiRequest(
         '/api/v1/jobs/import/commit',
@@ -44,6 +45,7 @@ export function commitJobImport(
             body: JSON.stringify({
                 dataset,
                 reviewedImport,
+                replaceExisting,
             }),
         }
     );

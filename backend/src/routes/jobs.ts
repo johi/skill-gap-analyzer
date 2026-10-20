@@ -1,4 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
+import { z } from 'zod';
 
 import { JobService } from '@/services/job-service';
 import { idParamSchema } from '@/schemas/common';
@@ -23,7 +24,11 @@ export function createJobRoutes(
         const importCommitService = new JobImportCommitService();
 
         fastify.post('/import/commit', async (request, reply) => {
-            const body = request.body as Record<string, unknown>;
+            const body = z.object({
+                dataset: z.unknown(),
+                reviewedImport: z.unknown(),
+                replaceExisting: z.boolean().optional().default(false),
+            }).parse(request.body);
 
             const dataset = jobDatasetSchema.parse(body.dataset);
             const reviewedImport = reviewedImportSchema.parse(
@@ -32,7 +37,8 @@ export function createJobRoutes(
 
             const result = await importCommitService.commit(
                 dataset,
-                reviewedImport
+                reviewedImport,
+                body.replaceExisting
             );
 
             return reply.status(201).send(result);

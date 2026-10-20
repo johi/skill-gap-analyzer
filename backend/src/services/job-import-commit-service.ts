@@ -1,4 +1,5 @@
 import { db } from '@/db';
+import { jobs } from '@/db/schema';
 
 import { JobService } from '@/services/job-service';
 import { JobImportService } from '@/services/job-import-service';
@@ -22,7 +23,8 @@ export class JobImportCommitService {
 
     async commit(
         dataset: JobDataset,
-        reviewedImport: ReviewedImport
+        reviewedImport: ReviewedImport,
+        replaceExisting = false
     ): Promise<{
         imported: number;
         excluded: number;
@@ -51,6 +53,12 @@ export class JobImportCommitService {
                 analysis,
                 validatedReview
             );
+
+            if (replaceExisting) {
+                // Cascades to job_skills and job_language_requirements only.
+                // The skills catalogue and user assessments remain untouched.
+                await tx.delete(jobs);
+            }
 
             const jobIds: number[] = [];
             let excluded = 0;

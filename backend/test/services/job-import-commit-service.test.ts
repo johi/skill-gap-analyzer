@@ -56,6 +56,44 @@ describe('JobImportCommitService', () => {
         await cleanDatabase();
     });
 
+    it('replaces jobs while preserving the skill catalogue', async () => {
+        const repository = new JobRepository(db);
+        const skillRepository = new SkillRepository(db);
+        const original = await service.commit(dataset, createReviewedImport());
+        const skill = await skillRepository.create({ name: 'Preserved skill', category: 'Backend' });
+
+        const replacement: JobDataset = {
+            version: 1,
+            jobs: [{
+                dateFound: '2026-10-20',
+                company: 'Replacement',
+                title: 'Engineer',
+                languageRequirements: [],
+                skills: [],
+            }],
+        };
+        const review: ReviewedImport = {
+            version: 1,
+            jobs: [{ jobIndex: 0, excluded: false, job: structuredClone(replacement.jobs[0]!) }],
+        };
+
+        const result = await service.commit(replacement, review, true);
+        expect(result.imported).toBe(1);
+        const jobs = await repository.findAll();
+        expect(jobs).toHaveLength(1);
+        expect(jobs[0]?.company).toBe('Replacement');
+        expect(jobs.some(job => original.jobIds.includes(job.id))).toBe(false);
+        expect(await skillRepository.findById(skill.id)).toBeDefined();
+    });
+
+    it('does not delete existing jobs when replacement review fails', async () => {
+        await service.commit(dataset, createReviewedImport());
+        const invalid = createReviewedImport();
+        invalid.jobs.pop();
+        await expect(service.commit(dataset, invalid, true)).rejects.toThrow();
+        expect(await new JobRepository(db).findAll()).toHaveLength(2);
+    });
+
     it('persists all approved jobs in a single batch', async () => {
         const result = await service.commit(
             dataset,

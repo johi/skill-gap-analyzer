@@ -544,7 +544,8 @@ describe('ImportJobsView: commit workflow', () => {
                             job: jobs[1],
                         },
                     ],
-                }
+                },
+                false
             );
 
         expect(wrapper.text())
@@ -552,6 +553,25 @@ describe('ImportJobsView: commit workflow', () => {
 
         expect(wrapper.text())
             .toContain('1 jobs imported');
+    });
+
+    it('passes true when replacing the existing job dataset', async () => {
+        const wrapper = mountView();
+        await analyze(wrapper);
+        await button(wrapper, 'Commit reviewed import').trigger('click');
+
+        const checkbox = wrapper.get('input[type="checkbox"]:not([id^="include-job-"])');
+        await checkbox.setValue(true);
+        expect(wrapper.text()).toContain('All existing jobs will be deleted');
+
+        await button(wrapper, 'Confirm import').trigger('click');
+        await flushPromises();
+
+        expect(commitJobImport).toHaveBeenCalledWith(
+            dataset,
+            expect.objectContaining({ version: 1 }),
+            true
+        );
     });
 
     it('prevents duplicate submission after success', async () => {

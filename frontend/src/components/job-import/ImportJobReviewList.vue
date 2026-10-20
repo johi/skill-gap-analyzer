@@ -5,8 +5,8 @@ import ImportJobReviewItem from './ImportJobReviewItem.vue';
 import ImportCommitConfirmation from './ImportCommitConfirmation.vue';
 import type { ReviewedJob, JobReviewStatus } from '@/services/job-import/reviewed-job';
 import type { ImportedJob } from '@/schemas/job-import';
-defineProps<{ reviewedJobs: ReviewedJob[]; reviewStatuses: JobReviewStatus[]; busy: boolean; editingJobIndex: number | null; savingJob: boolean; includedCount: number; excludedCount: number; unresolvedJobCount: number; readyToImport: boolean; showConfirmation: boolean; committing: boolean }>();
-const emit = defineEmits<{ setExcluded: [index: number, excluded: boolean]; startEditing: [index: number]; save: [index: number, job: ImportedJob]; cancelEditing: []; requestCommit: []; commit: []; cancelConfirmation: [] }>();
+defineProps<{ reviewedJobs: ReviewedJob[]; reviewStatuses: JobReviewStatus[]; busy: boolean; editingJobIndex: number | null; savingJob: boolean; includedCount: number; excludedCount: number; unresolvedJobCount: number; readyToImport: boolean; showConfirmation: boolean; committing: boolean; replaceExisting: boolean }>();
+const emit = defineEmits<{ setExcluded: [index: number, excluded: boolean]; startEditing: [index: number]; save: [index: number, job: ImportedJob]; cancelEditing: []; requestCommit: []; commit: []; cancelConfirmation: []; 'update:replaceExisting': [value: boolean] }>();
 </script>
 
 <template>
@@ -81,6 +81,8 @@ const emit = defineEmits<{ setExcluded: [index: number, excluded: boolean]; star
                 :included-count="includedCount"
                 :excluded-count="excludedCount"
                 :committing="committing"
+                :replace-existing="replaceExisting"
+                @update:replace-existing="emit('update:replaceExisting', $event)"
                 :ready-to-import="readyToImport"
                 @confirm="emit('commit')"
                 @cancel="emit('cancelConfirmation')"

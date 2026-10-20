@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Button } from '@/components/ui/button';
-defineProps<{ includedCount: number; excludedCount: number; committing: boolean; readyToImport: boolean }>();
-const emit = defineEmits<{ confirm: []; cancel: [] }>();
+defineProps<{ includedCount: number; excludedCount: number; committing: boolean; readyToImport: boolean; replaceExisting: boolean }>();
+const emit = defineEmits<{ confirm: []; cancel: []; 'update:replaceExisting': [value: boolean] }>();
 </script>
 
 <template>
@@ -24,6 +24,20 @@ const emit = defineEmits<{ confirm: []; cancel: [] }>();
                 Review your selection before proceeding.
               </p>
 
+              <label class="flex items-start gap-3 text-sm">
+                <input
+                    type="checkbox"
+                    class="mt-1"
+                    :checked="replaceExisting"
+                    :disabled="committing"
+                    @change="emit('update:replaceExisting', ($event.target as HTMLInputElement).checked)"
+                />
+                <span><strong>Replace existing job dataset</strong> — permanently delete all existing jobs and their job-specific skills and language requirements before importing. The skill catalogue and your personal assessments are preserved.</span>
+              </label>
+              <p v-if="replaceExisting" role="alert" class="text-sm font-semibold text-destructive">
+                Warning: All existing jobs will be deleted. This cannot be undone after the import succeeds.
+                If importing fails, the original jobs will be restored automatically.
+              </p>
               <div class="flex flex-wrap gap-3">
                 <Button
                     :disabled="committing || !readyToImport"

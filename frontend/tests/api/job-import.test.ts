@@ -186,6 +186,7 @@ describe('UC-35: Commit reviewed import API', () => {
                 body: JSON.stringify({
                     dataset,
                     reviewedImport,
+                    replaceExisting: false,
                 }),
             })
         );
@@ -195,6 +196,19 @@ describe('UC-35: Commit reviewed import API', () => {
             excluded: 0,
             jobIds: [42],
         });
+    });
+
+    it('sends the replacement flag when explicitly enabled', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response(JSON.stringify({ imported: 1, excluded: 0, jobIds: [42] }), { status: 201 })
+        );
+        vi.stubGlobal('fetch', fetchMock);
+
+        await commitJobImport(dataset, reviewedImport, true);
+
+        const options = fetchMock.mock.calls[0]?.[1] as RequestInit;
+        const payload = JSON.parse(options.body as string);
+        expect(payload.replaceExisting).toBe(true);
     });
 
     it('preserves original indices and exclusion decisions', async () => {

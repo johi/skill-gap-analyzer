@@ -10,7 +10,7 @@ import ImportJobReviewList from '@/components/job-import/ImportJobReviewList.vue
 
 const {
   selectedFileName, dataset, analysis, reviewedJobs,
-  editingJobIndex, analyzing, savingJob, committing, showConfirmation,
+  editingJobIndex, analyzing, savingJob, committing, showConfirmation, replaceExisting,
   commitResult, error, validationErrors,
   busy, includedCount, excludedCount, skillCounts, reviewStatuses,
   unresolvedJobCount, readyToImport,
@@ -89,6 +89,8 @@ const {
           :unresolved-job-count="unresolvedJobCount"
           :ready-to-import="readyToImport"
           :show-confirmation="showConfirmation"
+          :replace-existing="replaceExisting"
+          @update:replace-existing="replaceExisting = $event"
           :committing="committing"
           @set-excluded="setExcluded"
           @start-editing="startEditing"

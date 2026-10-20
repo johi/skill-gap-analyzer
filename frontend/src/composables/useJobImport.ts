@@ -18,6 +18,7 @@ export function useJobImport() {
   const savingJob = ref(false);
   const committing = ref(false);
   const showConfirmation = ref(false);
+  const replaceExisting = ref(false);
 
   const commitResult = ref<JobImportCommitResponse | null>(null);
 
@@ -339,7 +340,8 @@ export function useJobImport() {
     try {
       const result = await commitJobImport(
           dataset.value,
-          reviewedImport.data
+          reviewedImport.data,
+          replaceExisting.value
       );
 
       commitResult.value = result;
@@ -354,7 +356,7 @@ export function useJobImport() {
 
   return {
     selectedFileName, dataset, analysis, reviewedJobs,
-    editingJobIndex, analyzing, savingJob, committing, showConfirmation,
+    editingJobIndex, analyzing, savingJob, committing, showConfirmation, replaceExisting,
     commitResult, error, validationErrors,
     busy, includedCount, excludedCount, skillCounts, reviewStatuses,
     unresolvedJobCount, readyToImport,
