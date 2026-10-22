@@ -17,6 +17,9 @@ import { createSkillRoutes } from './routes/skills';
 import { createUserSkillRoutes } from './routes/user-skills';
 import { JobImportService } from './services/job-import-service';
 import { createJobImportRoutes } from './routes/job-import';
+import { createJobAnalysisRoutes } from './routes/job-analysis';
+import { JobAnalysisService } from './services/job-analysis-service';
+import { OpenAiJobAnalysisProvider } from './services/openai-job-analysis-provider';
 
 export function buildApp(
     options: FastifyServerOptions = {
@@ -54,6 +57,13 @@ export function buildApp(
         }
     );
     
+    fastify.register(
+        createJobAnalysisRoutes(
+            new JobAnalysisService(new OpenAiJobAnalysisProvider())
+        ),
+        { prefix: '/api/v1/job-analysis' }
+    );
+
     fastify.register(
         healthRoutes,
         {

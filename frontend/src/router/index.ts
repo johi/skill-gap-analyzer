@@ -11,6 +11,7 @@ import JobDetailView from '../views/JobDetailView.vue';
 import CreateJobView from '../views/CreateJobView.vue';
 import EditJobView from '../views/EditJobView.vue';
 import ImportJobsView from '../views/ImportJobsView.vue';
+import AnalyzeJobView from '../views/AnalyzeJobView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -34,6 +35,11 @@ const router = createRouter({
             path: '/jobs/import',
             name: 'job-import',
             component: ImportJobsView,
+        },
+        {
+            path: '/jobs/analyze',
+            name: 'job-analyze',
+            component: AnalyzeJobView,
         },
         {
             path: '/jobs/:id/edit',

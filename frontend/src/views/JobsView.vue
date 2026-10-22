@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BriefcaseBusiness, FileInput, Plus } from 'lucide-vue-next';
+import { BriefcaseBusiness, FileInput, Plus, Sparkles } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
 import { useJobs } from '@/composables/useJobs';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,11 @@ const { route, filters, jobs, pagination, totalPages, startItem, endItem, loadin
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <Button variant="outline" as-child>
+          <RouterLink :to="{ name: 'job-analyze' }">
+            <Sparkles class="size-4" /> Analyze advertisement
+          </RouterLink>
+        </Button>
         <Button variant="outline" as-child>
           <RouterLink :to="{ name: 'job-import' }">
             <FileInput class="size-4" /> Import jobs

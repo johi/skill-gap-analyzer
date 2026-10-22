@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { createMemoryHistory, createRouter } from 'vue-router';
-import JobsView from '../../src/views/JobsView.vue';
-import { getJobs } from '../../src/api/jobs';
-import type { JobWithSkills } from '../../src/types/job';
-import type { PaginatedJobs } from '../../src/schemas/job-list';
+import JobsView from '@/views/JobsView.vue';
+import { getJobs } from '@/api/jobs';
+import type { JobWithSkills } from '@/types/job';
+import type { PaginatedJobs } from '@/schemas/job-list';
 
 vi.mock('../../src/api/jobs', () => ({ getJobs: vi.fn() }));
 
@@ -36,6 +36,7 @@ async function setup(url = '/jobs') {
       { path: '/jobs', name: 'jobs', component: JobsView },
       { path: '/jobs/new', name: 'job-create', component: { template: '<div />' } },
       { path: '/jobs/import', name: 'job-import', component: { template: '<div />' } },
+      { path: '/jobs/analyze', name: 'job-analyze', component: { template: '<div />' } },
       { path: '/jobs/:id', name: 'job-detail', component: { template: '<div />' } },
     ],
   });

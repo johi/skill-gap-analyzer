@@ -3,6 +3,11 @@ import { FastifyError, FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
 
 import {
+    JobAnalysisInvalidResponseError,
+    JobAnalysisUnavailableError,
+} from './job-analysis-errors';
+
+import {
     ConflictError,
     NotFoundError,
     ValidationError,
@@ -16,7 +21,9 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
                 | ZodError
                 | NotFoundError
                 | ConflictError
-                | ValidationError,
+                | ValidationError
+                | JobAnalysisInvalidResponseError
+                | JobAnalysisUnavailableError,
             request,
             reply
         ) => {
@@ -49,6 +56,22 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
             if (error instanceof ConflictError) {
                 return reply.status(409).send({
                     error: 'conflict',
+                    message: error.message,
+                });
+            }
+
+            if (error instanceof JobAnalysisUnavailableError) {
+                request.log.warn({ errorName: error.name }, 'AI provider unavailable');
+                return reply.status(503).send({
+                    error: 'ai_service_unavailable',
+                    message: error.message,
+                });
+            }
+
+            if (error instanceof JobAnalysisInvalidResponseError) {
+                request.log.warn('AI provider returned invalid analysis');
+                return reply.status(502).send({
+                    error: 'ai_invalid_response',
                     message: error.message,
                 });
             }
