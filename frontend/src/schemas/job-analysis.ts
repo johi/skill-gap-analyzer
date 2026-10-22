@@ -33,6 +33,7 @@ export const extractedJobSchema = z.object({
 export const jobAdvertisementAnalysisSchema = z.object({
     dateFound: z.iso.date(),
     originalText: z.string().trim().min(50).max(30_000),
+    sourceUrl: z.url().nullable().optional(),
     proposal: extractedJobSchema,
     requiresReview: z.boolean(),
 });

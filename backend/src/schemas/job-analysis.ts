@@ -11,6 +11,11 @@ import {
 // This is a proposal, NOT a CreateJobInput. Missing facts remain null.
 export const jobAdvertisementRequestSchema = z.object({
     advertisement: z.string().trim().min(50).max(30_000),
+    sourceUrl: z.url().max(2048).refine(url => /^https?:\/\//i.test(url), 'Expected an HTTP or HTTPS URL').optional(),
+});
+
+export const jobUrlAnalysisRequestSchema = z.object({
+    url: z.url().max(2048),
 });
 
 export const extractedJobSchema = z.object({
@@ -63,6 +68,7 @@ export const extractedJobSchema = z.object({
 export const jobAdvertisementAnalysisSchema = z.object({
     dateFound: z.iso.date(),
     originalText: z.string().trim().min(50).max(30_000),
+    sourceUrl: z.url().nullable(),
     proposal: extractedJobSchema,
     requiresReview: z.boolean(),
 });

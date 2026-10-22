@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
+import { jobExtractionJsonSchema } from '@/services/job-analysis-contract';
+import { jobAnalysisInstructions } from '@/services/job-analysis-instructions';
 import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
@@ -29,7 +31,8 @@ describe('OpenAiJobAnalysisProvider', () => {
             input: advertisement,
             text: { format: { type: 'json_schema', strict: true } },
         });
-        expect(body.text.format.schema.required).toContain('skills');
+        expect(body.text.format.schema).toEqual(jobExtractionJsonSchema);
+        expect(body.instructions).toBe(jobAnalysisInstructions);
     });
 
     it('refuses to call the provider without an API key', async () => {

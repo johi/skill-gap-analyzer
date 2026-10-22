@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { analyzeJobAdvertisement } from '../../src/api/job-analysis';
-import { ApiError } from '../../src/api/client';
+import { analyzeJobAdvertisement, analyzeJobAdvertisementUrl } from '@/api/job-analysis';
+import { ApiError } from '@/api/client';
 
 const advertisement = 'Example Company seeks a Senior TypeScript Developer for our Copenhagen office. Full-time employment.';
 const result = {
@@ -28,6 +28,29 @@ describe('Job advertisement analysis API', () => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ advertisement }),
         });
+    });
+
+    it('submits a URL and validates the source URL in the analysis response', async () => {
+        const url = 'https://careers.example.com/jobs/42';
+        const response = { ...result, sourceUrl: url };
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(response), { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+        expect(await analyzeJobAdvertisementUrl(url)).toEqual(response);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/job-analysis/analyze-url', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+        });
+    });
+
+    it('includes source URL with manually pasted text when the URL could not be retrieved', async () => {
+        const url = 'https://careers.example.com/jobs/42';
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ...result, sourceUrl: url }), { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
+        await analyzeJobAdvertisement(advertisement, url);
+        expect(fetchMock).toHaveBeenCalledWith('/api/v1/job-analysis/analyze', expect.objectContaining({
+            body: JSON.stringify({ advertisement, sourceUrl: url }),
+        }));
     });
 
     it('rejects invalid structured responses', async () => {

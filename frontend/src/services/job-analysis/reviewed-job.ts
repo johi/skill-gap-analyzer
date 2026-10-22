@@ -20,7 +20,7 @@ export function analysisToReviewInput(analysis: JobAdvertisementAnalysis): JobRe
     dateFound: analysis.dateFound,
     company: analysis.proposal.company ?? '',
     title: analysis.proposal.title ?? '',
-    sourceUrl: null,
+    sourceUrl: analysis.sourceUrl ?? null,
     originalText: analysis.originalText,
     location: analysis.proposal.location,
     workModel: analysis.proposal.workModel,

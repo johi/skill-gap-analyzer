@@ -20,6 +20,7 @@ import { createJobImportRoutes } from './routes/job-import';
 import { createJobAnalysisRoutes } from './routes/job-analysis';
 import { JobAnalysisService } from './services/job-analysis-service';
 import { OpenAiJobAnalysisProvider } from './services/openai-job-analysis-provider';
+import { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
 
 export function buildApp(
     options: FastifyServerOptions = {
@@ -59,7 +60,8 @@ export function buildApp(
     
     fastify.register(
         createJobAnalysisRoutes(
-            new JobAnalysisService(new OpenAiJobAnalysisProvider())
+            new JobAnalysisService(new OpenAiJobAnalysisProvider()),
+            new JobAdvertisementUrlFetcher()
         ),
         { prefix: '/api/v1/job-analysis' }
     );

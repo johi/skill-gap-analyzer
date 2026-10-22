@@ -5,6 +5,7 @@ import { ArrowLeft, Sparkles } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useJobAnalysis } from '@/composables/useJobAnalysis';
 import { getSkills } from '@/api/skills';
 import type { Skill } from '@/types/skill';
@@ -15,8 +16,8 @@ import { createJob } from '@/api/jobs';
 import { useJobFormSubmit } from '@/composables/useJobFormSubmit';
 
 const {
-  advertisement, analysis, analyzing, error, validationErrors,
-  canAnalyze, analyze, discard,
+  advertisement, url, analysis, analyzing, error, validationErrors,
+  canAnalyze, canAnalyzeUrl, analyze, analyzeUrl, discard,
 } = useJobAnalysis();
 
 const skillCatalogue = ref<Skill[]>([]);
@@ -106,15 +107,39 @@ function show(value: string | null): string {
         Analyze job advertisement
       </h1>
       <p class="mt-1 text-sm text-muted-foreground">
-        Paste an advertisement to extract job metadata and skill requirements with AI.
+        Enter a job URL or paste its text to extract job metadata and skill requirements with AI.
         Nothing is saved to the database during analysis.
       </p>
     </div>
 
     <Card>
       <CardHeader>
-        <CardTitle>Advertisement text</CardTitle>
+        <CardTitle>Job advertisement URL</CardTitle>
         <CardDescription>
+          Fetch the advertisement from a public website. If the site blocks access, paste the text below instead.
+        </CardDescription>
+      </CardHeader>
+      <CardContent class="space-y-4">
+        <label for="job-url" class="text-sm font-medium">Job URL</label>
+        <Input
+          id="job-url"
+          v-model="url"
+          type="url"
+          :disabled="analyzing"
+          placeholder="https://example.com/careers/job"
+        />
+        <Button :disabled="!canAnalyzeUrl" @click="analyzeUrl">
+          <Sparkles class="size-4" />
+          {{ analyzing ? 'Analyzing…' : 'Analyze URL' }}
+        </Button>
+      </CardContent>
+    </Card>
+
+    <Card>
+      <CardHeader>
+        <CardTitle>Paste advertisement (fallback)</CardTitle>
+        <CardDescription>
+          Paste the advertisement if URL retrieval fails, or if you prefer to supply the text directly.
           The text will be sent to OpenAI for analysis. Enter 50–30,000 characters.
         </CardDescription>
       </CardHeader>

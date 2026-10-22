@@ -1,6 +1,7 @@
 
 import { FastifyError, FastifyInstance } from 'fastify';
 import { ZodError } from 'zod';
+import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
 
 import {
     JobAnalysisInvalidResponseError,
@@ -23,7 +24,8 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
                 | ConflictError
                 | ValidationError
                 | JobAnalysisInvalidResponseError
-                | JobAnalysisUnavailableError,
+                | JobAnalysisUnavailableError
+                | JobAdvertisementRetrievalError,
             request,
             reply
         ) => {
@@ -56,6 +58,13 @@ export function registerErrorHandler(fastify: FastifyInstance): void {
             if (error instanceof ConflictError) {
                 return reply.status(409).send({
                     error: 'conflict',
+                    message: error.message,
+                });
+            }
+
+            if (error instanceof JobAdvertisementRetrievalError) {
+                return reply.status(error.statusCode).send({
+                    error: error.code,
                     message: error.message,
                 });
             }

@@ -1,16 +1,26 @@
 import type { FastifyPluginAsync } from 'fastify';
-import { jobAdvertisementRequestSchema } from '@/schemas/job-analysis';
+import { jobAdvertisementRequestSchema, jobUrlAnalysisRequestSchema } from '@/schemas/job-analysis';
+import type { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
 import type { JobAnalysisService } from '@/services/job-analysis-service';
 
 export function createJobAnalysisRoutes(
-    service: JobAnalysisService
+    service: JobAnalysisService,
+    urlFetcher?: JobAdvertisementUrlFetcher
 ): FastifyPluginAsync {
     return async fastify => {
         fastify.post('/analyze', async request => {
-            const { advertisement } = jobAdvertisementRequestSchema.parse(
+            const { advertisement, sourceUrl } = jobAdvertisementRequestSchema.parse(
                 request.body
             );
-            return service.analyze(advertisement);
+            return service.analyze(advertisement, sourceUrl ?? null);
         });
+
+        if (urlFetcher) {
+            fastify.post('/analyze-url', async request => {
+                const { url } = jobUrlAnalysisRequestSchema.parse(request.body);
+                const { advertisement, sourceUrl } = await urlFetcher.retrieve(url);
+                return service.analyze(advertisement, sourceUrl);
+            });
+        }
     };
 }

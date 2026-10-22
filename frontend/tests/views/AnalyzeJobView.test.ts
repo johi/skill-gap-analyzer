@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import AnalyzeJobView from '@/views/AnalyzeJobView.vue';
-import { analyzeJobAdvertisement } from '@/api/job-analysis';
+import { analyzeJobAdvertisement, analyzeJobAdvertisementUrl } from '@/api/job-analysis';
 import { getSkills } from '@/api/skills';
 import { createJob } from '@/api/jobs';
 import { ApiError } from '@/api/client';
@@ -12,11 +12,12 @@ vi.mock('vue-router', async (importOriginal) => {
     const original = await importOriginal<typeof import('vue-router')>();
     return { ...original, useRouter: () => ({ push }) };
 });
-vi.mock('../../src/api/jobs', () => ({ createJob: vi.fn() }));
-vi.mock('../../src/api/job-analysis', () => ({
+vi.mock('@/api/jobs', () => ({ createJob: vi.fn() }));
+vi.mock('@/api/job-analysis', () => ({
     analyzeJobAdvertisement: vi.fn(),
+    analyzeJobAdvertisementUrl: vi.fn(),
 }));
-vi.mock('../../src/api/skills', () => ({
+vi.mock('@/api/skills', () => ({
     getSkills: vi.fn(),
 }));
 
@@ -49,6 +50,7 @@ beforeEach(() => {
     push.mockResolvedValue(undefined);
     vi.mocked(createJob).mockResolvedValue({ id: 42 } as Awaited<ReturnType<typeof createJob>>);
     vi.mocked(analyzeJobAdvertisement).mockResolvedValue(analysis);
+    vi.mocked(analyzeJobAdvertisementUrl).mockResolvedValue({ ...analysis, sourceUrl: 'https://careers.example.com/jobs/42' });
     vi.mocked(getSkills).mockResolvedValue([{ id: 1, name: 'TypeScript', category: 'Language', createdAt: '', updatedAt: '' }, { id: 2, name: 'Automated Testing', category: 'Testing', createdAt: '', updatedAt: '' }]);
 });
 
@@ -89,6 +91,47 @@ describe('AnalyzeJobView (UC-09–11)', () => {
     });
 });
 
+
+describe('AnalyzeJobView (URL-first)', () => {
+    it('analyzes a URL, clears the visible URL, and retains source URL and original text for review', async () => {
+        const wrapper = mountView();
+        const url = 'https://careers.example.com/jobs/42';
+        await wrapper.get('#job-url').setValue(url);
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze URL'))!.trigger('click');
+        await flushPromises();
+        expect(analyzeJobAdvertisementUrl).toHaveBeenCalledExactlyOnceWith(url);
+        expect((wrapper.get('#job-url').element as HTMLInputElement).value).toBe('');
+        expect((wrapper.get('#source-url').element as HTMLInputElement).value).toBe(url);
+        expect((wrapper.get('#original-text').element as HTMLTextAreaElement).value).toBe(advertisement);
+        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!.trigger('click');
+        await flushPromises();
+        expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
+            sourceUrl: url, originalText: advertisement,
+        }));
+    });
+
+    it('preserves the URL on retrieval failure and allows manual paste fallback', async () => {
+        vi.mocked(analyzeJobAdvertisementUrl).mockRejectedValueOnce(
+            new ApiError(422, 'job_page_unavailable', 'The job website blocked retrieval. Paste the advertisement instead.')
+        );
+        const wrapper = mountView();
+        await wrapper.get('#job-url').setValue('https://careers.example.com/jobs/42');
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze URL'))!.trigger('click');
+        await flushPromises();
+        expect(wrapper.text()).toContain('Paste the advertisement instead');
+        expect((wrapper.get('#job-url').element as HTMLInputElement).value).toBe('https://careers.example.com/jobs/42');
+        vi.mocked(analyzeJobAdvertisement).mockResolvedValueOnce({
+            ...analysis, sourceUrl: 'https://careers.example.com/jobs/42',
+        });
+        await wrapper.get('#job-advertisement').setValue(advertisement);
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
+        await flushPromises();
+        expect(analyzeJobAdvertisement).toHaveBeenCalledExactlyOnceWith(advertisement, 'https://careers.example.com/jobs/42');
+        expect((wrapper.get('#source-url').element as HTMLInputElement).value).toBe('https://careers.example.com/jobs/42');
+        expect(wrapper.text()).toContain('Review and correct analysis');
+    });
+});
 
 describe('AnalyzeJobView (UC-12)', () => {
     async function analyzedView() {

@@ -18,6 +18,14 @@ const analysis: JobAdvertisementAnalysis = {
 };
 
 describe('UC-12 reviewed analysis', () => {
+  it('preserves the source URL from URL-first analysis for UC-13', () => {
+    const sourceUrl = 'https://careers.example.com/jobs/42';
+    const draft = analysisToReviewInput({ ...analysis, sourceUrl });
+    expect(draft.sourceUrl).toBe(sourceUrl);
+    draft.skills.splice(1, 1);
+    expect(validateReviewedAnalysis(draft).value?.sourceUrl).toBe(sourceUrl);
+  });
+
   it('preserves original text and missing fields without inventing metadata', () => {
     const draft = analysisToReviewInput(analysis);
     expect(draft.originalText).toBe(analysis.originalText);
