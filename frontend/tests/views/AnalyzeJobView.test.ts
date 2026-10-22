@@ -3,8 +3,16 @@ import { flushPromises, mount } from '@vue/test-utils';
 import AnalyzeJobView from '@/views/AnalyzeJobView.vue';
 import { analyzeJobAdvertisement } from '@/api/job-analysis';
 import { getSkills } from '@/api/skills';
-import type { JobAdvertisementAnalysis } from '@schemas/job-analysis';
+import { createJob } from '@/api/jobs';
+import { ApiError } from '@/api/client';
+import type { JobAdvertisementAnalysis } from '@/schemas/job-analysis';
 
+const push = vi.fn();
+vi.mock('vue-router', async (importOriginal) => {
+    const original = await importOriginal<typeof import('vue-router')>();
+    return { ...original, useRouter: () => ({ push }) };
+});
+vi.mock('../../src/api/jobs', () => ({ createJob: vi.fn() }));
 vi.mock('../../src/api/job-analysis', () => ({
     analyzeJobAdvertisement: vi.fn(),
 }));
@@ -38,6 +46,8 @@ function mountView() {
 
 beforeEach(() => {
     vi.resetAllMocks();
+    push.mockResolvedValue(undefined);
+    vi.mocked(createJob).mockResolvedValue({ id: 42 } as Awaited<ReturnType<typeof createJob>>);
     vi.mocked(analyzeJobAdvertisement).mockResolvedValue(analysis);
     vi.mocked(getSkills).mockResolvedValue([{ id: 1, name: 'TypeScript', category: 'Language', createdAt: '', updatedAt: '' }, { id: 2, name: 'Automated Testing', category: 'Testing', createdAt: '', updatedAt: '' }]);
 });
@@ -61,6 +71,10 @@ describe('AnalyzeJobView (UC-09–11)', () => {
         expect(wrapper.text()).toContain('Example Company');
         expect(wrapper.text()).toContain('TypeScript');
         expect(wrapper.text()).toContain('not saved');
+        expect((wrapper.get('#job-advertisement').element as HTMLTextAreaElement).value).toBe('');
+        expect((wrapper.get('#original-text').element as HTMLTextAreaElement).value).toBe(advertisement);
+        expect(wrapper.get('#original-text').attributes('readonly')).toBeDefined();
+        expect(createJob).not.toHaveBeenCalled();
     });
 
     it('shows errors without displaying an analysis', async () => {
@@ -71,6 +85,7 @@ describe('AnalyzeJobView (UC-09–11)', () => {
         await flushPromises();
         expect(wrapper.get('[role="alert"]').text()).toContain('Unable to analyze');
         expect(wrapper.text()).not.toContain('Extracted metadata');
+        expect((wrapper.get('#job-advertisement').element as HTMLTextAreaElement).value).toBe(advertisement);
     });
 });
 
@@ -125,7 +140,7 @@ describe('AnalyzeJobView (UC-12)', () => {
         const wrapper = await analyzedView();
         await wrapper.findAll('button').find(button => button.text().includes('Discard analysis'))!.trigger('click');
         expect(wrapper.text()).not.toContain('Review and correct analysis');
-        expect((wrapper.get('#job-advertisement').element as HTMLTextAreaElement).value).toBe(advertisement);
+        expect((wrapper.get('#job-advertisement').element as HTMLTextAreaElement).value).toBe('');
     });
 
     it('blocks approval when the catalogue is unavailable and permits retry', async () => {
@@ -138,5 +153,85 @@ describe('AnalyzeJobView (UC-12)', () => {
         await flushPromises();
         expect(wrapper.text()).not.toContain('Unable to load the skill catalogue');
         expect(submitButton.attributes('disabled')).toBeUndefined();
+    });
+});
+
+
+describe('AnalyzeJobView (UC-13)', () => {
+    async function analyzedView() {
+        const wrapper = mountView();
+        await wrapper.get('#job-advertisement').setValue(advertisement);
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
+        await flushPromises();
+        return wrapper;
+    }
+
+    async function approve(wrapper: ReturnType<typeof mountView>) {
+        await wrapper.get('form').trigger('submit');
+        await flushPromises();
+    }
+
+    it('does not persist without explicit approval and save', async () => {
+        const wrapper = await analyzedView();
+        expect(createJob).not.toHaveBeenCalled();
+        expect(wrapper.findAll('button').some(button => button.text().includes('Save approved job'))).toBe(false);
+        await approve(wrapper);
+        expect(createJob).not.toHaveBeenCalled();
+        expect(wrapper.text()).toContain('Save approved job');
+    });
+
+    it('persists the reviewed job with original advertisement and navigates to its details', async () => {
+        const wrapper = await analyzedView();
+        await wrapper.get('#company').setValue('Corrected Company');
+        await approve(wrapper);
+        await wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!.trigger('click');
+        await flushPromises();
+        expect(createJob).toHaveBeenCalledOnce();
+        expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
+            company: 'Corrected Company',
+            originalText: advertisement,
+            skills: [{ name: 'TypeScript', category: 'language', requirement: 'must_have' }],
+        }));
+        expect(push).toHaveBeenCalledWith({ name: 'job-detail', params: { id: 42 } });
+    });
+
+    it('invalidates approval after editing and blocks saving until reapproved', async () => {
+        const wrapper = await analyzedView();
+        await approve(wrapper);
+        await wrapper.get('#title').setValue('Changed title');
+        expect(wrapper.text()).not.toContain('Review approved — not saved');
+        expect(wrapper.findAll('button').some(button => button.text().includes('Save approved job'))).toBe(false);
+        expect(createJob).not.toHaveBeenCalled();
+        await approve(wrapper);
+        expect(wrapper.text()).toContain('Save approved job');
+    });
+
+    it('retains the approved data on API failure so the user can retry', async () => {
+        vi.mocked(createJob).mockRejectedValueOnce(new ApiError(503, 'unavailable', 'Database unavailable'));
+        const wrapper = await analyzedView();
+        await approve(wrapper);
+        const save = () => wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!;
+        await save().trigger('click');
+        await flushPromises();
+        expect(wrapper.text()).toContain('Database unavailable');
+        expect(wrapper.text()).toContain('Save approved job');
+        expect(push).not.toHaveBeenCalled();
+        await save().trigger('click');
+        await flushPromises();
+        expect(createJob).toHaveBeenCalledTimes(2);
+        expect(push).toHaveBeenCalledWith({ name: 'job-detail', params: { id: 42 } });
+    });
+
+    it('shows backend validation errors without discarding the approved review', async () => {
+        vi.mocked(createJob).mockRejectedValueOnce(new ApiError(400, 'validation_error', 'Invalid', [
+            { path: 'sourceUrl', message: 'Invalid URL', code: 'invalid' },
+        ]));
+        const wrapper = await analyzedView();
+        await approve(wrapper);
+        await wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!.trigger('click');
+        await flushPromises();
+        expect(wrapper.text()).toContain('sourceUrl: Invalid URL');
+        expect(wrapper.text()).toContain('Save approved job');
+        expect(push).not.toHaveBeenCalled();
     });
 });

@@ -667,6 +667,7 @@ function submit(): void {
         <Textarea
             id="original-text"
             v-model="form.originalText"
+            :readonly="reviewMode"
             placeholder="Paste the original job advertisement here..."
             class="min-h-64"
         />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowLeft, Sparkles } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import type { Skill } from '@/types/skill';
 import type { CreateJobInput } from '@/types/job';
 import JobForm from '@/components/JobForm.vue';
 import { analysisToReviewInput, validateReviewedAnalysis } from '@/services/job-analysis/reviewed-job';
+import { createJob } from '@/api/jobs';
+import { useJobFormSubmit } from '@/composables/useJobFormSubmit';
 
 const {
   advertisement, analysis, analyzing, error, validationErrors,
@@ -21,7 +23,14 @@ const skillCatalogue = ref<Skill[]>([]);
 const loadingSkills = ref(false);
 const skillsError = ref<string | null>(null);
 const reviewErrors = ref<string[]>([]);
-const approvedReview = ref<CreateJobInput | null>(null);
+// Keep the approved, already-cloned snapshot non-reactive so structuredClone works.
+const approvedReview = shallowRef<CreateJobInput | null>(null);
+const {
+  submitting: saving,
+  error: saveError,
+  validationErrors: saveValidationErrors,
+  handleSubmit: persistApprovedJob,
+} = useJobFormSubmit(createJob, 'Unable to save reviewed job');
 let skillsRequest = 0;
 
 const reviewInput = computed(() => analysis.value ? analysisToReviewInput(analysis.value) : null);
@@ -47,12 +56,16 @@ watch(analysis, (current) => {
   skillsError.value = null;
   reviewErrors.value = [];
   approvedReview.value = null;
+  saveError.value = null;
+  saveValidationErrors.value = [];
   if (current) void loadSkillCatalogue();
 });
 
 function invalidateApproval(): void {
   approvedReview.value = null;
   reviewErrors.value = [];
+  saveError.value = null;
+  saveValidationErrors.value = [];
 }
 
 function approveReview(input: CreateJobInput): void {
@@ -61,12 +74,20 @@ function approveReview(input: CreateJobInput): void {
     reviewErrors.value = ['The skill catalogue must load before approval.'];
     return;
   }
-  const result = validateReviewedAnalysis(input);
+  // Analyzed jobs must retain the exact original advertisement, even if the
+  // review form is modified by a client-side script.
+  if (!analysis.value) return;
+  const result = validateReviewedAnalysis({ ...input, originalText: analysis.value.originalText });
   if (!result.valid || !result.value) {
     reviewErrors.value = result.errors;
     return;
   }
   approvedReview.value = structuredClone(result.value);
+}
+
+async function saveApprovedReview(): Promise<void> {
+  if (!approvedReview.value || saving.value || loadingSkills.value || skillsError.value) return;
+  await persistApprovedJob(structuredClone(approvedReview.value));
 }
 
 function show(value: string | null): string {
@@ -126,7 +147,7 @@ function show(value: string | null): string {
         <p class="font-medium">AI analysis completed — not saved</p>
         <p class="mt-1 text-muted-foreground">
           {{ analysis.requiresReview ? 'Some fields need clarification.' : 'Review all extracted fields for accuracy.' }}
-          Correct the proposal below and approve your review. Saving will be added in UC-13.
+          Correct the proposal below, approve your review, then explicitly save the job.
         </p>
       </div>
 
@@ -193,11 +214,11 @@ function show(value: string | null): string {
         <CardHeader>
           <div class="flex flex-wrap items-center justify-between gap-3">
             <CardTitle>Review and correct analysis (UC-12)</CardTitle>
-            <Button type="button" variant="outline" size="sm" @click="discard">Discard analysis</Button>
+            <Button type="button" variant="outline" size="sm" :disabled="saving" @click="discard">Discard analysis</Button>
           </div>
           <CardDescription>
             Edit the proposed job, replace skills using the existing catalogue, and remove incorrect skills.
-            Approval is local only; nothing is saved to the database.
+            Approval is local only. The job is saved only when you select Save approved job.
           </CardDescription>
         </CardHeader>
         <CardContent class="space-y-4">
@@ -212,23 +233,34 @@ function show(value: string | null): string {
               <li v-for="issue in reviewErrors" :key="issue">{{ issue }}</li>
             </ul>
           </div>
-          <div v-if="approvedReview" role="status" class="rounded-md border p-4 text-sm">
-            <p class="font-medium">Review approved — not saved</p>
-            <p class="mt-1 text-muted-foreground">
-              {{ approvedReview.title }} at {{ approvedReview.company }} is ready for the UC-13 save workflow.
-              Changing any field will require reapproval.
-            </p>
+          <div v-if="saveError || saveValidationErrors.length" role="alert" class="rounded-md border border-destructive/30 p-4 text-sm text-destructive">
+            <p v-if="saveError">{{ saveError }}</p>
+            <ul v-if="saveValidationErrors.length" class="list-disc pl-5">
+              <li v-for="issue in saveValidationErrors" :key="issue">{{ issue }}</li>
+            </ul>
           </div>
+          <fieldset :disabled="saving">
           <JobForm
             :key="analysis.originalText"
             :initial-value="reviewInput"
             :review-mode="true"
             :skill-catalogue="skillCatalogue"
-            :submitting="loadingSkills || !!skillsError"
+            :submitting="loadingSkills || !!skillsError || saving"
             submit-label="Approve review"
             @dirty="invalidateApproval"
             @submit="approveReview"
           />
+          </fieldset>
+          <div v-if="approvedReview" role="status" class="space-y-3 rounded-md border p-4 text-sm">
+            <p class="font-medium">Review approved — not saved</p>
+            <p class="text-muted-foreground">
+              {{ approvedReview.title }} at {{ approvedReview.company }} is ready to save.
+              Changing any field will require reapproval.
+            </p>
+            <Button type="button" :disabled="saving" @click="saveApprovedReview">
+              {{ saving ? 'Saving approved job…' : 'Save approved job' }}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </template>

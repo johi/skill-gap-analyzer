@@ -1,19 +1,24 @@
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { analyzeJobAdvertisement } from '@/api/job-analysis';
 import { ApiError } from '@/api/client';
 import type { JobAdvertisementAnalysis } from '@/schemas/job-analysis';
 
 export function useJobAnalysis() {
-    const advertisement = ref('');
+    const inputText = ref('');
     const analysis = ref<JobAdvertisementAnalysis | null>(null);
     const analyzing = ref(false);
     const error = ref<string | null>(null);
     const validationErrors = ref<string[]>([]);
-    watch(advertisement, () => {
-        // An edited advertisement invalidates the previous analysis.
-        analysis.value = null;
-        error.value = null;
-        validationErrors.value = [];
+    // Only user edits invalidate an analysis. Clearing the visible input after
+    // success must not discard the original text returned with the proposal.
+    const advertisement = computed({
+        get: () => inputText.value,
+        set: (value: string) => {
+            inputText.value = value;
+            analysis.value = null;
+            error.value = null;
+            validationErrors.value = [];
+        },
     });
 
     const canAnalyze = computed(() =>
@@ -29,9 +34,10 @@ export function useJobAnalysis() {
         validationErrors.value = [];
         analysis.value = null;
         try {
-            analysis.value = await analyzeJobAdvertisement(
-                advertisement.value.trim()
-            );
+            const result = await analyzeJobAdvertisement(advertisement.value.trim());
+            analysis.value = result;
+            // Clear only the input; result.originalText remains intact for UC-13.
+            inputText.value = '';
         } catch (caught) {
             if (caught instanceof ApiError) {
                 error.value = caught.message;
@@ -47,6 +53,7 @@ export function useJobAnalysis() {
     }
 
     function discard(): void {
+        inputText.value = '';
         analysis.value = null;
         error.value = null;
         validationErrors.value = [];
