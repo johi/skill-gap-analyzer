@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
+import SkillCatalogueLookup from '@/components/jobs/SkillCatalogueLookup.vue';
+import type { Skill } from '@/types/skill';
+import type { JobReviewDraft } from '@/services/job-analysis/reviewed-job';
 
 import type {
   ApplicationStatus,
@@ -24,18 +27,21 @@ import { Textarea } from '@/components/ui/textarea';
 
 const emit = defineEmits<{
   submit: [input: CreateJobInput];
+  dirty: [];
 }>();
 
 const props = defineProps<{
-  initialValue?: CreateJobInput;
+  initialValue?: CreateJobInput | JobReviewDraft;
   submitting?: boolean;
   submitLabel?: string;
+  reviewMode?: boolean;
+  skillCatalogue?: Skill[];
 }>();
 
 interface JobSkillForm {
   name: string;
   category: string;
-  requirement: JobSkillRequirement;
+  requirement: JobSkillRequirement | '';
 }
 
 interface JobLanguageRequirementForm {
@@ -91,8 +97,22 @@ const form = reactive<JobFormState>({
 
   skills: props.initialValue?.skills.map((skill) => ({
     ...skill,
+    requirement: skill.requirement ?? '' as const,
   })) ?? [] as JobSkillForm[],
 });
+
+const reviewError = ref<string | null>(null);
+
+function markDirty(): void {
+  reviewError.value = null;
+  emit('dirty');
+}
+
+function useExistingSkill(index: number, skill: Skill): void {
+  form.skills[index].name = skill.name;
+  form.skills[index].category = skill.category;
+  markDirty();
+}
 
 function nullableString(value: string): string | null {
   const trimmed = value.trim();
@@ -101,6 +121,7 @@ function nullableString(value: string): string | null {
 }
 
 function addLanguageRequirement(): void {
+  markDirty();
   form.languageRequirements.push({
     language: '',
     requirement: 'required',
@@ -108,10 +129,12 @@ function addLanguageRequirement(): void {
 }
 
 function removeLanguageRequirement(index: number): void {
+  markDirty();
   form.languageRequirements.splice(index, 1);
 }
 
 function addSkill(): void {
+  markDirty();
   form.skills.push({
     name: '',
     category: '',
@@ -120,10 +143,15 @@ function addSkill(): void {
 }
 
 function removeSkill(index: number): void {
+  markDirty();
   form.skills.splice(index, 1);
 }
 
 function submit(): void {
+  if (form.skills.some(skill => !skill.requirement)) {
+    reviewError.value = 'Classify every skill as must-have or nice-to-have before approving.';
+    return;
+  }
   emit('submit', {
     dateFound: form.dateFound,
     company: form.company.trim(),
@@ -150,14 +178,15 @@ function submit(): void {
     skills: form.skills.map((skill) => ({
       name: skill.name.trim(),
       category: skill.category.trim(),
-      requirement: skill.requirement,
+      requirement: skill.requirement as JobSkillRequirement,
     })),
   });
 }
 </script>
 
 <template>
-  <form class="space-y-8" @submit.prevent="submit">
+  <form class="space-y-8" @submit.prevent="submit" @input.capture="markDirty" @change.capture="markDirty">
+    <p v-if="reviewError" role="alert" class="text-sm text-destructive">{{ reviewError }}</p>
     <section class="space-y-4">
       <div>
         <h2 class="text-base font-semibold">
@@ -547,8 +576,15 @@ function submit(): void {
         <div
             v-for="(skill, index) in form.skills"
             :key="index"
-            class="grid gap-3 rounded-lg border bg-muted/20 p-4 md:grid-cols-[1fr_1fr_180px_auto] md:items-end"
+            class="space-y-3 rounded-lg border bg-muted/20 p-4"
         >
+          <SkillCatalogueLookup
+              v-if="reviewMode"
+              :input-id="`skill-lookup-${index}`"
+              :skills="skillCatalogue ?? []"
+              @select="useExistingSkill(index, $event)"
+          />
+          <div class="grid gap-3 md:grid-cols-[1fr_1fr_180px] md:items-end">
           <div class="space-y-2">
             <Label :for="`skill-name-${index}`">
               Skill
@@ -587,6 +623,7 @@ function submit(): void {
                 v-model="skill.requirement"
                 class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
+              <option v-if="reviewMode" value="" disabled>Review required</option>
               <option value="must_have">
                 Must have
               </option>
@@ -595,6 +632,7 @@ function submit(): void {
                 Nice to have
               </option>
             </select>
+          </div>
           </div>
 
           <Button
@@ -642,7 +680,7 @@ function submit(): void {
       >
         {{
           submitting
-              ? (submitLabel ? 'Saving...' : 'Creating...')
+              ? (reviewMode ? 'Preparing review...' : (submitLabel ? 'Saving...' : 'Creating...'))
               : (submitLabel ?? 'Create job')
         }}
       </Button>

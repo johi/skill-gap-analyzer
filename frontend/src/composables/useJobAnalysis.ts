@@ -46,6 +46,12 @@ export function useJobAnalysis() {
         }
     }
 
+    function discard(): void {
+        analysis.value = null;
+        error.value = null;
+        validationErrors.value = [];
+    }
+
     return {
         advertisement,
         analysis,
@@ -54,5 +60,6 @@ export function useJobAnalysis() {
         validationErrors,
         canAnalyze,
         analyze,
+        discard,
     };
 }
