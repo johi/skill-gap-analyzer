@@ -4,7 +4,7 @@
 
 Skill Gap Analyzer is a full-stack application for managing job opportunities, extracting their requirements with AI, and comparing those requirements with a candidate's existing skills.
 
-The application combines structured job and skill management with an AI-assisted workflow for analyzing advertisements. AI-generated results are proposals: the user can correct the extracted metadata and skills before explicitly approving and saving a job.
+The application combines structured job and skill management with an AI-assisted workflow for analyzing advertisements. AI-generated results are proposals: the user can correct the extracted metadata and skills before explicitly approving and saving a job. Skill categories are maintained through a two-stage AI workflow, deterministic catalogue matching, and human review.
 
 The project also serves as a technical demonstration of a modern TypeScript-based full-stack architecture, with explicit API contracts, runtime validation, automated testing, and containerized development.
 
@@ -50,13 +50,17 @@ The application currently supports:
 - Analyzing a pasted job advertisement with AI to extract metadata and skill requirements
 - Analyzing a job advertisement directly from a public HTTP(S) URL
 - Extracting advertisement content from structured `JobPosting` data or readable page content, with manual paste as a fallback when retrieval is blocked or unsuccessful
-- Reviewing and correcting AI-proposed metadata and skills, including matching skills to the existing catalogue
+- Extracting skills first, then matching them deterministically against the existing skill catalogue before AI proposes categories for unmatched skills
+- Reusing canonical categories for existing skills and suggesting existing categories for new skills when appropriate
+- Supporting free-form, industry-agnostic, human-readable skill categories rather than a fixed taxonomy
+- Reviewing and correcting AI-proposed metadata, skills, requirements, and categories, with explicit acceptance or replacement of new categories
+- Applying category review to both AI job analysis and JSON import before persistence
 - Explicitly approving and saving reviewed jobs, preserving the original advertisement and source URL
 - Provider-independent AI analysis contracts and instructions, with OpenAI as the initial implementation
 - Runtime validation of API data using Zod
 - Automated endpoint, repository, service, schema, and frontend tests
 
-**Current limitations:** AI skill categorization still requires human review. JSON export and automatic skill-gap curriculum generation are not implemented yet.
+**Current limitations:** New skill categories require explicit human acceptance or replacement; categorization is not fully autonomous. JSON export and automatic skill-gap curriculum generation are not implemented yet.
 
 ## Architecture
 
@@ -104,18 +108,44 @@ The frontend communicates with the backend through a dedicated API layer and val
 
 ```text
 Job URL ──> Backend URL retrieval ──┐
-                                    ├──> AI analysis ──> Review and edit
-Pasted advertisement ───────────────┘                         │
-                                                              v
-                                                      Explicit approval
-                                                              │
-                                                              v
-                                                       Save job to DB
+                                    ├──> AI extracts job metadata and skills
+Pasted advertisement ───────────────┘                    │
+                                                         v
+                                              Match skills to catalogue
+                                                         │
+                            ┌────────────────────────────┴───────────────────┐
+                            v                                                v
+                   Existing skill                                    Unmatched skill
+                   Reuse canonical                                   AI proposes category
+                   category                                          using existing categories
+                            │                                                │
+                            └────────────────────────────┬───────────────────┘
+                                                         v
+                                             Review metadata and skills
+                                             Accept/replace new categories
+                                                         │
+                                                         v
+                                                 Explicit approval
+                                                         │
+                                                         v
+                                                   Save job to DB
 ```
 
 The backend retrieves public job pages with redirect and IP-address validation, bounded response sizes, and request timeouts. It does not guarantee retrieval from sites that require JavaScript execution, authentication, or block automated requests. In those cases, paste the advertisement text manually.
 
 Analysis alone does **not** create a job. Saving happens only after the user reviews and approves the proposed data. The original advertisement is retained for reference.
+
+### Two-stage skill categorization
+
+The categorization workflow is **industry-agnostic**: there is no predefined list of permissible categories. Categories are readable labels such as `Programming Languages`, `Software Architecture`, or `API Design & Development`, rather than machine-style identifiers such as `programming_languages`.
+
+1. **Extract:** AI identifies the skills required by the advertisement, including must-have or nice-to-have requirements, without relying on its initial category guesses.
+2. **Match:** The backend checks extracted skill names against the existing catalogue. A matched skill keeps its established category; AI suggestions do not overwrite the canonical category.
+3. **Categorize unmatched skills:** AI receives the existing category names as context and proposes a suitable category for each unmatched skill. It should prefer an appropriate existing category but can propose a new one.
+4. **Review:** The interface marks proposed new categories as **New**. The user can edit a category, explicitly **Accept new category**, or select **Replace with existing category**. Empty or unresolved categories prevent approval.
+5. **Save:** Only after the review is approved and the user explicitly saves the job are its details and skill associations persisted. Accepted categories become part of the shared catalogue and are available to subsequent analyses.
+
+Category names are normalized for consistent human-readable presentation, and matching against existing category names is case-insensitive. The catalogue is the source of truth for previously recorded skills. The same new-category review principle applies to JSON imports.
 
 ## Running locally
 
@@ -195,9 +225,10 @@ docker compose exec backend npm run db:migrate
 1. Open the application and navigate to **Jobs → Analyze advertisement**.
 2. Enter a public job advertisement URL and select **Analyze URL**. Alternatively, paste the full advertisement into the manual input and select **Analyze advertisement**.
 3. If URL retrieval fails, paste the text manually. Keep the URL in the URL field if you want to associate it with the pasted advertisement.
-4. Review the extracted job metadata, language requirements, and skills. Correct any inaccurate values, skill categories, or must-have/nice-to-have classifications. You can match extracted skills against the existing catalogue.
-5. Select **Approve review**, then **Save approved job**.
-6. Check the saved job's details, including its source URL and original advertisement.
+4. Review the extracted job metadata, language requirements, and skills. Correct any inaccurate values or must-have/nice-to-have classifications. Skills already in the catalogue retain their canonical categories.
+5. For any **New category**, either select **Accept new category** or use **Replace with existing category**. You can edit the proposed category before accepting it. All new categories must be resolved before approval.
+6. Select **Approve review**, then **Save approved job**. Approval alone does not make a network request or persist the job.
+7. Check the saved job's details, including its source URL and original advertisement. Newly accepted categories are available when analyzing the next job.
 
 The analysis and review stages do not persist a job. Saving is a separate, explicit action. Editing the reviewed data after approval requires reapproval.
 
@@ -207,8 +238,9 @@ The import screen accepts a version 1 JSON dataset:
 
 1. Open [http://localhost:5173](http://localhost:5173) and navigate to **Import Jobs**.
 2. Under **Select dataset**, choose `backend/test/fixtures/sample.import.json` from your local project checkout.
-3. Select **Analyze dataset** and review the jobs, skill matches, and items requiring manual resolution.
-4. Edit or exclude jobs as needed, then confirm the import to save the included jobs.
+3. Select **Analyze dataset** and review the jobs, skill matches, proposed categories, and items requiring manual resolution.
+4. Accept or replace any new categories, and edit or exclude jobs as needed. Unresolved new categories block committing included jobs.
+5. Confirm the import to save the included jobs.
 
 Importing writes to the development database. Repeating an import may create duplicate job records. The **Replace Existing Dataset** option deletes existing jobs and their job-specific requirements before importing the reviewed dataset; it requires explicit confirmation. It preserves the shared skill catalogue and personal skill assessments. Use this option carefully.
 
@@ -294,6 +326,6 @@ The current CI status is shown by the badge at the top of this README. If fronte
 
 ## Project status
 
-Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, editable human review, explicit approval, and database persistence, alongside job management, skill assessments, JSON import, automated testing, and CI.
+Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, JSON import, automated testing, and CI are also in place.
 
-Planned improvements include more consistent skill categorization, additional skill-gap analysis capabilities, JSON export, and a later evaluation of MCP integration.
+Planned improvements include additional skill-gap analysis capabilities, JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.
