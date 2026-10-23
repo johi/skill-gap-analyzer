@@ -1,9 +1,9 @@
 import { z } from 'zod';
+import { normalizeSkillCategory } from '@/services/skill-category';
 
 export const skillCategorySchema = z.string()
-    .trim()
-    .min(1)
-    .max(100);
+    .transform(normalizeSkillCategory)
+    .pipe(z.string().min(1).max(100));
 
 export const createSkillSchema = z.object({
     name: z.string()

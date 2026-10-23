@@ -41,10 +41,25 @@ describe('Skills API', () => {
 
         expect(response.json()).toMatchObject({
             name: testSkillName,
-            category: 'database',
+            category: 'Database',
         });
 
         expect(response.json().id).toBeTypeOf('number');
+    });
+
+    it('normalizes machine-style category names and rejects uncategorized skills', async () => {
+        const created = await app.inject({
+            method: 'POST', url: '/api/v1/skills',
+            payload: { name: 'CategoryNormalizationTest', category: 'programming_languages' },
+        });
+        expect(created.statusCode).toBe(201);
+        expect(created.json().category).toBe('Programming Languages');
+
+        const invalid = await app.inject({
+            method: 'POST', url: '/api/v1/skills',
+            payload: { name: 'UncategorizedSkillTest', category: '___' },
+        });
+        expect(invalid.statusCode).toBe(400);
     });
 
     it('rejects an empty skill name', async () => {

@@ -37,6 +37,7 @@ describe('SkillService', () => {
 
     beforeEach(() => {
         vi.resetAllMocks();
+        repository.findAll.mockResolvedValue([]);
 
         service = new SkillService(
             repository as unknown as SkillRepository
@@ -79,7 +80,7 @@ describe('SkillService', () => {
             .toHaveBeenCalledWith(input.name);
 
         expect(repository.create)
-            .toHaveBeenCalledWith(input);
+            .toHaveBeenCalledWith({ ...input, category: 'Language' });
     });
 
     it('rejects duplicate skills', async () => {
@@ -114,7 +115,7 @@ describe('SkillService', () => {
             .toEqual(updated);
 
         expect(repository.update)
-            .toHaveBeenCalledWith(1, input);
+            .toHaveBeenCalledWith(1, { ...input, category: 'Language' });
     });
 
     it('rejects updating an unknown skill', async () => {

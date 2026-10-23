@@ -12,12 +12,14 @@ import type { SkillRepository } from '@/repositories/skill-repository';
 describe('JobImportService', () => {
     const skillRepository = {
         findByName: vi.fn(),
+        findAll: vi.fn(),
     };
 
     let service: JobImportService;
 
     beforeEach(() => {
         vi.resetAllMocks();
+        skillRepository.findAll.mockResolvedValue([]);
 
         service = new JobImportService(
             skillRepository as unknown as SkillRepository
@@ -33,6 +35,7 @@ describe('JobImportService', () => {
         expect(result).toEqual({
             version: 1,
             totalJobs: 0,
+            existingCategories: [],
             requiresReview: false,
             jobs: [],
         });
@@ -109,7 +112,7 @@ describe('JobImportService', () => {
         expect(result.jobs[0].skills).toEqual([
             {
                 name: 'Fastify',
-                category: 'framework',
+                category: 'Framework',
                 requirement: 'nice_to_have',
                 resolution: 'new',
                 canonicalSkillId: null,

@@ -20,9 +20,12 @@ import {
     ListJobsQuery,
 } from '@/schemas/job';
 
+import { canonicalSkillCategory, normalizeSkillCategory } from '@/services/skill-category';
+
 import {
     ConflictError,
     NotFoundError,
+    ValidationError,
 } from '@/errors/application-errors';
 
 export class JobService {
@@ -167,6 +170,7 @@ export class JobService {
         }> = [];
 
         const seen = new Set<string>();
+        const knownCategories = (await skillRepository.findAll()).map(skill => skill.category);
 
         for (const requestedSkill of requestedSkills) {
             const normalizedName =
@@ -184,12 +188,20 @@ export class JobService {
                 requestedSkill.name
             );
 
+            if (skill && !normalizeSkillCategory(skill.category)) {
+                throw new ValidationError(`Existing skill '${skill.name}' has no valid category; correct it in the skill catalogue`);
+            }
+
             if (!skill) {
+                const category = canonicalSkillCategory(requestedSkill.category, knownCategories);
+                if (!category) throw new ValidationError(`Skill '${requestedSkill.name}' requires a category`);
                 skill = await skillRepository.create({
                     name: requestedSkill.name,
-                    category: requestedSkill.category,
+                    category,
                 });
             }
+
+            if (!knownCategories.includes(skill.category)) knownCategories.push(skill.category);
 
             resolved.push({
                 skillId: skill.id,

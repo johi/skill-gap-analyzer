@@ -71,6 +71,7 @@ export const analyzedSkillSchema = z.object({
 export const jobImportAnalysisSchema = z.object({
     version: z.literal(1),
     totalJobs: z.number().int().nonnegative(),
+    existingCategories: z.array(z.string()).optional(),
     requiresReview: z.boolean(),
     jobs: z.array(
         z.object({

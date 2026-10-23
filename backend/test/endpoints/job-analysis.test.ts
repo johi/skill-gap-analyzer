@@ -23,7 +23,7 @@ function proposal() {
 }
 
 describe('POST /api/v1/job-analysis/analyze (UC-09–11)', () => {
-    const provider = { analyze: vi.fn() };
+    const provider = { analyze: vi.fn(), categorize: vi.fn() };
     const retrieve = vi.fn();
     const app = Fastify();
 

@@ -52,6 +52,8 @@ export const jobImportAnalysisSchema = z.object({
         .int()
         .nonnegative(),
 
+    existingCategories: z.array(skillCategorySchema).optional(),
+
     requiresReview: z.boolean(),
 
     jobs: z.array(analyzedJobSchema),

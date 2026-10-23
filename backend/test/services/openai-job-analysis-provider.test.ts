@@ -72,3 +72,18 @@ describe('OpenAiJobAnalysisProvider', () => {
         }
     });
 });
+
+describe('OpenAI stage-two categorization', () => {
+    it('uses the provider-independent category schema and sends only unmatched skills', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(response(JSON.stringify({
+            skills: [{ name: 'RabbitMQ', category: 'Messaging Systems' }],
+        })));
+        const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+        expect(await provider.categorize(['RabbitMQ'], ['Databases'], advertisement)).toEqual({
+            skills: [{ name: 'RabbitMQ', category: 'Messaging Systems' }],
+        });
+        const body = JSON.parse(fetchMock.mock.calls[0]![1].body);
+        expect(body.text.format.name).toBe('skill_categorization');
+        expect(JSON.parse(body.input)).toEqual({ skills: ['RabbitMQ'], existingCategories: ['Databases'], advertisement });
+    });
+});

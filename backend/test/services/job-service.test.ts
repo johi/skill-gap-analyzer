@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => {
     };
 
     const skillRepository = {
+        findAll: vi.fn(),
         findByName: vi.fn(),
         create: vi.fn(),
     };
@@ -99,6 +100,7 @@ describe('JobService', () => {
 
     beforeEach(() => {
         vi.resetAllMocks();
+        mocks.skillRepository.findAll.mockResolvedValue([]);
 
         mocks.transaction.mockImplementation(
             async (
@@ -300,7 +302,7 @@ describe('JobService', () => {
         expect(mocks.skillRepository.create)
             .toHaveBeenCalledWith({
                 name: 'PostgreSQL',
-                category: 'database',
+                category: 'Database',
             });
 
         expect(mocks.jobRepository.replaceSkills)

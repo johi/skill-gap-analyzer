@@ -36,12 +36,12 @@ describe('Jobs API', () => {
                 skills: [
                     {
                         name: 'TypeScript',
-                        category: 'language',
+                        category: 'Language',
                         requirement: 'must_have',
                     },
                     {
                         name: 'PostgreSQL',
-                        category: 'database',
+                        category: 'Database',
                         requirement: 'nice_to_have',
                     },
                 ],
@@ -110,7 +110,7 @@ describe('Jobs API', () => {
                 skills: [
                     {
                         name: 'TypeScript',
-                        category: 'language',
+                        category: 'Language',
                         requirement: 'sort_of_important',
                     },
                 ],
@@ -597,7 +597,7 @@ describe('Jobs API', () => {
             skills: [
                 {
                     name: 'TypeScript',
-                    category: 'language',
+                    category: 'Language',
                     requirement: 'must_have',
                 },
             ],
@@ -644,7 +644,7 @@ describe('Jobs API', () => {
             skills: [
                 expect.objectContaining({
                     name: 'TypeScript',
-                    category: 'language',
+                    category: 'Language',
                     requirement: 'must_have',
                 }),
             ],
@@ -659,7 +659,7 @@ describe('Jobs API', () => {
             url: '/api/v1/skills',
             payload: {
                 name: skillName,
-                category: 'framework',
+                category: 'Framework',
             },
         });
 
@@ -674,7 +674,7 @@ describe('Jobs API', () => {
             skills: [
                 {
                     name: skillName,
-                    category: 'framework',
+                    category: 'Framework',
                     requirement: 'must_have',
                 },
             ],
@@ -729,7 +729,7 @@ describe('Jobs API', () => {
             url: '/api/v1/skills',
             payload: {
                 name: 'ImportCaseTestSkill20261014',
-                category: 'language',
+                category: 'Language',
             },
         });
 
@@ -744,7 +744,7 @@ describe('Jobs API', () => {
             skills: [
                 {
                     name: 'importcasetestskill20261014',
-                    category: 'language',
+                    category: 'Language',
                     requirement: 'must_have',
                 },
             ],
@@ -801,12 +801,12 @@ describe('Jobs API', () => {
             skills: [
                 {
                     name: 'Fastify',
-                    category: 'framework',
+                    category: 'Framework',
                     requirement: 'must_have',
                 },
                 {
                     name: 'fastify',
-                    category: 'framework',
+                    category: 'Framework',
                     requirement: 'nice_to_have',
                 },
             ],
@@ -856,12 +856,12 @@ describe('Jobs API', () => {
             skills: [
                 {
                     name: 'Fastify',
-                    category: 'framework',
+                    category: 'Framework',
                     requirement: 'must_have',
                 },
                 {
                     name: 'fastify',
-                    category: 'framework',
+                    category: 'Framework',
                     requirement: 'nice_to_have',
                 },
             ],
@@ -872,7 +872,7 @@ describe('Jobs API', () => {
             skills: [
                 {
                     name: 'Fastify',
-                    category: 'framework',
+                    category: 'Framework',
                     requirement: 'must_have',
                 },
             ],

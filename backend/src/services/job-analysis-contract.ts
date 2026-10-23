@@ -1,6 +1,7 @@
 /** Provider-independent contract for job advertisement extraction. */
 export interface JobAnalysisProvider {
     analyze(advertisement: string): Promise<unknown>;
+    categorize(skills: string[], existingCategories: string[], advertisement: string): Promise<unknown>;
 }
 
 // Structured Outputs requires all fields and additionalProperties: false.
@@ -65,3 +66,24 @@ export const jobExtractionJsonSchema = {
     ],
 } as const;
 
+
+/** Stage two: classify only the skills that are absent from the catalogue. */
+export const skillCategorizationJsonSchema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+        skills: {
+            type: 'array',
+            items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                    name: { type: 'string' },
+                    category: { type: 'string' },
+                },
+                required: ['name', 'category'],
+            },
+        },
+    },
+    required: ['skills'],
+} as const;

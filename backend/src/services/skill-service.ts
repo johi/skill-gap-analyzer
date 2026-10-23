@@ -4,9 +4,12 @@ import {
     SkillRepository,
 } from '@/repositories/skill-repository';
 
+import { canonicalSkillCategory } from '@/services/skill-category';
+
 import {
     ConflictError,
     NotFoundError,
+    ValidationError,
 } from '@/errors/application-errors';
 
 export class SkillService {
@@ -37,7 +40,10 @@ export class SkillService {
             );
         }
 
-        return this.skillRepository.create(data);
+        const known = (await this.skillRepository.findAll()).map(skill => skill.category);
+        const category = canonicalSkillCategory(data.category, known);
+        if (!category) throw new ValidationError('Skill category is required');
+        return this.skillRepository.create({ ...data, category });
     }
 
     async update(
@@ -62,7 +68,10 @@ export class SkillService {
             );
         }
 
-        const updated = await this.skillRepository.update(id, data);
+        const known = (await this.skillRepository.findAll()).map(skill => skill.category);
+        const category = canonicalSkillCategory(data.category, known);
+        if (!category) throw new ValidationError('Skill category is required');
+        const updated = await this.skillRepository.update(id, { ...data, category });
 
         if (!updated) {
             throw new NotFoundError(`Skill ${id} not found`);

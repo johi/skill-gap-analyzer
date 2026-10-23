@@ -60,7 +60,7 @@ export function buildApp(
     
     fastify.register(
         createJobAnalysisRoutes(
-            new JobAnalysisService(new OpenAiJobAnalysisProvider()),
+            new JobAnalysisService(new OpenAiJobAnalysisProvider(), skillRepository),
             new JobAdvertisementUrlFetcher()
         ),
         { prefix: '/api/v1/job-analysis' }

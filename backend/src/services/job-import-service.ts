@@ -1,3 +1,4 @@
+import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
 import { SkillRepository } from '@/repositories/skill-repository';
 import {
     JobDataset,
@@ -35,11 +36,15 @@ export class JobImportService {
     async analyze(
         dataset: JobDataset
     ): Promise<JobImportAnalysis> {
+        const catalogue = await this.skillRepository.findAll();
+        const existingCategories = Array.from(new Map(catalogue.map(skill => [
+            categoryKey(skill.category), normalizeSkillCategory(skill.category),
+        ] as const)).values());
         const jobs: AnalyzedJob[] = [];
 
         for (const job of dataset.jobs) {
             const analyzedSkills =
-                await this.analyzeSkills(job.skills);
+                await this.analyzeSkills(job.skills, existingCategories);
 
             jobs.push({
                 job,
@@ -50,6 +55,7 @@ export class JobImportService {
         return {
             version: dataset.version,
             totalJobs: dataset.jobs.length,
+            existingCategories,
             requiresReview: jobs.some(
                 (job) =>
                     job.skills.some(
@@ -63,7 +69,8 @@ export class JobImportService {
     }
 
     private async analyzeSkills(
-        skills: JobDataset['jobs'][number]['skills']
+        skills: JobDataset['jobs'][number]['skills'],
+        knownCategories: string[]
     ): Promise<AnalyzedSkill[]> {
         const analyzed = new Map<string, AnalyzedSkill>();
 
@@ -84,7 +91,7 @@ export class JobImportService {
             if (!previous) {
                 analyzed.set(canonicalKey, {
                     name: skill.name,
-                    category: skill.category,
+                    category: existing?.category ?? canonicalSkillCategory(skill.category, knownCategories),
                     requirement: skill.requirement,
                     resolution: existing
                         ? 'existing'

@@ -45,6 +45,7 @@ describe('Job import endpoints', () => {
         expect(response.json()).toEqual({
             version: 1,
             totalJobs: 1,
+            existingCategories: [],
             requiresReview: false,
             jobs: [{
                 job: {
@@ -150,6 +151,7 @@ describe('Job import endpoints', () => {
         expect(response.json()).toEqual({
             version: 1,
             totalJobs: 0,
+            existingCategories: [],
             requiresReview: false,
             jobs: [],
         });
@@ -262,7 +264,7 @@ describe('Job import endpoints', () => {
         expect(response.json().jobs[0].skills).toEqual([
             {
                 name: 'importcanonicalskill',
-                category: 'test',
+                category: 'Test',
                 requirement: 'must_have',
                 resolution: 'existing',
                 canonicalSkillId: skillId,

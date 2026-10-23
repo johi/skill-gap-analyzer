@@ -2,17 +2,21 @@ import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
 } from '@/errors/job-analysis-errors';
-import { jobExtractionJsonSchema, type JobAnalysisProvider } from '@/services/job-analysis-contract';
-import { jobAnalysisInstructions } from '@/services/job-analysis-instructions';
+import {
+    jobExtractionJsonSchema,
+    skillCategorizationJsonSchema,
+    type JobAnalysisProvider,
+} from '@/services/job-analysis-contract';
+import {
+    jobAnalysisInstructions,
+    skillCategorizationInstructions,
+} from '@/services/job-analysis-instructions';
 
 interface OpenAiResponse {
     status?: string;
     output?: Array<{
         type?: string;
-        content?: Array<{
-            type?: string;
-            text?: string;
-        }>;
+        content?: Array<{ type?: string; text?: string }>;
     }>;
 }
 
@@ -23,11 +27,27 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
         private readonly fetchImpl: typeof fetch = fetch
     ) {}
 
-    async analyze(advertisement: string): Promise<unknown> {
+    analyze(advertisement: string): Promise<unknown> {
+        return this.request(jobAnalysisInstructions, advertisement, jobExtractionJsonSchema, 'job_advertisement_analysis');
+    }
+
+    categorize(skills: string[], existingCategories: string[], advertisement: string): Promise<unknown> {
+        return this.request(
+            skillCategorizationInstructions,
+            JSON.stringify({ skills, existingCategories, advertisement }),
+            skillCategorizationJsonSchema,
+            'skill_categorization'
+        );
+    }
+
+    private async request(
+        instructions: string,
+        input: string,
+        schema: object,
+        name: string
+    ): Promise<unknown> {
         if (!this.apiKey) {
-            throw new JobAnalysisUnavailableError(
-                'OpenAI API key is not configured on the backend'
-            );
+            throw new JobAnalysisUnavailableError('OpenAI API key is not configured on the backend');
         }
 
         let response: Response;
@@ -42,17 +62,10 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
                 body: JSON.stringify({
                     model: this.model,
                     store: false,
-                    instructions: jobAnalysisInstructions,
-                    input: advertisement,
+                    instructions,
+                    input,
                     max_output_tokens: 4_000,
-                    text: {
-                        format: {
-                            type: 'json_schema',
-                            name: 'job_advertisement_analysis',
-                            strict: true,
-                            schema: jobExtractionJsonSchema,
-                        },
-                    },
+                    text: { format: { type: 'json_schema', name, strict: true, schema } },
                 }),
             });
         } catch {
@@ -60,7 +73,6 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
         }
 
         if (!response.ok) {
-            // Do not expose provider error bodies or request data to the client.
             throw new JobAnalysisUnavailableError();
         }
 
@@ -71,10 +83,8 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             throw new JobAnalysisInvalidResponseError();
         }
 
-        if (
-            !payload || typeof payload !== 'object' ||
-            payload.status !== 'completed' || !Array.isArray(payload.output)
-        ) {
+        if (!payload || typeof payload !== 'object' ||
+            payload.status !== 'completed' || !Array.isArray(payload.output)) {
             throw new JobAnalysisInvalidResponseError();
         }
 
@@ -83,10 +93,7 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             .flatMap(item => item.content ?? [])
             .find(item => item && item.type === 'output_text' && typeof item.text === 'string')?.text;
 
-        if (!text) {
-            throw new JobAnalysisInvalidResponseError();
-        }
-
+        if (!text) throw new JobAnalysisInvalidResponseError();
         try {
             return JSON.parse(text) as unknown;
         } catch {
