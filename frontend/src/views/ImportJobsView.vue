@@ -14,7 +14,7 @@ const {
   commitResult, error, validationErrors,
   busy, includedCount, excludedCount, skillCounts, reviewStatuses,
   unresolvedJobCount, readyToImport,
-  setExcluded, startEditing, cancelEditing, saveReviewedJob,
+  setExcluded, acceptCategory, startEditing, cancelEditing, saveReviewedJob,
   handleFileChange, handleAnalyze, requestCommit, handleCommit,
 } = useJobImport();
 </script>
@@ -80,6 +80,7 @@ const {
       />
       <ImportJobReviewList
           :reviewed-jobs="reviewedJobs"
+          :existing-categories="analysis.existingCategories ?? []"
           :review-statuses="reviewStatuses"
           :busy="busy"
           :editing-job-index="editingJobIndex"
@@ -93,6 +94,7 @@ const {
           @update:replace-existing="replaceExisting = $event"
           :committing="committing"
           @set-excluded="setExcluded"
+          @accept-category="acceptCategory"
           @start-editing="startEditing"
           @save="saveReviewedJob"
           @cancel-editing="cancelEditing"

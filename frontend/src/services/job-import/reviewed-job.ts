@@ -1,3 +1,4 @@
+import { canonicalCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
 import { importedJobSchema } from '@/schemas/job-import';
 import type { ImportedJob, JobImportAnalysis } from '@/schemas/job-import';
 
@@ -8,6 +9,7 @@ export interface ReviewedJob {
   excluded: boolean;
   job: ImportedJob;
   analysis: AnalyzedJob | null;
+  acceptedCategories?: string[];
 }
 
 export interface JobReviewStatus {
@@ -19,7 +21,7 @@ export interface JobReviewStatus {
  * Apply safe, same-requirement canonicalization to the actual commit payload.
  * Conflicting requirements remain untouched and require an explicit edit.
  */
-export function normalizeReviewedJob(job: ImportedJob, analyzed: AnalyzedJob): ImportedJob {
+export function normalizeReviewedJob(job: ImportedJob, analyzed: AnalyzedJob, existingCategoryNames?: string[]): ImportedJob {
   const normalized = structuredClone(job);
   const requirementsByKey = new Map<string, Set<string>>();
 
@@ -46,6 +48,10 @@ export function normalizeReviewedJob(job: ImportedJob, analyzed: AnalyzedJob): I
       return true;
     }
 
+    if (existingCategoryNames) {
+      skill.category = canonicalCategory(canonical?.category ?? skill.category, existingCategoryNames);
+    }
+
     if (seen.has(canonicalKey)) {
       return false;
     }
@@ -56,7 +62,7 @@ export function normalizeReviewedJob(job: ImportedJob, analyzed: AnalyzedJob): I
   return normalized;
 }
 
-export function validateReviewedJob(reviewedJob: ReviewedJob): JobReviewStatus {
+export function validateReviewedJob(reviewedJob: ReviewedJob, existingCategoryNames?: string[]): JobReviewStatus {
   if (reviewedJob.excluded) {
     return { valid: true, errors: [] };
   }
@@ -82,6 +88,20 @@ export function validateReviewedJob(reviewedJob: ReviewedJob): JobReviewStatus {
   for (const skill of reviewedJob.analysis.skills) {
     if (skill.resolution === 'review_required') {
       errors.push(`Skill "${skill.name}" requires normalization review.`);
+    }
+  }
+
+  // A category not already in the catalogue requires explicit acceptance.
+  // Undefined means an older analysis response; production responses always supply the catalogue.
+  if (existingCategoryNames) {
+    const known = new Set(existingCategoryNames.map(categoryKey));
+    const accepted = new Set((reviewedJob.acceptedCategories ?? []).map(categoryKey));
+    for (const skill of reviewedJob.job.skills) {
+      const key = categoryKey(skill.category);
+      if (!key) errors.push(`Skill "${skill.name}" must have a category.`);
+      else if (!known.has(key) && !accepted.has(key)) {
+        errors.push(`New category "${normalizeSkillCategory(skill.category)}" must be accepted or replaced.`);
+      }
     }
   }
 

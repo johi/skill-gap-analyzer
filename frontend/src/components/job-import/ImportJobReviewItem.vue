@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { categoryKey, normalizeSkillCategory } from '@/services/skill-category';
 import { Button } from '@/components/ui/button';
 import JobImportReviewForm from '@/components/JobImportReviewForm.vue';
 import type { ReviewedJob, JobReviewStatus } from '@/services/job-import/reviewed-job';
 import type { ImportedJob } from '@/schemas/job-import';
-defineProps<{ reviewedJob: ReviewedJob; status: JobReviewStatus | undefined; index: number; busy: boolean; editing: boolean; savingJob: boolean }>();
-const emit = defineEmits<{ setExcluded: [excluded: boolean]; startEditing: []; save: [job: ImportedJob]; cancelEditing: [] }>();
+defineProps<{ reviewedJob: ReviewedJob; existingCategories: string[]; status: JobReviewStatus | undefined; index: number; busy: boolean; editing: boolean; savingJob: boolean }>();
+const emit = defineEmits<{ acceptCategory: [category: string]; setExcluded: [excluded: boolean]; startEditing: []; save: [job: ImportedJob]; cancelEditing: [] }>();
 function resolutionLabel(resolution: string): string {
   switch (resolution) {
     case 'existing': return 'Existing';
@@ -110,6 +111,7 @@ function requirementLabel(requirement: string): string {
                       <JobImportReviewForm
                           :key="index"
                           :job="reviewedJob.job"
+                          :existing-categories="existingCategories"
                           @save="emit('save', $event)"
                           @cancel="emit('cancelEditing')"
                       />
@@ -157,8 +159,21 @@ function requirementLabel(requirement: string): string {
                                                     {{ skill.name }}
                                                 </span>
                         <span class="text-muted-foreground">
-                                                    ({{ skill.category }})
+                                                    ({{ normalizeSkillCategory(skill.category) }})
                                                 </span>
+                        <span
+                          v-if="!existingCategories.some(category => categoryKey(category) === categoryKey(skill.category))"
+                          class="rounded bg-amber-100 px-2 py-1 text-xs font-medium text-amber-900"
+                        >New category</span>
+                        <Button
+                          v-if="!reviewedJob.excluded && !busy &&
+                            !existingCategories.some(category => categoryKey(category) === categoryKey(skill.category)) &&
+                            !(reviewedJob.acceptedCategories ?? []).includes(categoryKey(skill.category))"
+                          type="button" variant="outline" size="sm"
+                          :aria-label="`Accept new category ${normalizeSkillCategory(skill.category)}`"
+                          @click="emit('acceptCategory', skill.category)"
+                        >Accept new category</Button>
+                        <span v-else-if="(reviewedJob.acceptedCategories ?? []).includes(categoryKey(skill.category))" class="text-xs text-green-700">Accepted</span>
                         <span
                             class="rounded px-2 py-1 text-xs"
                             :class="

@@ -682,3 +682,19 @@ describe('ImportJobsView: commit workflow', () => {
             .toContain('Import completed');
     });
 });
+
+describe('JSON import category review', () => {
+    it('marks unknown categories as new and blocks import until accepted', async () => {
+        vi.mocked(analyzeJobImport).mockResolvedValue({
+            ...makeAnalysis(),
+            existingCategories: ['Language'],
+        });
+        const wrapper = mountView();
+        await analyze(wrapper);
+        expect(wrapper.text()).toContain('New category');
+        expect(button(wrapper, 'Commit reviewed import').attributes('disabled')).toBeDefined();
+        await wrapper.findAll('button').find(item => item.attributes('aria-label') === 'Accept new category Framework')!.trigger('click');
+        await flushPromises();
+        expect(button(wrapper, 'Commit reviewed import').attributes('disabled')).toBeUndefined();
+    });
+});

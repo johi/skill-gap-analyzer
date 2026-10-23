@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { computed, reactive, ref } from 'vue';
+import { canonicalCategory, categoryKey, existingCategories, normalizeSkillCategory } from '@/services/skill-category';
 import SkillCatalogueLookup from '@/components/jobs/SkillCatalogueLookup.vue';
 import type { Skill } from '@/types/skill';
 import type { JobReviewDraft } from '@/services/job-analysis/reviewed-job';
@@ -36,6 +37,8 @@ const props = defineProps<{
   submitLabel?: string;
   reviewMode?: boolean;
   skillCatalogue?: Skill[];
+  categoryReview?: boolean;
+  categoryOptions?: string[];
 }>();
 
 interface JobSkillForm {
@@ -102,6 +105,37 @@ const form = reactive<JobFormState>({
 });
 
 const reviewError = ref<string | null>(null);
+const approvedCategories = ref<string[]>([]);
+const knownCategories = computed(() => Array.from(new Set([
+  ...existingCategories(props.skillCatalogue ?? []),
+  ...(props.categoryOptions ?? []),
+])).sort((a, b) => a.localeCompare(b)));
+
+function matchedSkill(name: string): Skill | undefined {
+  return props.skillCatalogue?.find(skill => skill.name.trim().toLocaleLowerCase('en-US') === name.trim().toLocaleLowerCase('en-US'));
+}
+
+function isNewCategory(skill: JobSkillForm): boolean {
+  if (!skill.category.trim() || matchedSkill(skill.name)) return false;
+  return !knownCategories.value.some(category => categoryKey(category) === categoryKey(skill.category));
+}
+
+const hasUnacceptedCategories = computed(() => props.reviewMode && form.skills.some(
+  skill => isNewCategory(skill) && !approvedCategories.value.includes(categoryKey(skill.category)),
+));
+
+function acceptCategory(category: string): void {
+  const key = categoryKey(category);
+  if (!approvedCategories.value.includes(key)) approvedCategories.value.push(key);
+  markDirty();
+}
+
+function replaceCategory(index: number, category: string): void {
+  if (!category) return;
+  form.skills[index].category = category;
+  markDirty();
+}
+
 
 function markDirty(): void {
   reviewError.value = null;
@@ -148,8 +182,43 @@ function removeSkill(index: number): void {
 }
 
 function submit(): void {
+  reviewError.value = null;
+
+  // Review validation must run even when a required HTML input is blank.
+  // Native constraint validation otherwise suppresses the submit event.
+  if (props.reviewMode) {
+    if (!form.dateFound.trim()) {
+      reviewError.value = 'Enter the date found before approving.';
+      return;
+    }
+    if (!form.company.trim()) {
+      reviewError.value = 'Enter the company before approving.';
+      return;
+    }
+    if (!form.title.trim()) {
+      reviewError.value = 'Enter the job title before approving.';
+      return;
+    }
+    if (form.skills.some(skill => !skill.name.trim())) {
+      reviewError.value = 'Every skill must have a name.';
+      return;
+    }
+    if (form.languageRequirements.some(item => !/^[a-z]{2}$/i.test(item.language.trim()))) {
+      reviewError.value = 'Every language must have a two-letter code.';
+      return;
+    }
+  }
+
   if (form.skills.some(skill => !skill.requirement)) {
     reviewError.value = 'Classify every skill as must-have or nice-to-have before approving.';
+    return;
+  }
+  if (hasUnacceptedCategories.value) {
+    reviewError.value = 'Accept each new category or replace it with an existing category before approval.';
+    return;
+  }
+  if (form.skills.some(skill => !normalizeSkillCategory(skill.category))) {
+    reviewError.value = 'Every skill must have a category.';
     return;
   }
   emit('submit', {
@@ -177,7 +246,7 @@ function submit(): void {
     originalMatch: form.originalMatch,
     skills: form.skills.map((skill) => ({
       name: skill.name.trim(),
-      category: skill.category.trim(),
+      category: matchedSkill(skill.name)?.category ?? canonicalCategory(skill.category, knownCategories.value),
       requirement: skill.requirement as JobSkillRequirement,
     })),
   });
@@ -185,8 +254,7 @@ function submit(): void {
 </script>
 
 <template>
-  <form class="space-y-8" @submit.prevent="submit" @input.capture="markDirty" @change.capture="markDirty">
-    <p v-if="reviewError" role="alert" class="text-sm text-destructive">{{ reviewError }}</p>
+  <form class="space-y-8" :novalidate="reviewMode" @submit.prevent="submit" @input.capture="markDirty" @change.capture="markDirty">
     <section class="space-y-4">
       <div>
         <h2 class="text-base font-semibold">
@@ -608,9 +676,36 @@ function submit(): void {
                 :id="`skill-category-${index}`"
                 v-model="skill.category"
                 type="text"
-                placeholder="e.g. Language"
+                placeholder="e.g. Programming Languages"
                 required
             />
+            <template v-if="reviewMode || categoryReview">
+              <p v-if="matchedSkill(skill.name)" class="text-xs text-muted-foreground">
+                Existing skill — canonical category: {{ matchedSkill(skill.name)?.category }}
+              </p>
+              <p v-else-if="isNewCategory(skill)" class="text-xs font-medium text-amber-700">
+                New category: {{ normalizeSkillCategory(skill.category) }}
+              </p>
+              <p v-else-if="skill.category.trim()" class="text-xs text-muted-foreground">Existing category</p>
+              <div v-if="isNewCategory(skill)" class="space-y-2">
+                <select
+                    :aria-label="`Replace category for ${skill.name}`"
+                    class="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    :value="''"
+                    @change="replaceCategory(index, ($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">Replace with existing category…</option>
+                  <option v-for="category in knownCategories" :key="category" :value="category">{{ category }}</option>
+                </select>
+                <Button
+                    v-if="reviewMode && !approvedCategories.includes(categoryKey(skill.category))"
+                    type="button" variant="outline" size="sm"
+                    :aria-label="`Accept new category ${normalizeSkillCategory(skill.category)}`"
+                    @click="acceptCategory(skill.category)"
+                >Accept new category</Button>
+                <p v-else-if="reviewMode" class="text-xs text-green-700">New category accepted</p>
+              </div>
+            </template>
           </div>
 
           <div class="space-y-2">
@@ -674,7 +769,12 @@ function submit(): void {
       </div>
     </section>
 
-    <div class="flex justify-end border-t pt-6">
+    <div class="space-y-3 border-t pt-6">
+      <p v-if="reviewError" role="alert" class="text-sm text-destructive">{{ reviewError }}</p>
+      <p v-else-if="hasUnacceptedCategories" role="alert" class="text-sm text-destructive">
+        Accept each new category or replace it with an existing category before approval.
+      </p>
+      <div class="flex justify-end">
       <Button
           type="submit"
           :disabled="submitting"
@@ -685,6 +785,7 @@ function submit(): void {
               : (submitLabel ?? 'Create job')
         }}
       </Button>
+      </div>
     </div>
   </form>
 </template>

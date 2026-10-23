@@ -10,6 +10,7 @@ import type { ImportedJob } from '@/schemas/job-import';
 
 const props = defineProps<{
   job: ImportedJob;
+  existingCategories?: string[];
 }>();
 
 const emit = defineEmits<{
@@ -58,6 +59,8 @@ function handleSubmit(input: CreateJobInput): void {
 
     <JobForm
         :initial-value="formInitialValue"
+        :category-review="true"
+        :category-options="existingCategories ?? []"
         submit-label="Save changes"
         @submit="handleSubmit"
     />

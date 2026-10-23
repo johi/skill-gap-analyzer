@@ -252,12 +252,6 @@ function show(value: string | null): string {
             <p>{{ skillsError }}</p>
             <Button type="button" variant="outline" @click="loadSkillCatalogue">Retry loading skills</Button>
           </div>
-          <div v-if="reviewErrors.length" role="alert" class="rounded-md border border-destructive/30 p-4 text-sm text-destructive">
-            <p class="font-medium">Please correct the following before approval:</p>
-            <ul class="mt-2 list-disc pl-5">
-              <li v-for="issue in reviewErrors" :key="issue">{{ issue }}</li>
-            </ul>
-          </div>
           <div v-if="saveError || saveValidationErrors.length" role="alert" class="rounded-md border border-destructive/30 p-4 text-sm text-destructive">
             <p v-if="saveError">{{ saveError }}</p>
             <ul v-if="saveValidationErrors.length" class="list-disc pl-5">
@@ -276,6 +270,12 @@ function show(value: string | null): string {
             @submit="approveReview"
           />
           </fieldset>
+          <div v-if="reviewErrors.length" role="alert" class="rounded-md border border-destructive/30 p-4 text-sm text-destructive">
+            <p class="font-medium">Please correct the following before approval:</p>
+            <ul class="mt-2 list-disc pl-5">
+              <li v-for="issue in reviewErrors" :key="issue">{{ issue }}</li>
+            </ul>
+          </div>
           <div v-if="approvedReview" role="status" class="space-y-3 rounded-md border p-4 text-sm">
             <p class="font-medium">Review approved — not saved</p>
             <p class="text-muted-foreground">

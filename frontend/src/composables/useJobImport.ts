@@ -1,3 +1,4 @@
+import { categoryKey } from '@/services/skill-category';
 import { computed, ref } from 'vue';
 import { ZodError } from 'zod';
 import { ApiError } from '@/api/client';
@@ -68,7 +69,7 @@ export function useJobImport() {
   });
 
   const reviewStatuses = computed<JobReviewStatus[]>(() =>
-      reviewedJobs.value.map(validateReviewedJob)
+      reviewedJobs.value.map(job => validateReviewedJob(job, analysis.value?.existingCategories))
   );
 
   const unresolvedJobCount = computed(
@@ -84,6 +85,21 @@ export function useJobImport() {
           !busy.value &&
           commitResult.value === null
   );
+
+  function acceptCategory(jobIndex: number, category: string): void {
+    const source = reviewedJobs.value[jobIndex];
+    if (!source || source.excluded || busy.value) return;
+    const key = categoryKey(category);
+    if (!key) return;
+    // Categories are global. Accepting one proposal resolves the same category
+    // throughout this import, rather than requiring one click per job.
+    for (const reviewed of reviewedJobs.value) {
+      if (reviewed.excluded || !reviewed.job.skills.some(skill => categoryKey(skill.category) === key)) continue;
+      const accepted = reviewed.acceptedCategories ?? [];
+      if (!accepted.includes(key)) reviewed.acceptedCategories = [...accepted, key];
+    }
+    showConfirmation.value = false;
+  }
 
   function resetMessages(): void {
     error.value = null;
@@ -173,8 +189,9 @@ export function useJobImport() {
         );
       }
 
-      reviewedJob.job = normalizeReviewedJob(updatedJob, analyzedJob);
+      reviewedJob.job = normalizeReviewedJob(updatedJob, analyzedJob, result.existingCategories);
       reviewedJob.analysis = analyzedJob;
+      reviewedJob.acceptedCategories = [];
 
       editingJobIndex.value = null;
       showConfirmation.value = false;
@@ -282,8 +299,9 @@ export function useJobImport() {
           (analyzedJob, jobIndex) => ({
             jobIndex,
             excluded: false,
-            job: normalizeReviewedJob(analyzedJob.job, analyzedJob),
+            job: normalizeReviewedJob(analyzedJob.job, analyzedJob, result.existingCategories),
             analysis: analyzedJob,
+            acceptedCategories: [],
           })
       );
     } catch (err) {
@@ -360,7 +378,7 @@ export function useJobImport() {
     commitResult, error, validationErrors,
     busy, includedCount, excludedCount, skillCounts, reviewStatuses,
     unresolvedJobCount, readyToImport,
-    setExcluded, startEditing, cancelEditing, saveReviewedJob,
+    setExcluded, acceptCategory, startEditing, cancelEditing, saveReviewedJob,
     handleFileChange, handleAnalyze, requestCommit, handleCommit,
   };
 }

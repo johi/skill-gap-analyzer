@@ -233,7 +233,7 @@ describe('AnalyzeJobView (UC-13)', () => {
         expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
             company: 'Corrected Company',
             originalText: advertisement,
-            skills: [{ name: 'TypeScript', category: 'language', requirement: 'must_have' }],
+            skills: [{ name: 'TypeScript', category: 'Language', requirement: 'must_have' }],
         }));
         expect(push).toHaveBeenCalledWith({ name: 'job-detail', params: { id: 42 } });
     });
@@ -276,5 +276,93 @@ describe('AnalyzeJobView (UC-13)', () => {
         expect(wrapper.text()).toContain('sourceUrl: Invalid URL');
         expect(wrapper.text()).toContain('Save approved job');
         expect(push).not.toHaveBeenCalled();
+    });
+});
+
+describe('Browser-native review submission regression', () => {
+    it('allows accepting an edited category with an empty catalogue using a real submit event', async () => {
+        vi.mocked(getSkills).mockResolvedValue([]);
+        vi.mocked(analyzeJobAdvertisement).mockResolvedValue({
+            ...analysis,
+            proposal: {
+                ...analysis.proposal,
+                skills: [{ name: 'PHP', category: 'Web Development', requirement: 'must_have' }],
+            },
+        });
+        const wrapper = mountView();
+        await wrapper.get('#job-advertisement').setValue(advertisement);
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
+        await flushPromises();
+
+        await wrapper.get('#skill-category-0').setValue('Programming Language');
+        await wrapper.get('button[aria-label="Accept new category Programming Language"]').trigger('click');
+        (wrapper.get('form').element as HTMLFormElement).requestSubmit();
+        await flushPromises();
+
+        expect(wrapper.text()).toContain('Review approved — not saved');
+        expect(createJob).not.toHaveBeenCalled();
+    });
+
+    it('shows a validation error rather than silently blocking a real submit event', async () => {
+        vi.mocked(getSkills).mockResolvedValue([]);
+        vi.mocked(analyzeJobAdvertisement).mockResolvedValue({
+            ...analysis,
+            proposal: {
+                ...analysis.proposal,
+                company: null,
+                skills: [{ name: 'PHP', category: 'Web Development', requirement: 'must_have' }],
+            },
+        });
+        const wrapper = mountView();
+        await wrapper.get('#job-advertisement').setValue(advertisement);
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
+        await flushPromises();
+
+        (wrapper.get('form').element as HTMLFormElement).requestSubmit();
+        await flushPromises();
+
+        expect(wrapper.text()).toContain('Enter the company before approving.');
+        expect(wrapper.text()).not.toContain('Review approved — not saved');
+    });
+});
+
+describe('AI-proposed category review', () => {
+    async function withNewCategory() {
+        vi.mocked(analyzeJobAdvertisement).mockResolvedValue({
+            ...analysis,
+            requiresReview: true,
+            proposal: {
+                ...analysis.proposal,
+                skills: [{ name: 'RabbitMQ', category: 'Messaging Systems', requirement: 'must_have' }],
+            },
+        });
+        const wrapper = mountView();
+        await wrapper.get('#job-advertisement').setValue(advertisement);
+        await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
+        await flushPromises();
+        return wrapper;
+    }
+
+    it('blocks approval until a new AI category is explicitly accepted', async () => {
+        const wrapper = await withNewCategory();
+        expect(wrapper.text()).toContain('New category: Messaging Systems');
+        await wrapper.get('form').trigger('submit');
+        expect(wrapper.text()).toContain('Accept each new category');
+        expect(wrapper.text()).not.toContain('Review approved — not saved');
+        await wrapper.get('button[aria-label="Accept new category Messaging Systems"]').trigger('click');
+        await wrapper.get('form').trigger('submit');
+        expect(wrapper.text()).toContain('Review approved — not saved');
+    });
+
+    it('allows replacing a new AI category with an existing one', async () => {
+        const wrapper = await withNewCategory();
+        await wrapper.get('select[aria-label="Replace category for RabbitMQ"]').setValue('Testing');
+        await wrapper.get('form').trigger('submit');
+        expect(wrapper.text()).toContain('Review approved — not saved');
+        await wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!.trigger('click');
+        await flushPromises();
+        expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
+            skills: [{ name: 'RabbitMQ', category: 'Testing', requirement: 'must_have' }],
+        }));
     });
 });
