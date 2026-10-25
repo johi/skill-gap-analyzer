@@ -43,6 +43,7 @@ The application currently supports:
 - Associating must-have and nice-to-have skills with jobs
 - Analyzing skill demand across non-expired jobs, including occurrence counts, requirement breakdowns, and demand percentages
 - Comparing market demand with personal skill assessments, calculating proficiency gaps against a fixed target of 5, and identifying unassessed skills
+- Ranking upskilling opportunities using demand-weighted priority scores, while flagging missing assessments
 - Maintaining a reusable skill catalogue and assessing personal skill proficiency on a 0–5 scale
 - Recording structured job attributes such as seniority, work model, application status, experience, education, and language requirements
 - Supporting multiple preferred or required languages per job using ISO 639-1 language codes
@@ -106,13 +107,15 @@ The backend separates HTTP routes, application services, repositories, validatio
 
 The frontend communicates with the backend through a dedicated API layer and validates responses using Zod. Views compose feature-specific components, composables manage reactive workflows, and services hold reusable domain logic. Shared UI primitives are separate from feature components. Frontend source imports use the `@/` path alias.
 
-### Skill demand and skill-gap analysis architecture
+### Skill demand, skill gaps, and skill priorities architecture
 
-`GET /api/v1/analysis/skill-demand` uses `MarketAnalysisRepository` to aggregate skill occurrences and must-have/nice-to-have counts in PostgreSQL. `MarketAnalysisService` calculates each skill’s demand percentage, rounded to one decimal place. The `SkillDemandView` fetches the validated response through the frontend API layer and displays a sortable table.
+**Skill demand:** `GET /api/v1/analysis/skill-demand` uses `MarketAnalysisRepository` to aggregate skill occurrences and must-have/nice-to-have counts in PostgreSQL. `MarketAnalysisService` calculates each skill's demand percentage, rounded to one decimal place.
 
-`GET /api/v1/analysis/skill-gaps` uses `SkillGapAnalysisService` to combine the existing market-demand results with assessments returned by `UserSkillRepository`. Each skill is matched by `skillId`; for assessed skills, `gap = 5 - proficiency` (proficiency ranges from 0 to 5). Unassessed skills have `proficiency: null`, `gap: null`, and `status: "unassessed"`, rather than being treated as proficiency 0. The service preserves market-demand ordering, does not assign priority scores, and does not modify persisted data. The frontend validates both endpoint responses with Zod and presents them as **Market Demand** and **Skill Gaps** tabs on the same page.
+**Skill gaps:** `GET /api/v1/analysis/skill-gaps` uses `SkillGapAnalysisService` to combine market-demand results with assessments from `UserSkillRepository`, matched by `skillId`. Assessed proficiency ranges from 0 to 5; missing assessments remain `null`, not zero.
 
-The denominator is the number of **non-expired jobs with at least one associated skill**. Jobs marked `expired` and jobs without skills are excluded; jobs with a null application status are included. Each job contributes at most once to a given skill’s count.
+**Skill priorities:** `GET /api/v1/analysis/skill-priorities` uses `SkillPriorityService` to consume skill-gap results, calculate a demand weight and a priority score, and rank assessed skills by descending score. Unassessed skills have `priorityScore: null` and sort last. The response includes `missingInformation`, containing `market_demand` when there are no analyzed jobs/skills and `skill_assessments` when any analyzed skills lack a proficiency assessment. No data is persisted by these analysis endpoints.
+
+The frontend validates all three endpoint responses using Zod and presents **Market Demand**, **Skill Gaps**, and **Priorities** tabs in `SkillDemandView.vue`.
 
 ### AI job analysis workflow
 
@@ -252,14 +255,55 @@ The two databases are independent. Migrating `app` does **not** create tables in
 
 The analysis and review stages do not persist a job. Saving is a separate, explicit action. Editing the reviewed data after approval requires reapproval.
 
-## Analyzing skill demand and gaps
+## Analyzing skill demand, gaps, and priorities
 
 1. Open **Skill Demand** in the application navigation, or visit [http://localhost:5173/skill-demand](http://localhost:5173/skill-demand).
-2. Select **Market Demand** to review the **Jobs analyzed** total, skills, categories, job counts, must-have counts, nice-to-have counts, and demand percentages.
-3. Select **Skill Gaps** to compare those demand metrics with your assessed **Proficiency**, calculated **Gap**, and assessment **Status**.
-4. Select a column heading to sort; select it again to reverse the direction. Unassessed numeric values sort last.
+2. Select **Market Demand** to inspect job counts, must-have and nice-to-have counts, and demand percentages.
+3. Select **Skill Gaps** to compare market demand with your assessed proficiency and gap against the fixed target of 5.
+4. Select **Priorities** to rank upskilling opportunities by their demand-weighted priority score. This tab also shows demand weight, proficiency, gap, and assessment status.
+5. Select a column heading to sort; select it again to reverse direction. The Priorities tab defaults to descending priority score. Missing numeric values sort last.
 
-Demand percentage is calculated as `(jobs mentioning the skill / jobs analyzed) × 100`, rounded to one decimal place. Only non-expired jobs with at least one associated skill contribute to the analysis. Gap is calculated as `5 - proficiency` for assessed skills; an unassessed skill displays a dash instead of a numerical proficiency or gap. Both tabs provide loading, empty, and error/retry states.
+### Calculation formulas
+
+The analysis considers **non-expired jobs with at least one associated skill**. Let:
+
+- **T** = total number of jobs analyzed (same denominator for all skills)
+- **J** = number of analyzed jobs mentioning the skill
+- **M** = number of analyzed jobs listing the skill as *must-have*
+- **N** = number of analyzed jobs listing the skill as *nice-to-have*
+- **L** = personally assessed proficiency, an integer from 0 through 5
+- **G** = skill gap relative to the fixed target proficiency of 5
+- **W** = demand weight, from 0 to 1
+- **P** = priority score, from 0 to 100
+
+**Market demand percentage**
+
+```text
+Demand percentage = (J / T) × 100
+```
+
+The result is rounded to **one decimal place**. When no jobs qualify, the endpoint returns an empty skills array and `totalJobsAnalyzed: 0` rather than dividing by zero.
+
+**Personal skill gap**
+
+```text
+G = 5 − L
+```
+
+A proficiency of 5 produces gap 0; proficiency 0 produces gap 5. If the skill has not been assessed, `proficiency` and `gap` are `null`, and `status` is `unassessed`. An unassessed skill is **not** treated as proficiency zero.
+
+**Demand weighting and skill priority**
+
+```text
+W = (2 × M + N) / (2 × T)
+P = 100 × W^0.7 × (G / 5)^0.3
+```
+
+Must-have requirements receive **twice** the weight of nice-to-have requirements. The priority model is a **weighted geometric formula**, with demand exponent 0.7 and skill-gap exponent 0.3; these exponents express relative sensitivity, **not** an additive 70/30 split. This is an initial, tunable heuristic, not an empirically validated ranking model.
+
+The priority score is rounded to **one decimal place**. A fully proficient skill (`G = 0`) has priority 0. Unassessed skills have `priorityScore: null` and appear after scored skills. When market demand is missing, the result reports `market_demand`; when skill assessments are missing, it reports `skill_assessments` in `missingInformation`. Analysis does not modify stored data.
+
+All three tabs provide loading, empty, and error/retry states.
 
 ## Importing the sample job dataset
 
@@ -330,10 +374,11 @@ To run a single repository test file:
 docker compose exec backend npm run test:repository -- test/repositories/market-analysis-repository.test.ts
 ```
 
-To run the UC-27 service and combined UC-26/UC-27 endpoint tests specifically:
+To run the skill-gap and skill-priority service tests and the analysis endpoint and frontend tests specifically:
 
 ```bash
 docker compose exec backend npm run test:service -- test/services/skill-gap-analysis-service.test.ts
+docker compose exec backend npm run test:service -- test/services/skill-priority-service.test.ts
 docker compose exec backend npm run test:endpoint -- test/endpoints/market-analysis.test.ts
 docker compose exec frontend npm test -- tests/views/SkillDemandView.test.ts --maxWorkers=2
 ```
@@ -347,6 +392,17 @@ docker compose exec frontend npm test -- --maxWorkers=2
 ```
 
 The `--` forwards `--maxWorkers=2` to Vitest. This limit is intentional: unrestricted worker startup caused resource exhaustion and test-run failures in the Docker development environment. Use this command instead of the bare `docker compose exec frontend npm test` invocation. A worker-startup timeout does not necessarily indicate a failing application test.
+
+Run every backend test suite, all frontend tests, and both builds in one fail-fast command:
+
+```bash
+docker compose exec backend npm run test:repository && \
+docker compose exec backend npm run test:service && \
+docker compose exec backend npm run test:endpoint && \
+docker compose exec frontend npm test -- --maxWorkers=2 && \
+docker compose exec backend npm run build && \
+docker compose exec frontend npm run build
+```
 
 ## Builds
 
@@ -377,6 +433,6 @@ The current CI status is shown by the badge at the top of this README. If fronte
 
 ## Project status
 
-Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, skill demand and gap analysis (UC-26 and UC-27), JSON import, automated testing, and CI are also in place.
+Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, skill demand, gap, and priority analysis, JSON import, automated testing, and CI are also in place.
 
-Planned improvements include prioritizing skill gaps (UC-28), JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.
+Planned improvements include JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.
