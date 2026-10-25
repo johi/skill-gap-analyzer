@@ -1239,30 +1239,3 @@ Extensions:
 
 Postcondition:
 The API consumer receives a consistent error response.
-
-
-UC-43: Check Service Health
-
-Primary Actor:
-API Consumer
-
-Goal:
-Determine whether the backend and its required infrastructure are operational.
-
-Preconditions:
-Backend service is reachable.
-
-Trigger:
-Consumer requests service health.
-
-Main Success Scenario:
-1. System verifies backend operation.
-2. System verifies required database connectivity.
-3. System returns service health information.
-
-Extensions:
-2a. Database is unavailable:
-    System reports degraded/unhealthy service status.
-
-Postcondition:
-No application data is changed.
