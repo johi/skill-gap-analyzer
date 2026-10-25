@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import JobDetailHeader from '@/components/jobs/JobDetailHeader.vue';
 import JobPositionDetails from '@/components/jobs/JobPositionDetails.vue';
 import JobAssessment from '@/components/jobs/JobAssessment.vue';
+import JobMatch from '@/components/jobs/JobMatch.vue';
 import JobSkillsTable from '@/components/jobs/JobSkillsTable.vue';
 import JobAdditionalDetails from '@/components/jobs/JobAdditionalDetails.vue';
 import { useJobDetail } from '@/composables/useJobDetail';
@@ -40,11 +41,16 @@ function handleDelete(): void {
 
     <template v-else-if="job">
       <JobDetailHeader :job="job" :deleting="deleting" @delete="handleDelete" />
+
       <div class="grid gap-6 lg:grid-cols-3">
         <JobPositionDetails :job="job" />
         <JobAssessment :job="job" />
       </div>
+
+      <JobMatch :job-id="job.id" />
+
       <JobSkillsTable :job="job" />
+
       <JobAdditionalDetails :job="job" />
     </template>
   </section>
