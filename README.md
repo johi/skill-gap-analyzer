@@ -41,6 +41,7 @@ The application currently supports:
 
 - Creating, viewing, updating, and deleting job opportunities
 - Associating must-have and nice-to-have skills with jobs
+- Analyzing skill demand across non-expired jobs, including occurrence counts, requirement breakdowns, and demand percentages
 - Maintaining a reusable skill catalogue and assessing personal skill proficiency on a 0–5 scale
 - Recording structured job attributes such as seniority, work model, application status, experience, education, and language requirements
 - Supporting multiple preferred or required languages per job using ISO 639-1 language codes
@@ -103,6 +104,12 @@ skill-gap-analyzer/
 The backend separates HTTP routes, application services, repositories, validation schemas, and persistence. The job-analysis service depends on a provider-independent interface; the OpenAI adapter handles provider-specific API communication. Extraction instructions and the structured output contract are kept separate from that adapter.
 
 The frontend communicates with the backend through a dedicated API layer and validates responses using Zod. Views compose feature-specific components, composables manage reactive workflows, and services hold reusable domain logic. Shared UI primitives are separate from feature components. Frontend source imports use the `@/` path alias.
+
+### Skill demand analysis architecture
+
+`GET /api/v1/analysis/skill-demand` uses `MarketAnalysisRepository` to aggregate skill occurrences and must-have/nice-to-have counts in PostgreSQL. `MarketAnalysisService` calculates each skill’s demand percentage, rounded to one decimal place. The `SkillDemandView` fetches the validated response through the frontend API layer and displays a sortable table.
+
+The denominator is the number of **non-expired jobs with at least one associated skill**. Jobs marked `expired` and jobs without skills are excluded; jobs with a null application status are included. Each job contributes at most once to a given skill’s count.
 
 ### AI job analysis workflow
 
@@ -216,9 +223,19 @@ docker compose up -d --force-recreate backend
 
 ### 4. Run database migrations
 
+Apply migrations to the development database (`app`):
+
 ```bash
 docker compose exec backend npm run db:migrate
 ```
+
+Apply migrations separately to the test database (`app_test`) before running tests:
+
+```bash
+docker compose exec backend npm run db:test:migrate
+```
+
+The two databases are independent. Migrating `app` does **not** create tables in `app_test`. Run both migration commands on a fresh checkout, and rerun the relevant command whenever database migrations are added.
 
 ## Analyzing a job advertisement
 
@@ -231,6 +248,14 @@ docker compose exec backend npm run db:migrate
 7. Check the saved job's details, including its source URL and original advertisement. Newly accepted categories are available when analyzing the next job.
 
 The analysis and review stages do not persist a job. Saving is a separate, explicit action. Editing the reviewed data after approval requires reapproval.
+
+## Analyzing skill demand
+
+1. Open **Skill Demand** in the application navigation, or visit [http://localhost:5173/skill-demand](http://localhost:5173/skill-demand).
+2. Review the **Jobs analyzed** total and the table of skills, categories, job counts, must-have counts, nice-to-have counts, and demand percentages.
+3. Select a column heading to sort; select it again to reverse the direction.
+
+Demand percentage is calculated as `(jobs mentioning the skill / jobs analyzed) × 100`, rounded to one decimal place. Only non-expired jobs with at least one associated skill contribute to the analysis. The page provides loading, empty, and error/retry states.
 
 ## Importing the sample job dataset
 
@@ -273,9 +298,7 @@ Run backend and frontend npm commands **inside their Docker containers**, as sho
 
 ## Testing
 
-The project uses a dedicated PostgreSQL test database.
-
-Apply test migrations:
+The project uses a dedicated PostgreSQL test database (`app_test`), separate from the development database (`app`). Before the first test run—and after adding new database migrations—apply the migrations to `app_test`:
 
 ```bash
 docker compose exec backend npm run db:test:migrate
@@ -287,7 +310,15 @@ Run all backend tests:
 docker compose exec backend npm test
 ```
 
-The backend suite includes endpoint, repository, service, and schema tests.
+The backend suite includes endpoint, repository, service, and schema tests. The backend test scripts load `.env.test` with `--override` and use the corresponding Vitest configuration; invoke those scripts rather than calling Vitest directly. The database connection guard rejects attempts to run tests against a non-test database.
+
+To run a single repository test file:
+
+```bash
+docker compose exec backend npm run test:repository -- test/repositories/market-analysis-repository.test.ts
+```
+
+If a test fails with `relation "job_skills" does not exist`, check that the test migrations above completed successfully.
 
 **Run frontend tests with a limited worker count:**
 
@@ -326,6 +357,6 @@ The current CI status is shown by the badge at the top of this README. If fronte
 
 ## Project status
 
-Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, JSON import, automated testing, and CI are also in place.
+Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, skill demand analysis, JSON import, automated testing, and CI are also in place.
 
-Planned improvements include additional skill-gap analysis capabilities, JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.
+Planned improvements include skill-gap analysis beyond demand counts, JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.
