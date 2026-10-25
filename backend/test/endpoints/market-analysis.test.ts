@@ -366,4 +366,218 @@ describe('Market Analysis API', () => {
             )
         ).toBe(false);
     });
+
+    // UC-28: Skill priority
+
+    it('reports missing market demand when no jobs exist', async () => {
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/analysis/skill-priorities',
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({
+            totalJobsAnalyzed: 0,
+            skills: [],
+            missingInformation: ['market_demand'],
+        });
+    });
+
+    it('calculates weighted demand and priority scores', async () => {
+        await createJob('Company A', [
+            {
+                name: 'Docker',
+                category: 'DevOps',
+                requirement: 'must_have',
+            },
+            {
+                name: 'PHP',
+                category: 'Programming Languages',
+                requirement: 'must_have',
+            },
+        ]);
+
+        await createJob('Company B', [
+            {
+                name: 'Docker',
+                category: 'DevOps',
+                requirement: 'nice_to_have',
+            },
+        ]);
+
+        await assessSkill('Docker', 2);
+        await assessSkill('PHP', 5);
+
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/analysis/skill-priorities',
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        const result = response.json();
+
+        expect(result.totalJobsAnalyzed).toBe(2);
+        expect(result.missingInformation).toEqual([]);
+        expect(result.skills).toHaveLength(2);
+
+        const docker = result.skills[0];
+        const php = result.skills[1];
+
+        expect(docker).toMatchObject({
+            name: 'Docker',
+            jobCount: 2,
+            mustHaveCount: 1,
+            niceToHaveCount: 1,
+            proficiency: 2,
+            gap: 3,
+            demandWeight: 0.75,
+            status: 'assessed',
+        });
+
+        const expectedScore = Math.round(
+            100 *
+            Math.pow(0.75, 0.7) *
+            Math.pow(3 / 5, 0.3) *
+            10
+        ) / 10;
+
+        expect(docker.priorityScore).toBe(expectedScore);
+
+        expect(php).toMatchObject({
+            name: 'PHP',
+            proficiency: 5,
+            gap: 0,
+            demandWeight: 0.5,
+            priorityScore: 0,
+        });
+    });
+
+    it('ranks assessed skills by descending priority', async () => {
+        await createJob('Company A', [
+            {
+                name: 'Docker',
+                category: 'DevOps',
+                requirement: 'must_have',
+            },
+            {
+                name: 'PHP',
+                category: 'Programming Languages',
+                requirement: 'must_have',
+            },
+        ]);
+
+        await createJob('Company B', [
+            {
+                name: 'Docker',
+                category: 'DevOps',
+                requirement: 'must_have',
+            },
+        ]);
+
+        await assessSkill('Docker', 2);
+        await assessSkill('PHP', 4);
+
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/analysis/skill-priorities',
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        const result = response.json();
+
+        expect(result.skills.map(
+            (skill: { name: string }) => skill.name
+        )).toEqual(['Docker', 'PHP']);
+
+        expect(result.skills[0].priorityScore)
+            .toBeGreaterThan(result.skills[1].priorityScore);
+    });
+
+    it('reports unassessed skills without assigning priority', async () => {
+        await createJob('Company A', [
+            {
+                name: 'Rust',
+                category: 'Programming Languages',
+                requirement: 'must_have',
+            },
+            {
+                name: 'PHP',
+                category: 'Programming Languages',
+                requirement: 'must_have',
+            },
+        ]);
+
+        await assessSkill('PHP', 3);
+
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/analysis/skill-priorities',
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        const result = response.json();
+
+        expect(result.missingInformation)
+            .toContain('skill_assessments');
+
+        expect(result.skills.map(
+            (skill: { name: string }) => skill.name
+        )).toEqual(['PHP', 'Rust']);
+
+        expect(result.skills[1]).toMatchObject({
+            name: 'Rust',
+            proficiency: null,
+            gap: null,
+            priorityScore: null,
+            status: 'unassessed',
+        });
+    });
+
+    it('excludes expired jobs from priority analysis', async () => {
+        await createJob('Active Company', [
+            {
+                name: 'Docker',
+                category: 'DevOps',
+                requirement: 'must_have',
+            },
+        ]);
+
+        await createJob(
+            'Expired Company',
+            [
+                {
+                    name: 'Rust',
+                    category: 'Programming Languages',
+                    requirement: 'must_have',
+                },
+            ],
+            'expired'
+        );
+
+        await assessSkill('Docker', 2);
+
+        const response = await app.inject({
+            method: 'GET',
+            url: '/api/v1/analysis/skill-priorities',
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        const result = response.json();
+
+        expect(result.totalJobsAnalyzed).toBe(1);
+        expect(result.skills).toHaveLength(1);
+
+        expect(result.skills[0]).toMatchObject({
+            name: 'Docker',
+            demandWeight: 1,
+            proficiency: 2,
+            gap: 3,
+        });
+
+        expect(result.missingInformation).toEqual([]);
+    });
 });
