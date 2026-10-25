@@ -1,4 +1,3 @@
-
 import { z } from 'zod';
 
 import {
@@ -41,7 +40,6 @@ export const importedJobSchema = z.object({
     interest: z.number().int().min(0).max(100).nullable().optional(),
     applyStatus: applicationStatusSchema.nullable().optional(),
     gapNotes: z.string().trim().nullable().optional(),
-    originalMatch: z.number().min(0).max(100).nullable().optional(),
     skills: z.array(importedJobSkillSchema).default([]),
 });
 

@@ -70,7 +70,6 @@ interface JobFormState {
   interest: number | null;
   applyStatus: ApplicationStatus | '';
   gapNotes: string;
-  originalMatch: number | null;
   skills: JobSkillForm[];
 }
 
@@ -96,7 +95,6 @@ const form = reactive<JobFormState>({
   interest: props.initialValue?.interest ?? null,
   applyStatus: props.initialValue?.applyStatus ?? '',
   gapNotes: props.initialValue?.gapNotes ?? '',
-  originalMatch: props.initialValue?.originalMatch ?? null,
 
   skills: props.initialValue?.skills.map((skill) => ({
     ...skill,
@@ -243,7 +241,6 @@ function submit(): void {
     interest: form.interest,
     applyStatus: form.applyStatus || null,
     gapNotes: nullableString(form.gapNotes),
-    originalMatch: form.originalMatch,
     skills: form.skills.map((skill) => ({
       name: skill.name.trim(),
       category: matchedSkill(skill.name)?.category ?? canonicalCategory(skill.category, knownCategories.value),
@@ -547,22 +544,6 @@ function submit(): void {
           <input
               id="interest"
               v-model.number="form.interest"
-              type="number"
-              min="0"
-              max="100"
-              placeholder="0–100"
-              class="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="original-match">
-            Original match (%)
-          </Label>
-
-          <input
-              id="original-match"
-              v-model.number="form.originalMatch"
               type="number"
               min="0"
               max="100"

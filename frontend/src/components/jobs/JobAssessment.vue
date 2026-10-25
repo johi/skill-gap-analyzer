@@ -33,19 +33,6 @@ defineProps<{ job: JobWithSkills }>();
 
           <div>
             <dt class="text-sm text-muted-foreground">
-              Original match
-            </dt>
-            <dd class="mt-1 text-lg font-semibold">
-              {{
-                job.originalMatch !== null
-                    ? `${job.originalMatch}%`
-                    : '—'
-              }}
-            </dd>
-          </div>
-
-          <div>
-            <dt class="text-sm text-muted-foreground">
               Application status
             </dt>
             <dd class="mt-1">

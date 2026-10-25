@@ -74,7 +74,6 @@ export const jobSchema = z.object({
     interest: z.number().nullable(),
     applyStatus: applicationStatusSchema.nullable(),
     gapNotes: z.string().nullable(),
-    originalMatch: z.number().nullable(),
     createdAt: z.string(),
     updatedAt: z.string(),
 });

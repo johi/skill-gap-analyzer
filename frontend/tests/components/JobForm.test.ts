@@ -39,7 +39,6 @@ describe('JobForm', () => {
             company: 'Example Technologies',
             title: 'Senior Backend Developer',
             interest: null,
-            originalMatch: null,
             skills: [],
         });
     });

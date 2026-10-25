@@ -14,12 +14,12 @@ const job: JobWithSkills = {
   workModel: 'hybrid', employmentType: 'full_time', seniority: 'senior',
   primaryRole: null, yearsRequired: null, educationRequirement: null,
   languageRequirements: [], salaryRate: null, interest: 80,
-  applyStatus: 'not_applied', gapNotes: null, originalMatch: 75,
+  applyStatus: 'not_applied', gapNotes: null,
   createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', skills: [],
 };
 
 function response(data: JobWithSkills[] = [job], page = 1, totalItems = data.length, pageSize: 10 | 25 | 50 = 25): PaginatedJobs {
-  return { data, pagination: { page, pageSize, totalItems, totalPages: Math.ceil(totalItems / pageSize) } };
+  return { data: data.map(item => ({ ...item, matchPercentage: 87.5, assessmentCoverage: 75 })), pagination: { page, pageSize, totalItems, totalPages: Math.ceil(totalItems / pageSize) } };
 }
 
 function deferred<T>() {
@@ -65,6 +65,10 @@ describe('JobsView', () => {
     expect(wrapper.text()).toContain('Example Ltd');
     expect(wrapper.text()).toContain('Backend Engineer');
     expect(wrapper.text()).toContain('80%');
+    expect(wrapper.text()).toContain('87.5%');
+    expect(wrapper.text()).toContain('75%');
+    expect(wrapper.findAll('th').map(header => header.text())).not.toContain('Original match');
+    expect(wrapper.find('option[value="originalMatch"]').exists()).toBe(false);
     expect(wrapper.get('a[href="https://example.com/job"]').attributes('rel')).toContain('noopener');
     expect(wrapper.get('a[href="/jobs/7"]').text()).toContain('Backend Engineer');
   });
@@ -82,6 +86,13 @@ describe('JobsView', () => {
     await changeSelect(wrapper, 'Sort by', 'company');
     expect(router.currentRoute.value.query).toEqual({ workModel: 'hybrid', sortBy: 'company' });
     expect(getJobs).toHaveBeenLastCalledWith(expect.objectContaining({ workModel: 'hybrid', sortBy: 'company', page: 1 }));
+  });
+
+  it('sorts by calculated match through the URL', async () => {
+    const { wrapper, router } = await setup();
+    await changeSelect(wrapper, 'Sort by', 'matchPercentage');
+    expect(router.currentRoute.value.query.sortBy).toBe('matchPercentage');
+    expect(getJobs).toHaveBeenLastCalledWith(expect.objectContaining({ sortBy: 'matchPercentage' }));
   });
 
   it('debounces search and writes the search term into the URL', async () => {

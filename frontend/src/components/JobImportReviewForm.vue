@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { computed } from 'vue';
 
@@ -36,7 +35,6 @@ const formInitialValue = computed<CreateJobInput>(() => ({
   interest: props.job.interest ?? null,
   applyStatus: props.job.applyStatus ?? null,
   gapNotes: props.job.gapNotes ?? null,
-  originalMatch: props.job.originalMatch ?? null,
   skills: props.job.skills,
 }));
 

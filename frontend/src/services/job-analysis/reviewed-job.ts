@@ -34,7 +34,6 @@ export function analysisToReviewInput(analysis: JobAdvertisementAnalysis): JobRe
     interest: null,
     applyStatus: null,
     gapNotes: null,
-    originalMatch: null,
     // Preserve uncertainty. The reviewer must classify these before approval.
     skills: analysis.proposal.skills.map(skill => ({
       name: skill.name,
@@ -68,7 +67,6 @@ export const reviewedJobInputSchema = z.object({
   interest: z.number().int().min(0).max(100).nullable(),
   applyStatus: applicationStatusSchema.nullable(),
   gapNotes: z.string().nullable(),
-  originalMatch: z.number().min(0).max(100).nullable(),
   skills: z.array(z.object({
     name: z.string().trim().min(1).max(255),
     category: z.string().trim().min(1).max(100),

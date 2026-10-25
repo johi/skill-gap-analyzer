@@ -11,7 +11,7 @@ defineProps<{ jobs: PaginatedJobs['data'] }>();
           <Table>
             <TableHeader><TableRow>
               <TableHead>Date</TableHead><TableHead>Company</TableHead><TableHead>Title</TableHead>
-              <TableHead>Location</TableHead><TableHead>Interest</TableHead><TableHead>Match</TableHead>
+              <TableHead>Location</TableHead><TableHead>Interest</TableHead><TableHead>Calculated match</TableHead><TableHead>Coverage</TableHead>
               <TableHead>Status</TableHead><TableHead>Ad</TableHead>
             </TableRow></TableHeader>
             <TableBody>
@@ -23,7 +23,8 @@ defineProps<{ jobs: PaginatedJobs['data'] }>();
                 </TableCell>
                 <TableCell>{{ job.location ?? '—' }}</TableCell>
                 <TableCell><Badge v-if="job.interest !== null" variant="secondary">{{ job.interest }}%</Badge><span v-else>—</span></TableCell>
-                <TableCell><Badge v-if="job.originalMatch !== null" variant="secondary">{{ job.originalMatch }}%</Badge><span v-else>—</span></TableCell>
+                <TableCell><Badge v-if="job.matchPercentage !== null" variant="secondary">{{ job.matchPercentage }}%</Badge><span v-else>—</span></TableCell>
+                <TableCell><Badge variant="outline">{{ job.assessmentCoverage }}%</Badge></TableCell>
                 <TableCell><Badge v-if="job.applyStatus" variant="outline">{{ job.applyStatus.replaceAll('_', ' ') }}</Badge><span v-else>—</span></TableCell>
                 <TableCell>
                   <a v-if="job.sourceUrl" :href="job.sourceUrl" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm underline" :aria-label="`Open original advertisement for ${job.title}`">

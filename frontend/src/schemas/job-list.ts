@@ -8,7 +8,7 @@ import {
 } from './job';
 
 export const jobSortBySchema = z.enum([
-  'dateFound', 'company', 'interest', 'originalMatch',
+  'dateFound', 'company', 'interest', 'matchPercentage',
 ]);
 export const jobSortOrderSchema = z.enum(['asc', 'desc']);
 export const jobPageSizeSchema = z.union([
@@ -28,7 +28,10 @@ export const jobListQuerySchema = z.object({
 });
 
 export const paginatedJobsSchema = z.object({
-  data: z.array(jobWithSkillsSchema),
+  data: z.array(jobWithSkillsSchema.extend({
+    matchPercentage: z.number().min(0).max(100).nullable(),
+    assessmentCoverage: z.number().min(0).max(100),
+  })),
   pagination: z.object({
     page: z.number().int().positive(),
     pageSize: jobPageSizeSchema,

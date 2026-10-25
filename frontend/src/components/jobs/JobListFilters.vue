@@ -60,7 +60,7 @@ const resetFilters = () => emit('reset');
           <label class="space-y-1 text-sm">
             <span class="font-medium">Sort by</span>
             <select aria-label="Sort by" class="w-full rounded-md border bg-background px-3 py-2" :value="filters.sortBy" @change="updateFilters({ sortBy: ($event.target as HTMLSelectElement).value as JobListQuery['sortBy'] })">
-              <option value="dateFound">Date found</option><option value="company">Company</option><option value="interest">Interest</option><option value="originalMatch">Original match</option>
+              <option value="dateFound">Date found</option><option value="company">Company</option><option value="interest">Interest</option><option value="matchPercentage">Calculated match</option>
             </select>
           </label>
           <label class="space-y-1 text-sm">
