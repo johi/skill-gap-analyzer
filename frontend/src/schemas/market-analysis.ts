@@ -1,3 +1,4 @@
+
 import { z } from 'zod';
 
 export const skillDemandSchema = z.object({
@@ -13,4 +14,15 @@ export const skillDemandSchema = z.object({
 export const skillDemandResultSchema = z.object({
     totalJobsAnalyzed: z.number().int().nonnegative(),
     skills: z.array(skillDemandSchema),
+});
+
+export const skillGapSchema = skillDemandSchema.extend({
+    proficiency: z.number().int().min(0).max(5).nullable(),
+    gap: z.number().int().min(0).max(5).nullable(),
+    status: z.enum(['assessed', 'unassessed']),
+});
+
+export const skillGapResultSchema = z.object({
+    totalJobsAnalyzed: z.number().int().nonnegative(),
+    skills: z.array(skillGapSchema),
 });
