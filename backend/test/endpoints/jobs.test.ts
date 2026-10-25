@@ -959,4 +959,17 @@ describe('Jobs API', () => {
         }
     });
 
+    it('returns dynamically calculated match and coverage in job listings', async () => {
+        const created = await app.inject({ method: 'POST', url: '/api/v1/jobs', payload: {
+            dateFound: '2026-10-20', company: 'Match Example', title: 'Developer',
+            skills: [{ name: 'UC30 Test Skill', category: 'Programming Languages', requirement: 'must_have' }],
+        }});
+        expect(created.statusCode).toBe(201);
+        const response = await app.inject({ method: 'GET', url: '/api/v1/jobs?sortBy=matchPercentage' });
+        expect(response.statusCode).toBe(200);
+        expect(response.json().data).toEqual([expect.objectContaining({
+            company: 'Match Example', matchPercentage: null, assessmentCoverage: 0,
+        })]);
+    });
+
 });

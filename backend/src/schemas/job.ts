@@ -148,11 +148,6 @@ export const createJobSchema = z.object({
         .nullable()
         .optional(),
 
-    originalMatch: z.number()
-        .min(0)
-        .max(100)
-        .nullable()
-        .optional(),
 
     skills: z.array(jobSkillSchema)
         .default([]),
@@ -178,7 +173,6 @@ export const jobResponseSchema = z.object({
     interest: z.number().int().min(0).max(100).nullable(),
     applyStatus: applicationStatusSchema.nullable(),
     gapNotes: z.string().nullable(),
-    originalMatch: z.number().min(0).max(100).nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
     skills: z.array(z.object({
@@ -195,7 +189,7 @@ export const listJobsQuerySchema = z.object({
     seniority: senioritySchema.optional(),
     employmentType: employmentTypeSchema.optional(),
     applyStatus: applicationStatusSchema.optional(),
-    sortBy: z.enum(['dateFound', 'company', 'interest', 'originalMatch'])
+    sortBy: z.enum(['dateFound', 'company', 'interest', 'matchPercentage'])
         .optional().default('dateFound'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
     page: z.coerce.number().int().positive().optional().default(1),
@@ -205,7 +199,10 @@ export const listJobsQuerySchema = z.object({
 });
 
 export const jobsResponseSchema = z.object({
-    data: z.array(jobResponseSchema),
+    data: z.array(jobResponseSchema.extend({
+        matchPercentage: z.number().min(0).max(100).nullable(),
+        assessmentCoverage: z.number().min(0).max(100),
+    })),
     pagination: z.object({
         page: z.number().int().positive(),
         pageSize: z.union([z.literal(10), z.literal(25), z.literal(50)]),

@@ -70,9 +70,8 @@ export class JobRepository {
             dateFound: jobs.dateFound,
             company: jobs.company,
             interest: jobs.interest,
-            originalMatch: jobs.originalMatch,
         };
-        const column = sortColumns[query.sortBy];
+        const column = sortColumns[query.sortBy === 'matchPercentage' ? 'dateFound' : query.sortBy];
         const ordering = query.sortOrder === 'asc'
             ? sql`${column} ASC NULLS LAST`
             : sql`${column} DESC NULLS LAST`;

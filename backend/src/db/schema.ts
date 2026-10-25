@@ -1,3 +1,4 @@
+
 import {
     pgTable,
     bigserial,
@@ -7,7 +8,6 @@ import {
     date,
     timestamp,
     smallint,
-    numeric,
     primaryKey,
     unique,
     check,
@@ -15,7 +15,6 @@ import {
 } from 'drizzle-orm/pg-core';
 
 import { sql } from 'drizzle-orm';
-
 
 export const jobs = pgTable(
     'jobs',
@@ -43,12 +42,6 @@ export const jobs = pgTable(
         applyStatus: varchar('apply_status', { length: 50 }),
         gapNotes: text('gap_notes'),
 
-        originalMatch: numeric('original_match', {
-            precision: 5,
-            scale: 2,
-            mode: 'number',
-        }),
-
         createdAt: timestamp('created_at', {
             withTimezone: true,
         }).notNull().defaultNow(),
@@ -61,11 +54,6 @@ export const jobs = pgTable(
         check(
             'jobs_interest_check',
             sql`${table.interest} IS NULL OR ${table.interest} BETWEEN 0 AND 100`
-        ),
-
-        check(
-            'jobs_original_match_check',
-            sql`${table.originalMatch} IS NULL OR ${table.originalMatch} BETWEEN 0 AND 100`
         ),
 
         index('jobs_date_found_idx').on(table.dateFound),
@@ -136,7 +124,6 @@ export const skills = pgTable(
     ]
 );
 
-
 export const jobSkills = pgTable(
     'job_skills',
     {
@@ -173,7 +160,6 @@ export const jobSkills = pgTable(
         index('job_skills_skill_id_idx').on(table.skillId),
     ]
 );
-
 
 export const userSkills = pgTable(
     'user_skills',

@@ -49,6 +49,9 @@ describe('jobDatasetSchema', () => {
         });
 
         expect(result.success).toBe(true);
+        if (result.success) {
+            expect(result.data.jobs[0]).not.toHaveProperty('originalMatch');
+        }
     });
 
     it('accepts an exportedAt timestamp', () => {
@@ -236,7 +239,7 @@ describe('jobDatasetSchema', () => {
 
             expect(result.success).toBe(false);
         });
-        
+
         it('rejects duplicate job indexes', () => {
             const result = reviewedImportSchema.safeParse({
                 version: 1,
