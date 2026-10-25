@@ -1,7 +1,9 @@
+
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 
 import { JobService } from '@/services/job-service';
+import type { JobMatchAnalysisService } from '@/services/job-match-analysis-service';
 import { idParamSchema } from '@/schemas/common';
 import {
     createJobSchema,
@@ -18,7 +20,8 @@ import {
 } from '@/schemas/job-dataset';
 
 export function createJobRoutes(
-    jobService: JobService
+    jobService: JobService,
+    jobMatchAnalysisService: JobMatchAnalysisService
 ): FastifyPluginAsync {
     return async (fastify) => {
         const importCommitService = new JobImportCommitService();
@@ -49,6 +52,14 @@ export function createJobRoutes(
             const jobs = await jobService.list(query);
 
             return jobsResponseSchema.parse(jobs);
+        });
+
+        fastify.get('/:id/match', async (request) => {
+            const { id } = idParamSchema.parse(
+                request.params
+            );
+
+            return jobMatchAnalysisService.getJobMatch(id);
         });
 
         fastify.get('/:id', async (request) => {
