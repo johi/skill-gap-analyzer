@@ -905,36 +905,6 @@ Extensions:
 Postcondition:
 No persistent data is changed.
 
-
-UC-31: Calculate Projected Job Match
-
-Primary Actor:
-User
-
-Goal:
-Determine how a job match would change after improving selected skills.
-
-Preconditions:
-The job and personal skill profile exist.
-
-Trigger:
-User specifies proposed future skill levels.
-
-Main Success Scenario:
-1. User specifies one or more projected skill levels.
-2. System validates the levels.
-3. System calculates the current match.
-4. System calculates the projected match.
-5. System returns the difference and affected skill gaps.
-
-Extensions:
-2a. Proposed level is invalid:
-    System rejects the projection.
-
-Postcondition:
-The real personal skill profile remains unchanged.
-
-
 DASHBOARD AND OVERVIEW
 ======================
 
