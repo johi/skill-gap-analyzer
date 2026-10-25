@@ -5,6 +5,7 @@ import { computed, onMounted, ref } from 'vue';
 import {
   getSkillDemand,
   getSkillGaps,
+  getSkillPriorities,
 } from '@/api/market-analysis';
 
 import type {
@@ -12,9 +13,11 @@ import type {
   SkillDemandResult,
   SkillGap,
   SkillGapResult,
+  SkillPriority,
+  SkillPriorityResult,
 } from '@/types/market-analysis';
 
-type Tab = 'demand' | 'gaps';
+type Tab = 'demand' | 'gaps' | 'priorities';
 
 type SortKey =
     | 'name'
@@ -25,12 +28,17 @@ type SortKey =
     | 'demandPercentage'
     | 'proficiency'
     | 'gap'
-    | 'status';
+    | 'status'
+    | 'demandWeight'
+    | 'priorityScore';
+
+type AnalysisSkill = SkillDemand | SkillGap | SkillPriority;
 
 const activeTab = ref<Tab>('demand');
 
 const demandResult = ref<SkillDemandResult | null>(null);
 const gapResult = ref<SkillGapResult | null>(null);
+const priorityResult = ref<SkillPriorityResult | null>(null);
 
 const loading = ref(false);
 const error = ref<string | null>(null);
@@ -54,20 +62,63 @@ const gapColumns: { key: SortKey; label: string }[] = [
   { key: 'status', label: 'Status' },
 ];
 
-const columns = computed(() =>
-    activeTab.value === 'demand'
-        ? demandColumns
-        : gapColumns
+const priorityColumns: { key: SortKey; label: string }[] = [
+  { key: 'name', label: 'Skill' },
+  { key: 'category', label: 'Category' },
+  { key: 'jobCount', label: 'Jobs' },
+  { key: 'demandPercentage', label: 'Demand' },
+  { key: 'demandWeight', label: 'Demand Weight' },
+  { key: 'proficiency', label: 'Proficiency' },
+  { key: 'gap', label: 'Gap' },
+  { key: 'priorityScore', label: 'Priority Score' },
+  { key: 'status', label: 'Status' },
+];
+
+const tabs: { key: Tab; label: string }[] = [
+  { key: 'demand', label: 'Market Demand' },
+  { key: 'gaps', label: 'Skill Gaps' },
+  { key: 'priorities', label: 'Priorities' },
+];
+
+const columns = computed(() => {
+  switch (activeTab.value) {
+    case 'demand':
+      return demandColumns;
+    case 'gaps':
+      return gapColumns;
+    case 'priorities':
+      return priorityColumns;
+  }
+});
+
+const result = computed(() => {
+  switch (activeTab.value) {
+    case 'demand':
+      return demandResult.value;
+    case 'gaps':
+      return gapResult.value;
+    case 'priorities':
+      return priorityResult.value;
+  }
+});
+
+const loadingLabel = computed(() => {
+  switch (activeTab.value) {
+    case 'demand':
+      return 'skill demand';
+    case 'gaps':
+      return 'skill gaps';
+    case 'priorities':
+      return 'skill priorities';
+  }
+});
+
+const missingInformation = computed(
+    () => priorityResult.value?.missingInformation ?? []
 );
 
-const result = computed(() =>
-    activeTab.value === 'demand'
-        ? demandResult.value
-        : gapResult.value
-);
-
-const sortedSkills = computed<(SkillDemand | SkillGap)[]>(() => {
-  const skills = [...(result.value?.skills ?? [])];
+const sortedSkills = computed<AnalysisSkill[]>(() => {
+  const skills: AnalysisSkill[] = [...(result.value?.skills ?? [])];
 
   return skills.sort((a, b) => {
     const key = sortKey.value;
@@ -122,10 +173,16 @@ async function loadCurrentTab(): Promise<void> {
   error.value = null;
 
   try {
-    if (activeTab.value === 'demand') {
-      demandResult.value = await getSkillDemand();
-    } else {
-      gapResult.value = await getSkillGaps();
+    switch (activeTab.value) {
+      case 'demand':
+        demandResult.value = await getSkillDemand();
+        break;
+      case 'gaps':
+        gapResult.value = await getSkillGaps();
+        break;
+      case 'priorities':
+        priorityResult.value = await getSkillPriorities();
+        break;
     }
   } catch (err) {
     error.value = err instanceof Error
@@ -140,14 +197,16 @@ async function selectTab(tab: Tab): Promise<void> {
   if (activeTab.value === tab) return;
 
   activeTab.value = tab;
-  sortKey.value = 'jobCount';
+  sortKey.value = tab === 'priorities'
+      ? 'priorityScore'
+      : 'jobCount';
   sortDescending.value = true;
 
   await loadCurrentTab();
 }
 
 function formatCell(
-    skill: SkillDemand | SkillGap,
+    skill: AnalysisSkill,
     key: SortKey
 ): string {
   switch (key) {
@@ -175,6 +234,18 @@ function formatCell(
               : 'Unassessed'
           : '—';
 
+    case 'demandWeight':
+      return 'demandWeight' in skill
+          ? `${(skill.demandWeight * 100).toFixed(1)}%`
+          : '—';
+
+    case 'priorityScore':
+      return 'priorityScore' in skill
+          ? skill.priorityScore === null
+              ? '—'
+              : skill.priorityScore.toFixed(1)
+          : '—';
+
     default:
       return String(skill[key as keyof SkillDemand]);
   }
@@ -190,7 +261,7 @@ onMounted(loadCurrentTab);
         Skill Analysis
       </h1>
       <p class="mt-1 text-sm text-muted-foreground">
-        Explore market demand and compare it with your assessed skill levels.
+        Explore market demand, assess skill gaps, and prioritize upskilling.
       </p>
     </div>
 
@@ -200,38 +271,29 @@ onMounted(loadCurrentTab);
         class="flex gap-2 border-b"
     >
       <button
+          v-for="tab in tabs"
+          :key="tab.key"
           type="button"
           role="tab"
-          :aria-selected="activeTab === 'demand'"
+          :aria-selected="activeTab === tab.key"
           class="border-b-2 px-4 py-2 text-sm font-medium"
           :class="
-          activeTab === 'demand'
-            ? 'border-primary text-foreground'
-            : 'border-transparent text-muted-foreground hover:text-foreground'
-        "
-          @click="selectTab('demand')"
+                    activeTab === tab.key
+                        ? 'border-primary text-foreground'
+                        : 'border-transparent text-muted-foreground hover:text-foreground'
+                "
+          @click="selectTab(tab.key)"
       >
-        Market Demand
-      </button>
-
-      <button
-          type="button"
-          role="tab"
-          :aria-selected="activeTab === 'gaps'"
-          class="border-b-2 px-4 py-2 text-sm font-medium"
-          :class="
-          activeTab === 'gaps'
-            ? 'border-primary text-foreground'
-            : 'border-transparent text-muted-foreground hover:text-foreground'
-        "
-          @click="selectTab('gaps')"
-      >
-        Skill Gaps
+        {{ tab.label }}
       </button>
     </div>
 
-    <p v-if="loading" role="status" class="text-sm text-muted-foreground">
-      Loading {{ activeTab === 'demand' ? 'skill demand' : 'skill gaps' }}...
+    <p
+        v-if="loading"
+        role="status"
+        class="text-sm text-muted-foreground"
+    >
+      Loading {{ loadingLabel }}...
     </p>
 
     <div v-else-if="error" role="alert" class="space-y-3">
@@ -258,6 +320,29 @@ onMounted(loadCurrentTab);
         </p>
       </div>
 
+      <div
+          v-if="activeTab === 'priorities' && missingInformation.length > 0"
+          role="status"
+          class="rounded-lg border p-4 text-sm"
+      >
+        <p class="font-medium">
+          Additional information needed
+        </p>
+        <p
+            v-if="missingInformation.includes('market_demand')"
+            class="mt-1 text-muted-foreground"
+        >
+          Add skills to active jobs to calculate market demand.
+        </p>
+        <p
+            v-if="missingInformation.includes('skill_assessments')"
+            class="mt-1 text-muted-foreground"
+        >
+          Assess your proficiency in unassessed skills to calculate
+          their priority scores.
+        </p>
+      </div>
+
       <p
           v-if="result.skills.length === 0"
           class="rounded-lg border p-6 text-sm text-muted-foreground"
@@ -275,10 +360,10 @@ onMounted(loadCurrentTab);
                 :key="column.key"
                 scope="col"
                 :aria-sort="
-                  sortKey === column.key
-                    ? sortDescending ? 'descending' : 'ascending'
-                    : 'none'
-                "
+                                    sortKey === column.key
+                                        ? sortDescending ? 'descending' : 'ascending'
+                                        : 'none'
+                                "
                 class="px-4 py-3 text-left font-medium"
             >
               <button
@@ -303,10 +388,10 @@ onMounted(loadCurrentTab);
                 :key="column.key"
                 class="px-4 py-3"
                 :class="{
-                  'font-medium': column.key === 'name',
-                  'text-muted-foreground': column.key === 'category',
-                  'tabular-nums': !['name', 'category', 'status'].includes(column.key),
-                }"
+                                    'font-medium': column.key === 'name',
+                                    'text-muted-foreground': column.key === 'category',
+                                    'tabular-nums': !['name', 'category', 'status'].includes(column.key),
+                                }"
             >
               {{ formatCell(skill, column.key) }}
             </td>
@@ -320,6 +405,16 @@ onMounted(loadCurrentTab);
           class="text-xs text-muted-foreground"
       >
         Gap = 5 − proficiency. Unassessed skills have no calculated gap.
+      </p>
+
+      <p
+          v-if="activeTab === 'priorities'"
+          class="text-xs text-muted-foreground"
+      >
+        Demand weight = (2 × must-have + nice-to-have) /
+        (2 × jobs analyzed).
+        Priority score = 100 × demand weight^0.7 × (gap / 5)^0.3.
+        Unassessed skills have no priority score.
       </p>
     </template>
   </section>

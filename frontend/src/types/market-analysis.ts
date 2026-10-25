@@ -1,4 +1,3 @@
-
 import type { z } from 'zod';
 
 import type {
@@ -6,6 +5,8 @@ import type {
     skillDemandResultSchema,
     skillGapSchema,
     skillGapResultSchema,
+    skillPrioritySchema,
+    skillPriorityResultSchema,
 } from '@/schemas/market-analysis';
 
 export type SkillDemand = z.infer<
@@ -22,4 +23,12 @@ export type SkillGap = z.infer<
 
 export type SkillGapResult = z.infer<
     typeof skillGapResultSchema
+>;
+
+export type SkillPriority = z.infer<
+    typeof skillPrioritySchema
+>;
+
+export type SkillPriorityResult = z.infer<
+    typeof skillPriorityResultSchema
 >;

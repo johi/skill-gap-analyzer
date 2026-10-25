@@ -17,11 +17,13 @@ import SkillDemandView from '@/views/SkillDemandView.vue';
 import {
     getSkillDemand,
     getSkillGaps,
+    getSkillPriorities,
 } from '@/api/market-analysis';
 
 vi.mock('@/api/market-analysis', () => ({
     getSkillDemand: vi.fn(),
     getSkillGaps: vi.fn(),
+    getSkillPriorities: vi.fn(),
 }));
 
 const demandData = {
@@ -61,19 +63,19 @@ const gapData = {
     totalJobsAnalyzed: 3,
     skills: [
         {
-            ...demandData.skills[0],
+            ...demandData.skills[0]!,
             proficiency: 5,
             gap: 0,
             status: 'assessed' as const,
         },
         {
-            ...demandData.skills[1],
+            ...demandData.skills[1]!,
             proficiency: 0,
             gap: 5,
             status: 'assessed' as const,
         },
         {
-            ...demandData.skills[2],
+            ...demandData.skills[2]!,
             proficiency: null,
             gap: null,
             status: 'unassessed' as const,
@@ -81,12 +83,39 @@ const gapData = {
     ],
 };
 
+const priorityData = {
+    totalJobsAnalyzed: 3,
+    skills: [
+        {
+            ...gapData.skills[0]!,
+            demandWeight: 0.5,
+            priorityScore: 0,
+        },
+        {
+            ...gapData.skills[1]!,
+            demandWeight: 1 / 3,
+            priorityScore: 46.3,
+        },
+        {
+            ...gapData.skills[2]!,
+            demandWeight: 5 / 6,
+            priorityScore: null,
+        },
+    ],
+    missingInformation: ['skill_assessments' as const],
+};
+
 async function openGapTab(
     wrapper: ReturnType<typeof mount>
 ): Promise<void> {
-    const tabs = wrapper.findAll('[role="tab"]');
+    await wrapper.findAll('[role="tab"]')[1]!.trigger('click');
+    await flushPromises();
+}
 
-    await tabs[1]!.trigger('click');
+async function openPriorityTab(
+    wrapper: ReturnType<typeof mount>
+): Promise<void> {
+    await wrapper.findAll('[role="tab"]')[2]!.trigger('click');
     await flushPromises();
 }
 
@@ -106,6 +135,9 @@ describe('SkillDemandView', () => {
 
         vi.mocked(getSkillGaps)
             .mockResolvedValue(gapData);
+
+        vi.mocked(getSkillPriorities)
+            .mockResolvedValue(priorityData);
     });
 
     // UC-26: Market demand
@@ -117,6 +149,7 @@ describe('SkillDemandView', () => {
 
         expect(getSkillDemand).toHaveBeenCalledOnce();
         expect(getSkillGaps).not.toHaveBeenCalled();
+        expect(getSkillPriorities).not.toHaveBeenCalled();
 
         expect(wrapper.text()).toContain('Jobs analyzed');
         expect(wrapper.text()).toContain('PHP');
@@ -378,5 +411,137 @@ describe('SkillDemandView', () => {
             .toContain('Loading skill gaps');
 
         expect(wrapper.find('table').exists()).toBe(false);
+    });
+
+    // UC-28: Skill priority
+
+    it('loads priorities when the Priorities tab is selected', async () => {
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+
+        expect(getSkillPriorities).not.toHaveBeenCalled();
+
+        await openPriorityTab(wrapper);
+
+        expect(getSkillPriorities).toHaveBeenCalledOnce();
+
+        expect(wrapper.findAll('[role="tab"]')[2]!
+            .attributes('aria-selected')).toBe('true');
+
+        expect(wrapper.text()).toContain('Demand Weight');
+        expect(wrapper.text()).toContain('Priority Score');
+        expect(wrapper.text()).toContain('Proficiency');
+    });
+
+    it('sorts priorities by descending score by default', async () => {
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+        await openPriorityTab(wrapper);
+
+        expect(rowNames(wrapper))
+            .toEqual(['Docker', 'PHP', 'PostgreSQL']);
+
+        const priorityHeader = wrapper.findAll('thead th')
+            .find((header) => header.text().startsWith('Priority Score'));
+
+        expect(priorityHeader).toBeDefined();
+        expect(priorityHeader!.attributes('aria-sort'))
+            .toBe('descending');
+    });
+
+    it('formats demand weights, proficiency and priority scores', async () => {
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+        await openPriorityTab(wrapper);
+
+        const docker = wrapper.findAll('tbody tr')
+            .find((row) => row.find('td').text() === 'Docker');
+
+        expect(docker).toBeDefined();
+
+        const cells = docker!.findAll('td');
+
+        expect(cells[4]!.text()).toBe('33.3%');
+        expect(cells[5]!.text()).toBe('0/5');
+        expect(cells[6]!.text()).toBe('5');
+        expect(cells[7]!.text()).toBe('46.3');
+        expect(cells[8]!.text()).toBe('Assessed');
+    });
+
+    it('displays unassessed priorities without inventing scores', async () => {
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+        await openPriorityTab(wrapper);
+
+        const row = wrapper.findAll('tbody tr')
+            .find((item) =>
+                item.find('td').text() === 'PostgreSQL'
+            );
+
+        expect(row).toBeDefined();
+
+        const cells = row!.findAll('td');
+
+        expect(cells[5]!.text()).toBe('—');
+        expect(cells[6]!.text()).toBe('—');
+        expect(cells[7]!.text()).toBe('—');
+        expect(cells[8]!.text()).toBe('Unassessed');
+    });
+
+    it('reports missing assessment information', async () => {
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+        await openPriorityTab(wrapper);
+
+        expect(wrapper.text()).toContain(
+            'Additional information needed'
+        );
+
+        expect(wrapper.text()).toContain(
+            'Assess your proficiency in unassessed skills'
+        );
+    });
+
+    it('shows a loading state while priorities are pending', async () => {
+        vi.mocked(getSkillPriorities).mockReturnValue(
+            new Promise(() => {})
+        );
+
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+
+        await wrapper.findAll('[role="tab"]')[2]!.trigger('click');
+
+        expect(wrapper.get('[role="status"]').text())
+            .toContain('Loading skill priorities');
+
+        expect(wrapper.find('table').exists()).toBe(false);
+    });
+
+    it('retries a failed priority request', async () => {
+        vi.mocked(getSkillPriorities)
+            .mockRejectedValueOnce(new Error('Priority analysis unavailable'))
+            .mockResolvedValueOnce(priorityData);
+
+        const wrapper = mount(SkillDemandView);
+
+        await flushPromises();
+        await openPriorityTab(wrapper);
+
+        expect(wrapper.get('[role="alert"]').text())
+            .toContain('Priority analysis unavailable');
+
+        await wrapper.get('[role="alert"] button').trigger('click');
+        await flushPromises();
+
+        expect(getSkillPriorities).toHaveBeenCalledTimes(2);
+        expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+        expect(wrapper.text()).toContain('46.3');
     });
 });
