@@ -44,6 +44,7 @@ The application currently supports:
 - Analyzing skill demand across non-expired jobs, including occurrence counts, requirement breakdowns, and demand percentages
 - Comparing market demand with personal skill assessments, calculating proficiency gaps against a fixed target of 5, and identifying unassessed skills
 - Ranking upskilling opportunities using demand-weighted priority scores, while flagging missing assessments
+- Calculating per-job skill match scores with weighted assessment coverage, an individual skill breakdown, and explicit handling of unassessed skills
 - Maintaining a reusable skill catalogue and assessing personal skill proficiency on a 0–5 scale
 - Recording structured job attributes such as seniority, work model, application status, experience, education, and language requirements
 - Supporting multiple preferred or required languages per job using ISO 639-1 language codes
@@ -116,6 +117,10 @@ The frontend communicates with the backend through a dedicated API layer and val
 **Skill priorities:** `GET /api/v1/analysis/skill-priorities` uses `SkillPriorityService` to consume skill-gap results, calculate a demand weight and a priority score, and rank assessed skills by descending score. Unassessed skills have `priorityScore: null` and sort last. The response includes `missingInformation`, containing `market_demand` when there are no analyzed jobs/skills and `skill_assessments` when any analyzed skills lack a proficiency assessment. No data is persisted by these analysis endpoints.
 
 The frontend validates all three endpoint responses using Zod and presents **Market Demand**, **Skill Gaps**, and **Priorities** tabs in `SkillDemandView.vue`.
+
+### Job match analysis
+
+`GET /api/v1/jobs/:id/match` uses `JobMatchAnalysisService` to retrieve a job’s required skills and the candidate’s current assessments. `JobMatchService` calculates a weighted match and assessment coverage without modifying stored data. The Job Detail page shows the calculated match, coverage, and per-skill match factors; Refresh retrieves current assessments. The calculated match is distinct from the stored **Original match** and **Interest** fields.
 
 ### AI job analysis workflow
 
@@ -305,6 +310,34 @@ The priority score is rounded to **one decimal place**. A fully proficient skill
 
 All three tabs provide loading, empty, and error/retry states.
 
+## Calculating a job match
+
+Open a job from the **Jobs** list and inspect **Calculated job match** on its detail page. The score reflects your currently assessed proficiency for that job’s skill requirements. The **Refresh** button recalculates it after assessments change.
+
+For each required skill *i*, define:
+
+- **Lᵢ**: assessed proficiency, from 0 to 5; unassessed skills have no Lᵢ value
+- **wᵢ**: requirement weight, **2** for must-have and **1** for nice-to-have
+- **Fᵢ**: match factor, from 0 to 1
+- **A**: the set of assessed skills required by this job
+- **R**: all skills required by this job
+
+```text
+Fᵢ = min(1, Lᵢ / 4)
+
+Calculated match (%) = 100 × Σ(wᵢ × Fᵢ, i ∈ A) / Σ(wᵢ, i ∈ A)
+
+Assessment coverage (%) = 100 × Σ(wᵢ, i ∈ A) / Σ(wᵢ, i ∈ R)
+```
+
+Both percentages are rounded to **one decimal place**. Proficiency **4/5 or 5/5** fully satisfies a requirement; **0/5** is a valid assessment and contributes zero. Must-have skills carry twice the weight of nice-to-have skills.
+
+**Unassessed skills are excluded from both the numerator and denominator of the calculated match**, rather than being treated as proficiency zero. They still count toward total requirement weight when calculating assessment coverage. For example, if PHP and Docker are both must-have, PHP is assessed at 5/5, and Docker is unassessed, the result is **100% calculated match with 50% assessment coverage**. A high match with low coverage is incomplete evidence, not a claim that all requirements are met.
+
+If no required skills have been assessed, `matchPercentage` is `null` and coverage is **0%**. If a job has no skill requirements, `matchPercentage` is `null`, coverage is **0%**, and `missingInformation` contains `job_skills`. Missing assessments are indicated by `skill_assessments`. The API returns the underlying per-skill proficiency, match factor, and assessment status to make the calculation inspectable.
+
+This is a deterministic, skill-based heuristic. It does not assess seniority, languages, education, location, or other non-skill requirements, and it does not overwrite the job’s stored **Original match** value.
+
 ## Importing the sample job dataset
 
 The import screen accepts a version 1 JSON dataset:
@@ -383,6 +416,14 @@ docker compose exec backend npm run test:endpoint -- test/endpoints/market-analy
 docker compose exec frontend npm test -- tests/views/SkillDemandView.test.ts --maxWorkers=2
 ```
 
+To run job-match backend and frontend tests specifically:
+
+```bash
+docker compose exec backend npm run test:service -- test/services/job-match-service.test.ts
+docker compose exec backend npm run test:endpoint -- test/endpoints/job-match.test.ts
+docker compose exec frontend npm test -- tests/components/JobMatch.test.ts --maxWorkers=2
+```
+
 If a test fails with `relation "job_skills" does not exist`, check that the test migrations above completed successfully.
 
 **Run frontend tests with a limited worker count:**
@@ -433,6 +474,6 @@ The current CI status is shown by the badge at the top of this README. If fronte
 
 ## Project status
 
-Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, skill demand, gap, and priority analysis, JSON import, automated testing, and CI are also in place.
+Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, skill demand, gap, priority, and per-job match analysis, JSON import, automated testing, and CI are also in place.
 
 Planned improvements include JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.
