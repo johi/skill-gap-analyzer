@@ -4,14 +4,15 @@ import {
     createWebHistory,
 } from 'vue-router';
 
-import JobsView from '../views/JobsView.vue';
-import SkillsView from '../views/SkillsView.vue';
-import UserSkillsView from '../views/UserSkillsView.vue';
-import JobDetailView from '../views/JobDetailView.vue';
-import CreateJobView from '../views/CreateJobView.vue';
-import EditJobView from '../views/EditJobView.vue';
-import ImportJobsView from '../views/ImportJobsView.vue';
-import AnalyzeJobView from '../views/AnalyzeJobView.vue';
+import JobsView from '@/views/JobsView.vue';
+import SkillsView from '@/views/SkillsView.vue';
+import UserSkillsView from '@/views/UserSkillsView.vue';
+import JobDetailView from '@/views/JobDetailView.vue';
+import CreateJobView from '@/views/CreateJobView.vue';
+import EditJobView from '@/views/EditJobView.vue';
+import ImportJobsView from '@/views/ImportJobsView.vue';
+import AnalyzeJobView from '@/views/AnalyzeJobView.vue';
+import SkillDemandView from '@/views/SkillDemandView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -60,6 +61,11 @@ const router = createRouter({
             path: '/my-skills',
             name: 'user-skills',
             component: UserSkillsView,
+        },
+        {
+            path: '/skill-demand',
+            name: 'skill-demand',
+            component: SkillDemandView,
         },
     ],
 });

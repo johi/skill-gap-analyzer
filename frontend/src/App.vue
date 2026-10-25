@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  BarChart3,
   BriefcaseBusiness,
   ChartNoAxesColumnIncreasing,
   ListChecks,
@@ -31,6 +32,11 @@ const navigation = [
     name: 'My Skills',
     route: 'user-skills',
     icon: ChartNoAxesColumnIncreasing,
+  },
+  {
+    name: 'Skill Demand',
+    route: 'skill-demand',
+    icon: BarChart3,
   },
 ];
 
