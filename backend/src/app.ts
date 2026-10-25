@@ -15,6 +15,7 @@ import { JobService } from './services/job-service';
 import { JobImportService } from './services/job-import-service';
 import { MarketAnalysisService } from './services/market-analysis-service';
 import { JobAnalysisService } from './services/job-analysis-service';
+import { SkillGapAnalysisService } from '@/services/skill-gap-analysis-service';
 
 import { healthRoutes } from './routes/health';
 import { createJobRoutes } from './routes/jobs';
@@ -57,6 +58,11 @@ export function buildApp(
     const marketAnalysisService =
         new MarketAnalysisService(marketAnalysisRepository);
 
+    const skillGapAnalysisService =
+        new SkillGapAnalysisService(
+            marketAnalysisService,
+            userSkillRepository
+        );
     const jobService = new JobService();
 
     const jobImportService =
@@ -106,7 +112,10 @@ export function buildApp(
     );
 
     fastify.register(
-        createMarketAnalysisRoutes(marketAnalysisService),
+        createMarketAnalysisRoutes(
+            marketAnalysisService,
+            skillGapAnalysisService
+        ),
         {
             prefix: '/api/v1/analysis',
         }
