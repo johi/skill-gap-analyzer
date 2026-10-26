@@ -43,6 +43,7 @@ const job: JobWithSkills = {
   createdAt: '2026-10-17T00:00:00.000Z',
   updatedAt: '2026-10-17T00:00:00.000Z',
   skills: [],
+  contacts: [],
 };
 
 function mountView() {
@@ -67,6 +68,24 @@ describe('JobDetailView', () => {
     expect(wrapper.text()).toContain('Example Company');
     expect(wrapper.text()).toContain('Position details');
     expect(wrapper.text()).toContain('No skills assigned');
+  });
+
+  it('renders all saved recruitment contacts with clickable email and phone links', async () => {
+    vi.mocked(getJob).mockResolvedValue({
+      ...job,
+      contacts: [
+        { id: 1, name: 'Anna Example', role: 'Recruiter', email: 'anna@example.com', phone: '+45 12345678' },
+        { id: 2, name: 'Bo Example', role: null, email: 'bo@example.com', phone: null },
+      ],
+    });
+    const wrapper = mountView();
+    await flushPromises();
+    expect(wrapper.text()).toContain('Recruitment contacts');
+    expect(wrapper.text()).toContain('Anna Example');
+    expect(wrapper.text()).toContain('Recruiter');
+    expect(wrapper.text()).toContain('Bo Example');
+    expect(wrapper.find('a[href="mailto:anna@example.com"]').exists()).toBe(true);
+    expect(wrapper.find('a[href="tel:+45 12345678"]').exists()).toBe(true);
   });
 
   it('rejects invalid IDs without requesting a job', async () => {

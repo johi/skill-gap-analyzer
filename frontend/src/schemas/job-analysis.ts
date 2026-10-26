@@ -9,6 +9,13 @@ import {
 } from './job';
 
 export const extractedJobSchema = z.object({
+    applicationDeadline: z.iso.date().nullable().optional(),
+    contacts: z.array(z.object({
+        name: z.string().trim().max(255).nullable(),
+        role: z.string().trim().max(255).nullable(),
+        email: z.email().max(255).nullable(),
+        phone: z.string().trim().max(100).nullable(),
+    })).optional(),
     company: z.string().trim().min(1).max(255).nullable(),
     title: z.string().trim().min(1).max(255).nullable(),
     location: z.string().trim().min(1).max(255).nullable(),

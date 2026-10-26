@@ -58,6 +58,14 @@ export const jobSkillSchema = z.object({
 export const jobSchema = z.object({
     id: z.number().int().positive(),
     dateFound: z.string(),
+    applicationDeadline: z.iso.date().nullable().optional(),
+    contacts: z.array(z.object({
+        id: z.number().int().positive(),
+        name: z.string().nullable(),
+        role: z.string().nullable(),
+        email: z.string().nullable(),
+        phone: z.string().nullable(),
+    })).optional(),
     company: z.string(),
     title: z.string(),
     sourceUrl: z.string().nullable(),

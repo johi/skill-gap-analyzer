@@ -18,6 +18,8 @@ export type JobReviewDraft = Omit<CreateJobInput, 'skills'> & {
 export function analysisToReviewInput(analysis: JobAdvertisementAnalysis): JobReviewDraft {
   return {
     dateFound: analysis.dateFound,
+    applicationDeadline: analysis.proposal.applicationDeadline ?? null,
+    contacts: (analysis.proposal.contacts ?? []).map(contact => ({ ...contact })),
     company: analysis.proposal.company ?? '',
     title: analysis.proposal.title ?? '',
     sourceUrl: analysis.sourceUrl ?? null,
@@ -47,6 +49,13 @@ const nullableText = (max: number) => z.string().trim().max(max).nullable();
 /** Mirrors the backend's create-job contract, with duplicate detection before approval. */
 export const reviewedJobInputSchema = z.object({
   dateFound: z.iso.date(),
+  applicationDeadline: z.iso.date().nullable().optional(),
+  contacts: z.array(z.object({
+    name: z.string().trim().max(255).nullable(),
+    role: z.string().trim().max(255).nullable(),
+    email: z.email().max(255).nullable(),
+    phone: z.string().trim().max(100).nullable(),
+  })).optional(),
   company: z.string().trim().min(1).max(255),
   title: z.string().trim().min(1).max(255),
   sourceUrl: z.url().nullable(),

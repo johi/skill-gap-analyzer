@@ -181,6 +181,7 @@ function show(value: string | null): string {
         <CardContent>
           <dl class="grid gap-4 sm:grid-cols-2">
             <div v-for="field in [
+              { label: 'Application deadline', value: analysis.proposal.applicationDeadline ?? null },
               { label: 'Company', value: analysis.proposal.company },
               { label: 'Job title', value: analysis.proposal.title },
               { label: 'Location', value: analysis.proposal.location },
@@ -196,6 +197,15 @@ function show(value: string | null): string {
               <dd class="mt-1 text-sm">{{ show(field.value) }}</dd>
             </div>
           </dl>
+          <div class="mt-5">
+            <h3 class="text-sm font-medium">Recruitment contacts</h3>
+            <p v-if="!analysis.proposal.contacts?.length" class="mt-1 text-sm text-muted-foreground">Not specified</p>
+            <ul v-else class="mt-2 space-y-1 text-sm">
+              <li v-for="(contact, index) in analysis.proposal.contacts" :key="index">
+                {{ [contact.name, contact.role, contact.email, contact.phone].filter(Boolean).join(' · ') }}
+              </li>
+            </ul>
+          </div>
           <div class="mt-5">
             <h3 class="text-sm font-medium">Language requirements</h3>
             <p v-if="analysis.proposal.languageRequirements.length === 0" class="mt-1 text-sm text-muted-foreground">Not specified</p>

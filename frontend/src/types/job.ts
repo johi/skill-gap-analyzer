@@ -26,7 +26,16 @@ export interface JobSkillInput {
     requirement: JobSkillRequirement;
 }
 
+export interface JobContactInput {
+    name: string | null;
+    role: string | null;
+    email: string | null;
+    phone: string | null;
+}
+
 export interface CreateJobInput {
+    applicationDeadline?: string | null;
+    contacts?: JobContactInput[];
     dateFound: string;
     company: string;
     title: string;

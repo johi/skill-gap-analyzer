@@ -54,6 +54,8 @@ interface JobLanguageRequirementForm {
 
 interface JobFormState {
   dateFound: string;
+  applicationDeadline: string;
+  contacts: Array<{ name: string; role: string; email: string; phone: string }>;
   company: string;
   title: string;
   sourceUrl: string;
@@ -74,6 +76,10 @@ interface JobFormState {
 
 const form = reactive<JobFormState>({
   dateFound: props.initialValue?.dateFound ?? '',
+  applicationDeadline: props.initialValue?.applicationDeadline ?? '',
+  contacts: props.initialValue?.contacts?.map(c => ({
+    name: c.name ?? '', role: c.role ?? '', email: c.email ?? '', phone: c.phone ?? '',
+  })) ?? [],
   company: props.initialValue?.company ?? '',
   title: props.initialValue?.title ?? '',
   sourceUrl: props.initialValue?.sourceUrl ?? '',
@@ -163,6 +169,15 @@ function removeLanguageRequirement(index: number): void {
   form.languageRequirements.splice(index, 1);
 }
 
+function addContact(): void {
+  markDirty();
+  form.contacts.push({ name: '', role: '', email: '', phone: '' });
+}
+function removeContact(index: number): void {
+  markDirty();
+  form.contacts.splice(index, 1);
+}
+
 function addSkill(): void {
   markDirty();
   form.skills.push({
@@ -219,6 +234,11 @@ function submit(): void {
   }
   emit('submit', {
     dateFound: form.dateFound,
+    applicationDeadline: nullableString(form.applicationDeadline),
+    contacts: form.contacts.map(c => ({
+      name: nullableString(c.name), role: nullableString(c.role),
+      email: nullableString(c.email), phone: nullableString(c.phone),
+    })).filter(c => Object.values(c).some(value => value !== null)),
     company: form.company.trim(),
     title: form.title.trim(),
     sourceUrl: nullableString(form.sourceUrl),
@@ -273,6 +293,10 @@ function submit(): void {
         </div>
 
         <div class="space-y-2">
+          <Label for="application-deadline">Application deadline</Label>
+          <Input id="application-deadline" v-model="form.applicationDeadline" type="date" />
+        </div>
+        <div class="space-y-2">
           <Label for="company">Company</Label>
 
           <Input
@@ -306,6 +330,23 @@ function submit(): void {
               placeholder="https://..."
           />
         </div>
+      </div>
+    </section>
+
+    <Separator />
+
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-base font-semibold">Recruitment contacts</h2>
+        <Button type="button" variant="outline" size="sm" @click="addContact"><Plus class="size-4" /> Add contact</Button>
+      </div>
+      <p v-if="form.contacts.length === 0" class="text-sm text-muted-foreground">No contacts specified.</p>
+      <div v-for="(contact, index) in form.contacts" :key="index" class="grid gap-3 rounded-lg border p-4 sm:grid-cols-2">
+        <div><Label :for="`contact-name-${index}`">Name</Label><Input :id="`contact-name-${index}`" v-model="contact.name" /></div>
+        <div><Label :for="`contact-role-${index}`">Role</Label><Input :id="`contact-role-${index}`" v-model="contact.role" /></div>
+        <div><Label :for="`contact-email-${index}`">Email</Label><Input :id="`contact-email-${index}`" v-model="contact.email" type="email" /></div>
+        <div><Label :for="`contact-phone-${index}`">Phone</Label><Input :id="`contact-phone-${index}`" v-model="contact.phone" type="tel" /></div>
+        <div class="sm:col-span-2"><Button type="button" variant="ghost" size="sm" @click="removeContact(index)"><Trash2 class="size-4" /> Remove contact</Button></div>
       </div>
     </section>
 
