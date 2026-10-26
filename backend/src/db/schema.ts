@@ -22,6 +22,7 @@ export const jobs = pgTable(
         id: bigserial('id', { mode: 'number' }).primaryKey(),
 
         dateFound: date('date_found').notNull(),
+        applicationDeadline: date('application_deadline'),
 
         company: varchar('company', { length: 255 }).notNull(),
         title: varchar('title', { length: 255 }).notNull(),
@@ -40,7 +41,6 @@ export const jobs = pgTable(
 
         interest: smallint('interest'),
         applyStatus: varchar('apply_status', { length: 50 }),
-        gapNotes: text('gap_notes'),
 
         createdAt: timestamp('created_at', {
             withTimezone: true,
@@ -59,6 +59,27 @@ export const jobs = pgTable(
         index('jobs_date_found_idx').on(table.dateFound),
         index('jobs_company_idx').on(table.company),
         index('jobs_apply_status_idx').on(table.applyStatus),
+    ]
+);
+
+export const jobContacts = pgTable(
+    'job_contacts',
+    {
+        id: bigserial('id', { mode: 'number' }).primaryKey(),
+
+        jobId: bigint('job_id', { mode: 'number' })
+            .notNull()
+            .references(() => jobs.id, {
+                onDelete: 'cascade',
+            }),
+
+        name: varchar('name', { length: 255 }),
+        role: varchar('role', { length: 255 }),
+        email: varchar('email', { length: 255 }),
+        phone: varchar('phone', { length: 100 }),
+    },
+    (table) => [
+        index('job_contacts_job_id_idx').on(table.jobId),
     ]
 );
 
