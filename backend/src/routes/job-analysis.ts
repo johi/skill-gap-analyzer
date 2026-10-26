@@ -18,8 +18,8 @@ export function createJobAnalysisRoutes(
         if (urlFetcher) {
             fastify.post('/analyze-url', async request => {
                 const { url } = jobUrlAnalysisRequestSchema.parse(request.body);
-                const { advertisement, sourceUrl } = await urlFetcher.retrieve(url);
-                return service.analyze(advertisement, sourceUrl);
+                const { advertisement, sourceUrl, title } = await urlFetcher.retrieve(url);
+                return service.analyze(advertisement, sourceUrl, title ?? null);
             });
         }
     };

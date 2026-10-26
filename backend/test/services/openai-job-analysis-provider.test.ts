@@ -32,6 +32,8 @@ describe('OpenAiJobAnalysisProvider', () => {
             text: { format: { type: 'json_schema', strict: true } },
         });
         expect(body.text.format.schema).toEqual(jobExtractionJsonSchema);
+        expect(body.text.format.schema.properties).not.toHaveProperty('cleanedAdvertisement');
+        expect(body.text.format.schema.required).not.toContain('cleanedAdvertisement');
         expect(body.instructions).toBe(jobAnalysisInstructions);
     });
 

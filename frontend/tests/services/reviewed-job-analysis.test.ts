@@ -18,6 +18,20 @@ const analysis: JobAdvertisementAnalysis = {
 };
 
 describe('UC-12 reviewed analysis', () => {
+  it('carries extracted contacts and deadline through review validation', () => {
+    const draft = analysisToReviewInput({
+      ...analysis,
+      proposal: { ...analysis.proposal, applicationDeadline: '2026-12-01', contacts: [
+        { name: 'Anna', role: 'Recruiter', email: 'anna@example.com', phone: null },
+      ] },
+    });
+    draft.skills.splice(1, 1);
+    const reviewed = validateReviewedAnalysis(draft);
+    expect(reviewed.valid).toBe(true);
+    expect(reviewed.value?.applicationDeadline).toBe('2026-12-01');
+    expect(reviewed.value?.contacts?.[0]?.email).toBe('anna@example.com');
+  });
+
   it('preserves the source URL from URL-first analysis for UC-13', () => {
     const sourceUrl = 'https://careers.example.com/jobs/42';
     const draft = analysisToReviewInput({ ...analysis, sourceUrl });

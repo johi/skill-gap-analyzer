@@ -54,7 +54,7 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
         try {
             response = await this.fetchImpl('https://api.openai.com/v1/responses', {
                 method: 'POST',
-                signal: AbortSignal.timeout(30_000),
+                signal: AbortSignal.timeout(90_000),
                 headers: {
                     Authorization: `Bearer ${this.apiKey}`,
                     'Content-Type': 'application/json',

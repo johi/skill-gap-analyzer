@@ -5,7 +5,7 @@ import type { Readable } from 'node:stream';
 import { BlockList, isIP } from 'node:net';
 import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
-import { extractJobAdvertisement } from '@/services/job-advertisement-content';
+import { extractJobAdvertisementDetails } from '@/services/job-advertisement-content';
 
 const MAX_PAGE_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
@@ -145,7 +145,7 @@ export class JobAdvertisementUrlFetcher {
         private readonly transport: PageTransport = requestPage
     ) {}
 
-    async retrieve(rawUrl: string): Promise<{ sourceUrl: string; advertisement: string }> {
+    async retrieve(rawUrl: string): Promise<{ sourceUrl: string; advertisement: string; title: string | null }> {
         const original = parseTarget(rawUrl);
         let current = original;
         const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -187,10 +187,10 @@ export class JobAdvertisementUrlFetcher {
                     `The job website returned HTTP ${response.status}. Paste the advertisement instead.`
                 );
             }
-            return {
-                sourceUrl: original.toString(),
-                advertisement: extractJobAdvertisement(response.body, String(response.headers['content-type'] ?? '')),
-            };
+            const { advertisement, title } = extractJobAdvertisementDetails(
+                response.body, String(response.headers['content-type'] ?? '')
+            );
+            return { sourceUrl: original.toString(), advertisement, title };
         }
         throw new JobAdvertisementRetrievalError('Too many redirects. Paste the advertisement instead.');
     }

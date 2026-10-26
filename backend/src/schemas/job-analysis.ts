@@ -18,7 +18,14 @@ export const jobUrlAnalysisRequestSchema = z.object({
     url: z.url().max(2048),
 });
 
-export const extractedJobSchema = z.object({
+export const jobProposalSchema = z.object({
+    applicationDeadline: z.iso.date().nullable().optional(),
+    contacts: z.array(z.object({
+        name: z.string().trim().max(255).nullable(),
+        role: z.string().trim().max(255).nullable(),
+        email: z.email().max(255).nullable(),
+        phone: z.string().trim().max(100).nullable(),
+    })).optional(),
     company: z.string().trim().min(1).max(255).nullable(),
     title: z.string().trim().min(1).max(255).nullable(),
     location: z.string().trim().min(1).max(255).nullable(),
@@ -67,11 +74,12 @@ export const extractedJobSchema = z.object({
 
 export const jobAdvertisementAnalysisSchema = z.object({
     dateFound: z.iso.date(),
-    originalText: z.string().trim().min(50).max(30_000),
+    originalText: z.string().min(50).max(30_000),
     sourceUrl: z.url().nullable(),
-    proposal: extractedJobSchema,
+    proposal: jobProposalSchema,
     requiresReview: z.boolean(),
 });
 
-export type ExtractedJob = z.infer<typeof extractedJobSchema>;
+export type JobProposal = z.infer<typeof jobProposalSchema>;
+export type ExtractedJob = z.infer<typeof jobProposalSchema>;
 export type JobAdvertisementAnalysis = z.infer<typeof jobAdvertisementAnalysisSchema>;

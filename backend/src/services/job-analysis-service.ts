@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import {
-    extractedJobSchema,
+    jobProposalSchema,
     jobAdvertisementAnalysisSchema,
     type JobAdvertisementAnalysis,
 } from '@/schemas/job-analysis';
@@ -8,6 +8,11 @@ import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
 import type { JobAnalysisProvider } from '@/services/job-analysis-contract';
 import type { SkillRepository } from '@/repositories/skill-repository';
 import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
+
+// Preserve source-line boundaries when validating recruitment contact roles.
+function sourceLines(advertisement: string): string[] {
+    return advertisement.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+}
 
 const categorizationSchema = z.object({
     skills: z.array(z.object({
@@ -22,11 +27,30 @@ export class JobAnalysisService {
         private readonly skillCatalogue?: Pick<SkillRepository, 'findAll'>
     ) {}
 
-    async analyze(advertisement: string, sourceUrl: string | null = null): Promise<JobAdvertisementAnalysis> {
-        const extracted = extractedJobSchema.safeParse(await this.provider.analyze(advertisement));
+    async analyze(
+        advertisement: string, sourceUrl: string | null = null, extractedTitle: string | null = null
+    ): Promise<JobAdvertisementAnalysis> {
+        // Give the AI explicit source metadata; never add it to the saved advertisement.
+        const aiInput = extractedTitle ? `Job title: ${extractedTitle}\n\n${advertisement}` : advertisement;
+        const providerResult = await this.provider.analyze(aiInput);
+        const extracted = jobProposalSchema.safeParse(providerResult);
         if (!extracted.success) throw new JobAnalysisInvalidResponseError();
 
         const proposal = extracted.data;
+        // JSON-LD title is source metadata, not an AI inference.
+        if (extractedTitle && extractedTitle.length <= 255) proposal.title = extractedTitle;
+        proposal.applicationDeadline ??= null;
+        proposal.contacts ??= [];
+        // A role is accepted only when the same source line explicitly associates
+        // that role with the named contact. Otherwise leave it for human review.
+        const lines = sourceLines(advertisement).map(line => line.toLocaleLowerCase());
+        proposal.contacts = proposal.contacts.map(contact => {
+            if (!contact.role || !contact.name) return { ...contact, role: null };
+            const name = contact.name.toLocaleLowerCase();
+            const role = contact.role.toLocaleLowerCase();
+            return lines.some(line => line.includes(name) && line.includes(role))
+                ? contact : { ...contact, role: null };
+        });
         const existingSkills = await this.skillCatalogue?.findAll() ?? [];
         const byName = new Map(existingSkills.map(skill => [skill.name.trim().toLocaleLowerCase('en-US'), skill]));
         const categories = Array.from(new Map(existingSkills

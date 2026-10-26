@@ -14,6 +14,7 @@ const advertisement = 'Example Company seeks a Senior TypeScript Developer for o
 
 function proposal() {
     return {
+        applicationDeadline: null, contacts: [],
         company: 'Example Company', title: 'Senior TypeScript Developer',
         location: 'Copenhagen', workModel: null, employmentType: 'full_time',
         seniority: 'senior', primaryRole: null, yearsRequired: null,
@@ -70,6 +71,24 @@ describe('POST /api/v1/job-analysis/analyze (UC-09–11)', () => {
         expect(result.json()).toMatchObject({
             sourceUrl: 'https://careers.example.com/jobs/42', originalText: advertisement,
         });
+    });
+
+    it('passes trusted job title metadata to AI without modifying originalText', async () => {
+        retrieve.mockResolvedValue({
+            sourceUrl: 'https://careers.example.com/jobs/42', advertisement,
+            title: 'Senior Platform Developer',
+        });
+        provider.analyze.mockResolvedValue({ ...proposal(), title: null });
+        const result = await app.inject({
+            method: 'POST', url: '/api/v1/job-analysis/analyze-url',
+            payload: { url: 'https://careers.example.com/jobs/42' },
+        });
+        expect(result.statusCode).toBe(200);
+        expect(provider.analyze).toHaveBeenCalledExactlyOnceWith(
+            `Job title: Senior Platform Developer\n\n${advertisement}`
+        );
+        expect(result.json().proposal.title).toBe('Senior Platform Developer');
+        expect(result.json().originalText).toBe(advertisement);
     });
 
     it('preserves source URL when the user pastes text after retrieval fails', async () => {

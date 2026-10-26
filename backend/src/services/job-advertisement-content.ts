@@ -33,7 +33,10 @@ function normalizeText(value: string): string {
 }
 
 function htmlToText(html: string): string {
-    return normalizeText(html
+    // JSON-LD descriptions can contain entity-encoded HTML (e.g. &lt;p&gt;).
+    // Decode before stripping tags so encoded markup is handled as markup.
+    const decodedHtml = decodeEntities(html);
+    return normalizeText(decodedHtml
         .replace(/<!--[\s\S]*?-->/g, ' ')
         .replace(/<(script|style|noscript|svg|nav|footer)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, ' ')
         .replace(/<br\s*\/?\s*>/gi, '\n')
@@ -54,74 +57,95 @@ function jobPostingFrom(value: unknown): Record<string, unknown> | null {
         }
         return null;
     }
+
     const object = record(value);
     if (!object) return null;
+
     const type = object['@type'];
-    if (type === 'JobPosting' || (Array.isArray(type) && type.includes('JobPosting')) ||
+    if (type === 'JobPosting' ||
+        (Array.isArray(type) && type.includes('JobPosting')) ||
         (typeof type === 'string' && type.endsWith('/JobPosting'))) {
         return object;
     }
+
     return jobPostingFrom(object['@graph']);
 }
 
-function locationText(value: unknown): string | null {
-    if (Array.isArray(value)) return value.map(locationText).filter(Boolean).join(', ') || null;
-    if (typeof value === 'string') return value;
-    const obj = record(value);
-    if (!obj) return null;
-    const address = record(obj.address) ?? obj;
-    const parts = [address.streetAddress, address.addressLocality, address.addressRegion, address.addressCountry]
-        .filter((part): part is string => typeof part === 'string' && part.length > 0);
-    return parts.join(', ') || null;
-}
-
-function extractJsonLd(html: string): string | null {
+function extractJsonLd(html: string): { advertisement: string; title: string | null } | null {
     const scripts = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+
     for (const match of html.matchAll(scripts)) {
         if (!/\btype\s*=\s*(?:["']application\/ld\+json["']|application\/ld\+json(?:\s|$))/i.test(match[1] ?? '')) {
             continue;
         }
+
         try {
             const posting = jobPostingFrom(JSON.parse(match[2] ?? ''));
             if (!posting || typeof posting.description !== 'string') continue;
+
             const description = htmlToText(posting.description);
             if (description.length < MIN_ADVERTISEMENT_LENGTH) continue;
-            const organization = record(posting.hiringOrganization);
-            const details = [
-                typeof posting.title === 'string' ? `Job title: ${posting.title}` : null,
-                typeof organization?.name === 'string' ? `Company: ${organization.name}` : null,
-                locationText(posting.jobLocation) ? `Location: ${locationText(posting.jobLocation)}` : null,
-                typeof posting.employmentType === 'string' ? `Employment type: ${posting.employmentType}` : null,
-            ].filter(Boolean);
-            return normalizeText([...details, description].join('\n\n'));
+
+            // Preserve the actual advertised title as a heading when it is not already present.
+            const title = typeof posting.title === 'string' ? htmlToText(posting.title) : '';
+            return {
+                title: title || null,
+                advertisement: title && description.split('\n', 1)[0]?.trim() !== title
+                    ? `${title}\n\n${description}`
+                    : description,
+            };
         } catch {
             // Malformed JSON-LD is common. Try the next script or visible page text.
         }
     }
+
     return null;
 }
 
 /** Extract a reviewable advertisement from HTML or plain text; no AI or persistence. */
-export function extractJobAdvertisement(body: string, contentType: string): string {
+export function extractJobAdvertisementDetails(
+    body: string, contentType: string
+): { advertisement: string; title: string | null } {
     const type = contentType.toLowerCase().split(';')[0]?.trim();
+
     if (type && !['text/html', 'application/xhtml+xml', 'text/plain'].includes(type)) {
-        throw new JobAdvertisementRetrievalError('The URL does not return an HTML or text page. Paste the advertisement instead.');
+        throw new JobAdvertisementRetrievalError(
+            'The URL does not return an HTML or text page. Paste the advertisement instead.'
+        );
     }
 
-    const isHtml = type !== 'text/plain' && /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(body);
+    const isHtml = type !== 'text/plain' &&
+        /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(body);
+
     let text: string;
+    let title: string | null = null;
+
     if (!isHtml) {
         text = normalizeText(body);
     } else {
         const jsonLd = extractJsonLd(body);
         const main = body.match(/<main\b[^>]*>([\s\S]*?)<\/main\s*>/i)
             ?? body.match(/<article\b[^>]*>([\s\S]*?)<\/article\s*>/i);
-        const visible = htmlToText(main?.[1] ?? body.match(/<body\b[^>]*>([\s\S]*?)<\/body\s*>/i)?.[1] ?? body);
-        text = jsonLd ?? visible;
+
+        const visible = htmlToText(
+            main?.[1] ??
+            body.match(/<body\b[^>]*>([\s\S]*?)<\/body\s*>/i)?.[1] ??
+            body
+        );
+
+        text = jsonLd?.advertisement ?? visible;
+        title = jsonLd?.title ?? null;
     }
 
     if (text.length < MIN_ADVERTISEMENT_LENGTH) {
-        throw new JobAdvertisementRetrievalError('No readable job advertisement was found at this URL. Paste the advertisement instead.');
+        throw new JobAdvertisementRetrievalError(
+            'No readable job advertisement was found at this URL. Paste the advertisement instead.'
+        );
     }
-    return text.slice(0, MAX_ADVERTISEMENT_LENGTH).trim();
+
+    return { advertisement: text.slice(0, MAX_ADVERTISEMENT_LENGTH).trim(), title };
+}
+
+export function extractJobAdvertisement(body: string, contentType: string): string {
+    return extractJobAdvertisementDetails(body, contentType).advertisement;
 }

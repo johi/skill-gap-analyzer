@@ -16,6 +16,21 @@ export const jobExtractionJsonSchema = {
     type: 'object',
     additionalProperties: false,
     properties: {
+        applicationDeadline: nullableString,
+        contacts: {
+            type: 'array',
+            items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                    name: nullableString,
+                    role: nullableString,
+                    email: nullableString,
+                    phone: nullableString,
+                },
+                required: ['name', 'role', 'email', 'phone'],
+            },
+        },
         company: nullableString,
         title: nullableString,
         location: nullableString,
@@ -60,7 +75,7 @@ export const jobExtractionJsonSchema = {
         },
     },
     required: [
-        'company', 'title', 'location', 'workModel', 'employmentType',
+        'applicationDeadline', 'contacts', 'company', 'title', 'location', 'workModel', 'employmentType',
         'seniority', 'primaryRole', 'yearsRequired', 'educationRequirement',
         'languageRequirements', 'salaryRate', 'skills',
     ],
