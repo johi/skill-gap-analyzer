@@ -39,7 +39,6 @@ export const importedJobSchema = z.object({
     salaryRate: z.string().trim().nullable().optional(),
     interest: z.number().int().min(0).max(100).nullable().optional(),
     applyStatus: applicationStatusSchema.nullable().optional(),
-    gapNotes: z.string().trim().nullable().optional(),
     skills: z.array(importedJobSkillSchema).default([]),
 });
 

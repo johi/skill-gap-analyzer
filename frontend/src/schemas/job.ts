@@ -73,7 +73,6 @@ export const jobSchema = z.object({
     salaryRate: z.string().nullable(),
     interest: z.number().nullable(),
     applyStatus: applicationStatusSchema.nullable(),
-    gapNotes: z.string().nullable(),
     createdAt: z.string(),
     updatedAt: z.string(),
 });

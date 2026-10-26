@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => {
         delete: vi.fn(),
         replaceSkills: vi.fn(),
         replaceLanguageRequirements: vi.fn(),
+        replaceContacts: vi.fn(),
     };
 
     const skillRepository = {
@@ -174,6 +175,7 @@ describe('JobService', () => {
         const {
             skills,
             languageRequirements,
+            contacts,
             ...jobData
         } = input;
 
@@ -184,6 +186,9 @@ describe('JobService', () => {
             .toHaveBeenCalledWith(1, []);
 
         expect(mocks.jobRepository.replaceLanguageRequirements)
+            .toHaveBeenCalledWith(1, []);
+
+        expect(mocks.jobRepository.replaceContacts)
             .toHaveBeenCalledWith(1, []);
     });
 
@@ -432,6 +437,7 @@ describe('JobService', () => {
         const {
             skills,
             languageRequirements,
+            contacts,
             ...jobData
         } = updateInput;
 
@@ -443,6 +449,9 @@ describe('JobService', () => {
 
         expect(mocks.jobRepository.replaceLanguageRequirements)
             .toHaveBeenCalledWith(1, []);
+
+        expect(mocks.jobRepository.replaceContacts)
+            .not.toHaveBeenCalled();
     });
 
     it('rejects updating an unknown job', async () => {

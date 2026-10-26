@@ -43,6 +43,5 @@ export interface CreateJobInput {
     salaryRate: string | null;
     interest: number | null;
     applyStatus: ApplicationStatus | null;
-    gapNotes: string | null;
     skills: JobSkillInput[];
 }

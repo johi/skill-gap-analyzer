@@ -3,6 +3,7 @@ import type { ListJobsQuery } from '@/schemas/job';
 
 import {
     jobs,
+    jobContacts,
     jobLanguageRequirements,
     jobSkills,
     skills,
@@ -25,7 +26,10 @@ export interface JobLanguageRequirement {
     requirement: string;
 }
 
+export type JobContact = typeof jobContacts.$inferSelect;
+
 export interface JobWithSkills extends Job {
+    contacts: JobContact[];
     skills: JobSkill[];
     languageRequirements: JobLanguageRequirement[];
 }
@@ -106,6 +110,11 @@ export class JobRepository {
             .innerJoin(skills, eq(jobSkills.skillId, skills.id))
             .where(inArray(jobSkills.jobId, ids));
 
+        const contacts = await this.db
+            .select()
+            .from(jobContacts)
+            .where(inArray(jobContacts.jobId, ids));
+
         const languages = await this.db
             .select({
                 jobId: jobLanguageRequirements.jobId,
@@ -118,6 +127,7 @@ export class JobRepository {
         return {
             data: pageJobs.map((job) => ({
                 ...job,
+                contacts: contacts.filter((contact) => contact.jobId === job.id),
                 skills: assignedSkills
                     .filter((skill) => skill.jobId === job.id)
                     .map(({ jobId: _, ...skill }) => skill),
@@ -161,8 +171,11 @@ export class JobRepository {
             })
             .from(jobLanguageRequirements);
 
+        const contacts = await this.db.select().from(jobContacts);
+
         return allJobs.map((job) => ({
             ...job,
+            contacts: contacts.filter((contact) => contact.jobId === job.id),
 
             skills: assignedSkills
                 .filter((skill) => skill.jobId === job.id)
@@ -206,8 +219,14 @@ export class JobRepository {
             })
             .from(jobLanguageRequirements)
             .where(eq(jobLanguageRequirements.jobId, id));
+        const contacts = await this.db
+            .select()
+            .from(jobContacts)
+            .where(eq(jobContacts.jobId, id));
+
         return {
             ...job,
+            contacts,
             skills: assignedSkills,
             languageRequirements,
         };
@@ -247,6 +266,29 @@ export class JobRepository {
             });
 
         return deleted.length > 0;
+    }
+
+    async replaceContacts(
+        jobId: number,
+        contacts: Array<{
+            name?: string | null;
+            role?: string | null;
+            email?: string | null;
+            phone?: string | null;
+        }>
+    ): Promise<void> {
+        await this.db.delete(jobContacts).where(eq(jobContacts.jobId, jobId));
+        if (contacts.length === 0) return;
+
+        await this.db.insert(jobContacts).values(
+            contacts.map((contact) => ({
+                jobId,
+                name: contact.name ?? null,
+                role: contact.role ?? null,
+                email: contact.email ?? null,
+                phone: contact.phone ?? null,
+            }))
+        );
     }
 
     async replaceSkills(

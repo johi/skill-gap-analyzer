@@ -40,7 +40,6 @@ const job: JobWithSkills = {
   salaryRate: null,
   interest: 85,
   applyStatus: 'not_applied',
-  gapNotes: null,
   createdAt: '2026-10-17T00:00:00.000Z',
   updatedAt: '2026-10-17T00:00:00.000Z',
   skills: [],

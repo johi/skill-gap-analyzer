@@ -14,7 +14,7 @@ const job: JobWithSkills = {
   workModel: 'hybrid', employmentType: 'full_time', seniority: 'senior',
   primaryRole: null, yearsRequired: null, educationRequirement: null,
   languageRequirements: [], salaryRate: null, interest: 80,
-  applyStatus: 'not_applied', gapNotes: null,
+  applyStatus: 'not_applied',
   createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z', skills: [],
 };
 

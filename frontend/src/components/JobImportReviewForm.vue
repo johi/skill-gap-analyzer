@@ -34,7 +34,6 @@ const formInitialValue = computed<CreateJobInput>(() => ({
   salaryRate: props.job.salaryRate ?? null,
   interest: props.job.interest ?? null,
   applyStatus: props.job.applyStatus ?? null,
-  gapNotes: props.job.gapNotes ?? null,
   skills: props.job.skills,
 }));
 

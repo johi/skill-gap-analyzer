@@ -65,6 +65,7 @@ export class JobService {
         const {
             skills,
             languageRequirements,
+            contacts,
             ...jobData
         } = input;
 
@@ -84,6 +85,8 @@ export class JobService {
             job.id,
             languageRequirements
         );
+
+        await jobRepository.replaceContacts(job.id, contacts ?? []);
 
         const created = await jobRepository.findById(job.id);
 
@@ -115,6 +118,7 @@ export class JobService {
             const {
                 skills,
                 languageRequirements,
+                contacts,
                 ...jobData
             } = input;
 
@@ -134,6 +138,10 @@ export class JobService {
                 id,
                 languageRequirements
             );
+
+            if (contacts !== undefined) {
+                await jobRepository.replaceContacts(id, contacts);
+            }
 
             const updated = await jobRepository.findById(id);
 

@@ -9,19 +9,7 @@ defineProps<{ job: JobWithSkills }>();
 
 <template>
   <div class="grid gap-6 lg:grid-cols-2">
-    <Card>
-      <CardHeader>
-        <CardTitle>Gap notes</CardTitle>
-      </CardHeader>
-
-      <CardContent>
-        <p class="whitespace-pre-wrap text-sm leading-relaxed">
-          {{ job.gapNotes ?? '—' }}
-        </p>
-      </CardContent>
-    </Card>
-
-    <Card v-if="job.sourceUrl" class="h-fit">
+<Card v-if="job.sourceUrl" class="h-fit">
       <CardHeader>
         <CardTitle>Source</CardTitle>
 

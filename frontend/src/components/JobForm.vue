@@ -69,7 +69,6 @@ interface JobFormState {
   salaryRate: string;
   interest: number | null;
   applyStatus: ApplicationStatus | '';
-  gapNotes: string;
   skills: JobSkillForm[];
 }
 
@@ -94,7 +93,6 @@ const form = reactive<JobFormState>({
   salaryRate: props.initialValue?.salaryRate ?? '',
   interest: props.initialValue?.interest ?? null,
   applyStatus: props.initialValue?.applyStatus ?? '',
-  gapNotes: props.initialValue?.gapNotes ?? '',
 
   skills: props.initialValue?.skills.map((skill) => ({
     ...skill,
@@ -240,7 +238,6 @@ function submit(): void {
     salaryRate: nullableString(form.salaryRate),
     interest: form.interest,
     applyStatus: form.applyStatus || null,
-    gapNotes: nullableString(form.gapNotes),
     skills: form.skills.map((skill) => ({
       name: skill.name.trim(),
       category: matchedSkill(skill.name)?.category ?? canonicalCategory(skill.category, knownCategories.value),
@@ -572,18 +569,6 @@ function submit(): void {
           </select>
         </div>
 
-        <div class="space-y-2 sm:col-span-2">
-          <Label for="gap-notes">
-            Gap notes
-          </Label>
-
-          <Textarea
-              id="gap-notes"
-              v-model="form.gapNotes"
-              placeholder="Important gaps or observations"
-              class="min-h-24"
-          />
-        </div>
       </div>
     </section>
 

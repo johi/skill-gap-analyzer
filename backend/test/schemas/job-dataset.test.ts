@@ -31,7 +31,6 @@ describe('jobDatasetSchema', () => {
         salaryRate: null,
         interest: 80,
         applyStatus: 'not_applied',
-        gapNotes: null,
         originalMatch: 75,
         skills: [
             {
