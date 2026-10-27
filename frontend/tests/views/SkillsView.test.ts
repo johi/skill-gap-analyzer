@@ -78,10 +78,8 @@ describe('SkillsView', () => {
 
         await flushPromises();
 
-        const inputs = wrapper.findAll('input');
-
-        await inputs[0].setValue('Vue');
-        await inputs[1].setValue('framework');
+        await wrapper.get('#skill-name').setValue('Vue');
+        await wrapper.get('#skill-category').setValue('framework');
 
         await wrapper.get('form').trigger('submit');
 
@@ -112,13 +110,11 @@ describe('SkillsView', () => {
 
         await editButtons[0].trigger('click');
 
-        const inputs = wrapper.findAll('input');
-
         expect(
-            (inputs[0].element as HTMLInputElement).value
+            (wrapper.get('#skill-name').element as HTMLInputElement).value
         ).toBe('TypeScript');
 
-        await inputs[0].setValue('JavaScript');
+        await wrapper.get('#skill-name').setValue('JavaScript');
 
         await wrapper.get('form').trigger('submit');
 
@@ -199,10 +195,8 @@ describe('SkillsView', () => {
 
         await flushPromises();
 
-        const inputs = wrapper.findAll('input');
-
-        await inputs[0].setValue('TypeScript');
-        await inputs[1].setValue('language');
+        await wrapper.get('#skill-name').setValue('TypeScript');
+        await wrapper.get('#skill-category').setValue('language');
 
         await wrapper.get('form').trigger('submit');
 
