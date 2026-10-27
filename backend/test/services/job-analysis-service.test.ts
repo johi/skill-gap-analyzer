@@ -82,6 +82,60 @@ describe('JobAnalysisService (UC-09–11)', () => {
         }
     });
 
+
+    it('corrects invalid deadline using one schema-guided retry', async () => {
+        const initial = { ...proposal(), applicationDeadline: '30. november 2026' };
+        const corrected = { ...proposal(), applicationDeadline: '2026-11-30' };
+        const provider = {
+            analyze: vi.fn().mockResolvedValue(initial),
+            categorize: vi.fn(),
+            correctAnalysis: vi.fn().mockResolvedValue(corrected),
+        };
+        const result = await new JobAnalysisService(provider).analyze(advertisement);
+        expect(result.proposal.applicationDeadline).toBe('2026-11-30');
+        expect(provider.analyze).toHaveBeenCalledTimes(1);
+        expect(provider.correctAnalysis).toHaveBeenCalledTimes(1);
+        expect(provider.correctAnalysis).toHaveBeenCalledWith(
+            advertisement,
+            initial,
+            expect.arrayContaining([expect.objectContaining({ path: 'applicationDeadline', code: 'invalid_format' })])
+        );
+    });
+
+    it('does not request a correction for valid extraction', async () => {
+        const provider = {
+            analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2026-11-30' }),
+            categorize: vi.fn(),
+            correctAnalysis: vi.fn(),
+        };
+        await new JobAnalysisService(provider).analyze(advertisement);
+        expect(provider.correctAnalysis).not.toHaveBeenCalled();
+    });
+
+    it('never retries extraction more than once', async () => {
+        const provider = {
+            analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '30. november 2026' }),
+            categorize: vi.fn(),
+            correctAnalysis: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: 'not a date' }),
+        };
+        await expect(new JobAnalysisService(provider).analyze(advertisement))
+            .rejects.toBeInstanceOf(JobAnalysisInvalidResponseError);
+        expect(provider.correctAnalysis).toHaveBeenCalledTimes(1);
+    });
+
+    it('corrects other schema errors without date-specific handling', async () => {
+        const provider = {
+            analyze: vi.fn().mockResolvedValue({ ...proposal(), seniority: 'super_senior' }),
+            categorize: vi.fn(),
+            correctAnalysis: vi.fn().mockResolvedValue({ ...proposal(), seniority: 'senior' }),
+        };
+        const result = await new JobAnalysisService(provider).analyze(advertisement);
+        expect(result.proposal.seniority).toBe('senior');
+        expect(provider.correctAnalysis.mock.calls[0]?.[2]).toEqual(
+            expect.arrayContaining([expect.objectContaining({ path: 'seniority' })])
+        );
+    });
+
     it('rejects structurally invalid provider data', async () => {
         const provider = { analyze: vi.fn().mockResolvedValue({
             ...proposal(), seniority: 'super_senior',

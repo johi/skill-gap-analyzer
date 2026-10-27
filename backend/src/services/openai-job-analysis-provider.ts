@@ -6,9 +6,11 @@ import {
     jobExtractionJsonSchema,
     skillCategorizationJsonSchema,
     type JobAnalysisProvider,
+    type AnalysisValidationIssue,
 } from '@/services/job-analysis-contract';
 import {
     jobAnalysisInstructions,
+    jobAnalysisCorrectionInstructions,
     skillCategorizationInstructions,
 } from '@/services/job-analysis-instructions';
 import {
@@ -35,6 +37,15 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
 
     analyze(advertisement: string): Promise<unknown> {
         return this.request(jobAnalysisInstructions, advertisement, jobExtractionJsonSchema, 'job_advertisement_analysis');
+    }
+
+    correctAnalysis(advertisement: string, previous: unknown, issues: AnalysisValidationIssue[]): Promise<unknown> {
+        return this.request(
+            jobAnalysisCorrectionInstructions,
+            JSON.stringify({ advertisement, previous, validationIssues: issues }),
+            jobExtractionJsonSchema,
+            'job_advertisement_correction'
+        );
     }
 
     categorize(skills: string[], existingCategories: string[], advertisement: string): Promise<unknown> {

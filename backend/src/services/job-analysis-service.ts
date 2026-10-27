@@ -4,10 +4,9 @@ import {
     type JobAdvertisementAnalysis,
 } from '@/schemas/job-analysis';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
-import type { JobAnalysisProvider } from '@/services/job-analysis-contract';
+import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/services/job-analysis-contract';
 import type { SkillRepository } from '@/repositories/skill-repository';
 import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
-import { normalizeJobApplicationDeadline } from '@/services/job-application-deadline';
 
 // Disabled by default. Logs validation structure only, never returned field values.
 function logAnalysisValidation(stage: string, details: object): void {
@@ -50,20 +49,25 @@ export class JobAnalysisService {
             : baseInput;
 
         const rawExtraction = await this.provider.analyze(analysisInput);
-        // OpenAI's JSON schema allows any string here, but the application requires
-        // an ISO date. Normalize recognized formats without weakening Zod validation.
-        const normalizedExtraction = rawExtraction !== null && typeof rawExtraction === 'object' &&
-            !Array.isArray(rawExtraction) && 'applicationDeadline' in rawExtraction
-            ? {
-                ...rawExtraction,
-                applicationDeadline: normalizeJobApplicationDeadline(rawExtraction.applicationDeadline),
-            }
-            : rawExtraction;
-
-        const extracted = jobAdvertisementAnalysisSchema.shape.proposal.safeParse(normalizedExtraction);
+        const proposalSchema = jobAdvertisementAnalysisSchema.shape.proposal;
+        let extracted = proposalSchema.safeParse(rawExtraction);
         if (!extracted.success) {
             logSchemaIssues('extraction_schema', extracted.error);
-            throw new JobAnalysisInvalidResponseError();
+            if (!this.provider.correctAnalysis) throw new JobAnalysisInvalidResponseError();
+            const issues: AnalysisValidationIssue[] = extracted.error.issues.map(issue => ({
+                path: issue.path.map(String).join('.'),
+                code: issue.code,
+                ...(issue.code === 'invalid_format' && issue.path.join('.') === 'applicationDeadline'
+                    ? { expected: 'YYYY-MM-DD or null' } : {}),
+            }));
+            logAnalysisValidation('extraction_correction', { attempt: 1, issueCount: issues.length });
+            const corrected = await this.provider.correctAnalysis(analysisInput, rawExtraction, issues);
+            extracted = proposalSchema.safeParse(corrected);
+            if (!extracted.success) {
+                logSchemaIssues('extraction_correction_failed', extracted.error);
+                throw new JobAnalysisInvalidResponseError();
+            }
+            logAnalysisValidation('extraction_correction_succeeded', { attempt: 1 });
         }
 
         const proposal = extracted.data;

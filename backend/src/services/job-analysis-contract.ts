@@ -2,6 +2,14 @@
 export interface JobAnalysisProvider {
     analyze(advertisement: string): Promise<unknown>;
     categorize(skills: string[], existingCategories: string[], advertisement: string): Promise<unknown>;
+    /** Optional provider correction of a rejected structured extraction. */
+    correctAnalysis?(advertisement: string, previous: unknown, issues: AnalysisValidationIssue[]): Promise<unknown>;
+}
+
+export interface AnalysisValidationIssue {
+    path: string;
+    code: string;
+    expected?: string;
 }
 
 // Structured Outputs requires all fields and additionalProperties: false.
@@ -16,21 +24,8 @@ export const jobExtractionJsonSchema = {
     type: 'object',
     additionalProperties: false,
     properties: {
-        applicationDeadline: nullableString,
-        contacts: {
-            type: 'array',
-            items: {
-                type: 'object',
-                additionalProperties: false,
-                properties: {
-                    name: nullableString,
-                    role: nullableString,
-                    email: nullableString,
-                    phone: nullableString,
-                },
-                required: ['name', 'role', 'email', 'phone'],
-            },
-        },
+        applicationDeadline: { type: ['string', 'null'], description: 'ISO 8601 calendar date YYYY-MM-DD or null if not explicitly established' },
+        contacts: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { name: nullableString, role: nullableString, email: nullableString, phone: nullableString }, required: ['name', 'role', 'email', 'phone'] } },
         company: nullableString,
         title: nullableString,
         location: nullableString,
