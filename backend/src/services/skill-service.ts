@@ -80,6 +80,13 @@ export class SkillService {
         return updated;
     }
 
+    async merge(sourceIds: number[], targetId: number): Promise<void> {
+        if (sourceIds.includes(targetId)) {
+            throw new ValidationError('Target skill cannot be a source skill');
+        }
+        await this.skillRepository.merge(sourceIds, targetId);
+    }
+
     async delete(id: number): Promise<void> {
         const deleted = await this.skillRepository.delete(id);
 

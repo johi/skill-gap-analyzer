@@ -5,6 +5,7 @@ import { idParamSchema } from '../schemas/common';
 import {
     createSkillSchema,
     updateSkillSchema,
+    mergeSkillsSchema,
 } from '../schemas/skill';
 
 export function createSkillRoutes(
@@ -13,6 +14,12 @@ export function createSkillRoutes(
     return async (fastify) => {
         fastify.get('/', async () => {
             return skillService.list();
+        });
+
+        fastify.post('/merge', async (request, reply) => {
+            const { sourceIds, targetId } = mergeSkillsSchema.parse(request.body);
+            await skillService.merge(sourceIds, targetId);
+            return reply.status(204).send();
         });
 
         fastify.get('/:id', async (request) => {

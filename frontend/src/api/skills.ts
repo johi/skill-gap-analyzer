@@ -58,3 +58,12 @@ export function deleteSkill(id: number): Promise<void> {
         }
     );
 }
+
+
+export function mergeSkills(sourceIds: number[], targetId: number): Promise<void> {
+    return apiRequest<void>('/api/v1/skills/merge', null, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sourceIds, targetId }),
+    });
+}

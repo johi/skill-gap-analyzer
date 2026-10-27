@@ -45,7 +45,7 @@ The application currently supports:
 - Comparing market demand with personal skill assessments, calculating proficiency gaps against a fixed target of 5, and identifying unassessed skills
 - Ranking upskilling opportunities using demand-weighted priority scores, while flagging missing assessments
 - Calculating per-job skill match scores with weighted assessment coverage, an individual skill breakdown, and explicit handling of unassessed skills
-- Maintaining a reusable skill catalogue and assessing personal skill proficiency on a 0–5 scale
+- Maintaining a reusable skill catalogue, merging equivalent skills, and assessing personal skill proficiency on a 0–5 scale
 - Recording structured job attributes such as seniority, work model, application status, experience, education, and language requirements
 - Supporting multiple preferred or required languages per job using ISO 639-1 language codes
 - Searching, filtering, sorting, and paginating jobs with URL-backed filters
@@ -117,6 +117,12 @@ The frontend communicates with the backend through a dedicated API layer and val
 **Skill priorities:** `GET /api/v1/analysis/skill-priorities` uses `SkillPriorityService` to consume skill-gap results, calculate a demand weight and a priority score, and rank assessed skills by descending score. Unassessed skills have `priorityScore: null` and sort last. The response includes `missingInformation`, containing `market_demand` when there are no analyzed jobs/skills and `skill_assessments` when any analyzed skills lack a proficiency assessment. No data is persisted by these analysis endpoints.
 
 The frontend validates all three endpoint responses using Zod and presents **Market Demand**, **Skill Gaps**, and **Priorities** tabs in `SkillDemandView.vue`.
+
+### Merging catalogue skills
+
+The Skills page supports merging one or more source skills into a selected target skill. The target keeps its existing name, category, and personal proficiency assessment. On confirmation, the backend updates `job_skills.skill_id` to the target skill ID, leaving each `job_id` and its other job data unchanged. If a job already references the target skill, the redundant source association is deleted and the existing target association (including its requirement) is retained.
+
+The source skills are deleted after their associations have been handled. Their personal proficiency assessments are deleted by the existing foreign-key cascade; proficiency values are **not** transferred. The operation runs within a single PostgreSQL transaction, so a failure rolls back the merge. Job, market-demand, gap, and match analyses subsequently use the consolidated associations.
 
 ### Job match analysis
 
@@ -247,6 +253,15 @@ docker compose exec backend npm run db:test:migrate
 ```
 
 The two databases are independent. Migrating `app` does **not** create tables in `app_test`. Run both migration commands on a fresh checkout, and rerun the relevant command whenever database migrations are added.
+
+## Merging skills
+
+1. Open **Skills** and select the source skills to consolidate.
+2. Choose the existing skill to retain as the target.
+3. Confirm the merge.
+4. The source skills disappear from the catalogue, and their job associations now point to the target. If a job already had the target skill, that association remains unchanged.
+
+Source-skill proficiency assessments are discarded, even when the target has no assessment. If needed, assess the retained skill again under **My Skills**. This operation cannot be undone through the UI.
 
 ## Analyzing a job advertisement
 
@@ -424,6 +439,14 @@ docker compose exec backend npm run test:endpoint -- test/endpoints/job-match.te
 docker compose exec frontend npm test -- tests/components/JobMatch.test.ts --maxWorkers=2
 ```
 
+Merge skills coverage includes service input validation, API requests, repository association updates, duplicate job associations, deletion of source assessments, and transaction rollback. To run the merge tests individually:
+
+```bash
+docker compose exec backend npm run test:service -- test/services/skill-merge.test.ts
+docker compose exec backend npm run test:repository -- test/repositories/skill-merge.test.ts
+docker compose exec backend npm run test:endpoint -- test/endpoints/skill-merge.test.ts
+```
+
 If a test fails with `relation "job_skills" does not exist`, check that the test migrations above completed successfully.
 
 **Run frontend tests with a limited worker count:**
@@ -474,6 +497,6 @@ The current CI status is shown by the badge at the top of this README. If fronte
 
 ## Project status
 
-Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill assessments, skill demand, gap, priority, and per-job match analysis, JSON import, automated testing, and CI are also in place.
+Skill Gap Analyzer is an actively developed demonstration project. It now supports end-to-end AI-assisted job advertisement analysis, including URL retrieval, two-stage skill categorization, deterministic reuse of the skill catalogue, editable human review, explicit approval, and database persistence. Job management, skill catalogue merging, skill assessments, skill demand, gap, priority, and per-job match analysis, JSON import, automated testing, and CI are also in place.
 
 Planned improvements include JSON export, automatic skill-gap curriculum generation, and a later evaluation of MCP integration.

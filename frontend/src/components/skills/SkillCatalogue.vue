@@ -12,11 +12,13 @@ defineProps<{
   loading: boolean;
   editingId: number | null;
   deletingId: number | null;
+  selectedIds: number[];
 }>();
 
 const emit = defineEmits<{
   edit: [skill: Skill];
   delete: [skill: Skill];
+  toggle: [id: number];
 }>();
 </script>
 
@@ -43,6 +45,7 @@ const emit = defineEmits<{
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead class="w-10">Select</TableHead>
               <TableHead>Name</TableHead>
               <TableHead>Category</TableHead>
               <TableHead class="text-right">Actions</TableHead>
@@ -50,6 +53,9 @@ const emit = defineEmits<{
           </TableHeader>
           <TableBody>
             <TableRow v-for="skill in skills" :key="skill.id" :class="{ 'bg-muted/40': editingId === skill.id }">
+              <TableCell>
+                <input type="checkbox" :aria-label="`Select ${skill.name}`" :checked="selectedIds.includes(skill.id)" @change="emit('toggle', skill.id)" />
+              </TableCell>
               <TableCell class="font-medium">{{ skill.name }}</TableCell>
               <TableCell><Badge variant="secondary">{{ skill.category }}</Badge></TableCell>
               <TableCell>
