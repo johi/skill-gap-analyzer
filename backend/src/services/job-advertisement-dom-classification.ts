@@ -283,7 +283,7 @@ export async function classifyHtmlJobAdvertisement(
 
     const advertisement = renderRole(tree, roles, 'advertisement').slice(0, 30_000).trim();
     const metadataContext = renderRole(tree, roles, 'metadata').slice(0, 30_000).trim();
-    if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+    if (process.env.DEBUG_HTML_CLASSIFICATION === '1' && process.env.VITEST !== 'true') {
         printClassificationTrace(units, roles, advertisement, metadataContext);
     }
     if (!advertisement || advertisement.length < 50) throw new JobAnalysisInvalidResponseError();

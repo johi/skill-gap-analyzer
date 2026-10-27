@@ -10,7 +10,8 @@ import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/s
 
 // Disabled by default. Logs validation structure only, never returned field values.
 function logAnalysisValidation(stage: string, details: object): void {
-    if (process.env.DEBUG_HTML_CLASSIFICATION !== '1') return;
+    // Keep diagnostics available during normal operation without flooding Vitest output.
+    if (process.env.DEBUG_HTML_CLASSIFICATION !== '1' || process.env.VITEST === 'true') return;
     console.error('[JOB ANALYSIS VALIDATION]', JSON.stringify({ stage, ...details }));
 }
 

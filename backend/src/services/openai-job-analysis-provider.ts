@@ -110,7 +110,7 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             throw new JobAnalysisInvalidResponseError();
         }
 
-        if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+        if (process.env.DEBUG_HTML_CLASSIFICATION === '1' && process.env.VITEST !== 'true') {
             console.warn('[OPENAI ANALYSIS DIAGNOSTIC]', JSON.stringify({
                 operation: name,
                 status: payload?.status ?? 'missing',
@@ -134,7 +134,7 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             .find(item => item && item.type === 'output_text' && typeof item.text === 'string')?.text;
 
         if (!text) {
-            if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+            if (process.env.DEBUG_HTML_CLASSIFICATION === '1' && process.env.VITEST !== 'true') {
                 console.warn('[OPENAI ANALYSIS DIAGNOSTIC] no output_text', name);
             }
             throw new JobAnalysisInvalidResponseError();
@@ -142,7 +142,7 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
         try {
             return JSON.parse(text) as unknown;
         } catch {
-            if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+            if (process.env.DEBUG_HTML_CLASSIFICATION === '1' && process.env.VITEST !== 'true') {
                 console.warn('[OPENAI ANALYSIS DIAGNOSTIC] invalid output JSON', name);
             }
             throw new JobAnalysisInvalidResponseError();
