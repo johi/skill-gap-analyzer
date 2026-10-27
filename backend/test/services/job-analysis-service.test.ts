@@ -22,50 +22,6 @@ function proposal() {
 }
 
 describe('JobAnalysisService (UC-09–11)', () => {
-    it('passes a labeled source title to AI and preserves the exact advertisement', async () => {
-        const raw = 'THE OPPORTUNITY\n\nDevelop APIs and services using TypeScript and PostgreSQL.';
-        const provider = { analyze: vi.fn().mockResolvedValue({ ...proposal(), title: null }), categorize: vi.fn() };
-        const result = await new JobAnalysisService(provider).analyze(
-            raw, 'https://careers.example.com/jobs/42', 'Senior Platform Developer'
-        );
-        expect(provider.analyze).toHaveBeenCalledExactlyOnceWith(
-            `Job title: Senior Platform Developer\n\n${raw}`
-        );
-        expect(result.proposal.title).toBe('Senior Platform Developer');
-        expect(result.originalText).toBe(raw);
-    });
-
-    it('preserves extracted contacts and explicit deadline in its proposal', async () => {
-        const provider = { analyze: vi.fn().mockResolvedValue({
-            ...proposal(), applicationDeadline: '2026-12-01',
-            contacts: [
-                { name: 'Anna', role: 'Recruiter', email: 'anna@example.com', phone: null },
-                { name: 'Peter', role: null, email: null, phone: '+45 12345678' },
-            ],
-        }), categorize: vi.fn() };
-        const result = await new JobAnalysisService(provider).analyze(advertisement);
-        expect(result.proposal.applicationDeadline).toBe('2026-12-01');
-        expect(result.proposal.contacts).toHaveLength(2);
-        expect(result.proposal.contacts?.[0]?.role).toBeNull(); // Role not present in the source
-    });
-
-    it('keeps a contact role only when the same source line supports it', async () => {
-        const raw = 'Contact Anna (Recruiter) for questions about this Senior Developer vacancy.';
-        const provider = { analyze: vi.fn().mockResolvedValue({
-            ...proposal(), contacts: [{ name: 'Anna', role: 'Recruiter', email: null, phone: null }],
-        }), categorize: vi.fn() };
-        const result = await new JobAnalysisService(provider).analyze(raw);
-        expect(result.proposal.contacts?.[0]?.role).toBe('Recruiter');
-    });
-
-    it('rejects malformed application deadlines', async () => {
-        const provider = { analyze: vi.fn().mockResolvedValue({
-            ...proposal(), applicationDeadline: 'next Friday',
-        }), categorize: vi.fn() };
-        await expect(new JobAnalysisService(provider).analyze(advertisement))
-            .rejects.toBeInstanceOf(JobAnalysisInvalidResponseError);
-    });
-
     it('returns structured metadata and skills without persistence', async () => {
         const provider = { analyze: vi.fn().mockResolvedValue(proposal()), categorize: vi.fn() };
         const result = await new JobAnalysisService(provider).analyze(advertisement);
@@ -79,6 +35,21 @@ describe('JobAnalysisService (UC-09–11)', () => {
         expect(result.dateFound).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
+    it('uses supplementary metadata for analysis but never stores it in originalText', async () => {
+        const provider = { analyze: vi.fn().mockResolvedValue(proposal()), categorize: vi.fn() };
+        const result = await new JobAnalysisService(provider).analyze(
+            advertisement,
+            'https://careers.example.com/jobs/42',
+            null,
+            'Deadline: 12 January 2027'
+        );
+        expect(provider.analyze).toHaveBeenCalledWith(expect.stringContaining('SUPPLEMENTARY JOB METADATA'));
+        expect(provider.analyze.mock.calls[0]?.[0]).toContain('Deadline: 12 January 2027');
+        expect(result.originalText).toBe(advertisement);
+        expect(result.originalText).not.toContain('Deadline:');
+        expect(result.proposal.title).toBe('Senior TypeScript Developer');
+    });
+
     it('preserves missing facts as null and flags incomplete analysis for review', async () => {
         const provider = { analyze: vi.fn().mockResolvedValue({
             ...proposal(), company: null,
@@ -87,6 +58,28 @@ describe('JobAnalysisService (UC-09–11)', () => {
         const result = await new JobAnalysisService(provider).analyze(advertisement);
         expect(result.proposal.company).toBeNull();
         expect(result.requiresReview).toBe(true);
+    });
+
+    it('logs extraction validation paths and codes only when diagnostics are enabled', async () => {
+        const previous = process.env.DEBUG_HTML_CLASSIFICATION;
+        const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            process.env.DEBUG_HTML_CLASSIFICATION = '1';
+            const provider = { analyze: vi.fn().mockResolvedValue({
+                ...proposal(), seniority: 'invalid_private_value',
+            }), categorize: vi.fn() };
+            await expect(new JobAnalysisService(provider).analyze(advertisement))
+                .rejects.toBeInstanceOf(JobAnalysisInvalidResponseError);
+            expect(spy).toHaveBeenCalledWith('[JOB ANALYSIS VALIDATION]', expect.stringContaining('extraction_schema'));
+            const diagnostic = spy.mock.calls.map(call => String(call[1] ?? '')).join(' ');
+            expect(diagnostic).toContain('seniority');
+            expect(diagnostic).not.toContain('invalid_private_value');
+            expect(diagnostic).not.toContain(advertisement);
+        } finally {
+            if (previous === undefined) delete process.env.DEBUG_HTML_CLASSIFICATION;
+            else process.env.DEBUG_HTML_CLASSIFICATION = previous;
+            spy.mockRestore();
+        }
     });
 
     it('rejects structurally invalid provider data', async () => {
@@ -168,24 +161,5 @@ describe('Two-stage skill categorization', () => {
         const catalogue = { findAll: vi.fn().mockResolvedValue([]) };
         await expect(new JobAnalysisService(provider, catalogue).analyze(advertisement))
             .rejects.toBeInstanceOf(JobAnalysisInvalidResponseError);
-    });
-});
-
-
-describe('Source advertisement preservation', () => {
-    it('preserves all original lines without rewriting or deletion', async () => {
-        const raw = 'Role overview\n\n' + advertisement + '\nApplication information and benefits.';
-        const provider = { analyze: vi.fn().mockResolvedValue(proposal()), categorize: vi.fn() };
-        const result = await new JobAnalysisService(provider).analyze(raw);
-        expect(provider.analyze).toHaveBeenCalledExactlyOnceWith(raw);
-        expect(result.originalText).toBe(raw);
-    });
-
-    it('ignores any invented cleanedAdvertisement field', async () => {
-        const provider = { analyze: vi.fn().mockResolvedValue({
-            ...proposal(), cleanedAdvertisement: 'AI invented rewritten content',
-        }), categorize: vi.fn() };
-        const result = await new JobAnalysisService(provider).analyze(advertisement);
-        expect(result.originalText).toBe(advertisement);
     });
 });

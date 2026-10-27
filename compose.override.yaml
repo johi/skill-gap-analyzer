@@ -1,0 +1,6 @@
+# Development-only configuration for the AI HTML classification trace.
+# Docker Compose merges this file with compose.yaml automatically.
+services:
+  backend:
+    environment:
+      DEBUG_HTML_CLASSIFICATION: "1"

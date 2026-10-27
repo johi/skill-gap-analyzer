@@ -5,7 +5,8 @@ import type { Readable } from 'node:stream';
 import { BlockList, isIP } from 'node:net';
 import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
-import { extractJobAdvertisementDetails } from '@/services/job-advertisement-content';
+import { extractJobAdvertisement } from '@/services/job-advertisement-content';
+import { classifyHtmlJobAdvertisement, type ContentClassificationProvider } from '@/services/job-advertisement-dom-classification';
 
 const MAX_PAGE_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
@@ -142,10 +143,11 @@ async function resolveBeforeDeadline(
 export class JobAdvertisementUrlFetcher {
     constructor(
         private readonly resolveHost: HostResolver = async hostname => lookup(hostname, { all: true }),
-        private readonly transport: PageTransport = requestPage
+        private readonly transport: PageTransport = requestPage,
+        private readonly classifier?: ContentClassificationProvider
     ) {}
 
-    async retrieve(rawUrl: string): Promise<{ sourceUrl: string; advertisement: string; title: string | null }> {
+    async retrieve(rawUrl: string): Promise<{ sourceUrl: string; advertisement: string; title?: string | null; metadataContext?: string }> {
         const original = parseTarget(rawUrl);
         let current = original;
         const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
@@ -187,10 +189,29 @@ export class JobAdvertisementUrlFetcher {
                     `The job website returned HTTP ${response.status}. Paste the advertisement instead.`
                 );
             }
-            const { advertisement, title } = extractJobAdvertisementDetails(
-                response.body, String(response.headers['content-type'] ?? '')
-            );
-            return { sourceUrl: original.toString(), advertisement, title };
+            const contentType = String(response.headers['content-type'] ?? '');
+            // Keep the original extraction for plain text and test instances without
+            // a classifier. HTML URLs use the v4 text-unit classifier.
+            const type = contentType.toLowerCase().split(';')[0]?.trim();
+            const isHtml = type !== 'text/plain' &&
+                /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(response.body);
+            if (this.classifier && isHtml) {
+                // Validate the media type before invoking AI.
+                if (type && !['text/html', 'application/xhtml+xml'].includes(type)) {
+                    return { sourceUrl: original.toString(), advertisement: extractJobAdvertisement(response.body, contentType) };
+                }
+                const extracted = await classifyHtmlJobAdvertisement(response.body, this.classifier);
+                return {
+                    sourceUrl: original.toString(),
+                    advertisement: extracted.advertisement,
+                    title: extracted.title,
+                    metadataContext: extracted.metadataContext,
+                };
+            }
+            return {
+                sourceUrl: original.toString(),
+                advertisement: extractJobAdvertisement(response.body, contentType),
+            };
         }
         throw new JobAdvertisementRetrievalError('Too many redirects. Paste the advertisement instead.');
     }

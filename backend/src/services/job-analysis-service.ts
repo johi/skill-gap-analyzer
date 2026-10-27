@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import {
-    jobProposalSchema,
     jobAdvertisementAnalysisSchema,
     type JobAdvertisementAnalysis,
 } from '@/schemas/job-analysis';
@@ -8,10 +7,21 @@ import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
 import type { JobAnalysisProvider } from '@/services/job-analysis-contract';
 import type { SkillRepository } from '@/repositories/skill-repository';
 import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
+import { normalizeJobApplicationDeadline } from '@/services/job-application-deadline';
 
-// Preserve source-line boundaries when validating recruitment contact roles.
-function sourceLines(advertisement: string): string[] {
-    return advertisement.match(/[^\n]*\n|[^\n]+$/g) ?? [];
+// Disabled by default. Logs validation structure only, never returned field values.
+function logAnalysisValidation(stage: string, details: object): void {
+    if (process.env.DEBUG_HTML_CLASSIFICATION !== '1') return;
+    console.error('[JOB ANALYSIS VALIDATION]', JSON.stringify({ stage, ...details }));
+}
+
+function logSchemaIssues(stage: string, error: z.ZodError): void {
+    logAnalysisValidation(stage, {
+        issues: error.issues.map(issue => ({
+            path: issue.path.map(String).join('.'),
+            code: issue.code,
+        })),
+    });
 }
 
 const categorizationSchema = z.object({
@@ -28,29 +38,37 @@ export class JobAnalysisService {
     ) {}
 
     async analyze(
-        advertisement: string, sourceUrl: string | null = null, extractedTitle: string | null = null
+        advertisement: string,
+        sourceUrl: string | null = null,
+        extractedTitle: string | null = null,
+        metadataContext: string | null = null
     ): Promise<JobAdvertisementAnalysis> {
-        // Give the AI explicit source metadata; never add it to the saved advertisement.
-        const aiInput = extractedTitle ? `Job title: ${extractedTitle}\n\n${advertisement}` : advertisement;
-        const providerResult = await this.provider.analyze(aiInput);
-        const extracted = jobProposalSchema.safeParse(providerResult);
-        if (!extracted.success) throw new JobAnalysisInvalidResponseError();
+        // Supplementary page facts inform extraction but must never enter originalText.
+        const baseInput = extractedTitle ? `Job title: ${extractedTitle}\n\n${advertisement}` : advertisement;
+        const analysisInput = metadataContext?.trim()
+            ? `${baseInput}\n\nSUPPLEMENTARY JOB METADATA (facts only, not advertisement text):\n${metadataContext}`
+            : baseInput;
+
+        const rawExtraction = await this.provider.analyze(analysisInput);
+        // OpenAI's JSON schema allows any string here, but the application requires
+        // an ISO date. Normalize recognized formats without weakening Zod validation.
+        const normalizedExtraction = rawExtraction !== null && typeof rawExtraction === 'object' &&
+            !Array.isArray(rawExtraction) && 'applicationDeadline' in rawExtraction
+            ? {
+                ...rawExtraction,
+                applicationDeadline: normalizeJobApplicationDeadline(rawExtraction.applicationDeadline),
+            }
+            : rawExtraction;
+
+        const extracted = jobAdvertisementAnalysisSchema.shape.proposal.safeParse(normalizedExtraction);
+        if (!extracted.success) {
+            logSchemaIssues('extraction_schema', extracted.error);
+            throw new JobAnalysisInvalidResponseError();
+        }
 
         const proposal = extracted.data;
-        // JSON-LD title is source metadata, not an AI inference.
+        // A trusted source title takes precedence over an AI-inferred title.
         if (extractedTitle && extractedTitle.length <= 255) proposal.title = extractedTitle;
-        proposal.applicationDeadline ??= null;
-        proposal.contacts ??= [];
-        // A role is accepted only when the same source line explicitly associates
-        // that role with the named contact. Otherwise leave it for human review.
-        const lines = sourceLines(advertisement).map(line => line.toLocaleLowerCase());
-        proposal.contacts = proposal.contacts.map(contact => {
-            if (!contact.role || !contact.name) return { ...contact, role: null };
-            const name = contact.name.toLocaleLowerCase();
-            const role = contact.role.toLocaleLowerCase();
-            return lines.some(line => line.includes(name) && line.includes(role))
-                ? contact : { ...contact, role: null };
-        });
         const existingSkills = await this.skillCatalogue?.findAll() ?? [];
         const byName = new Map(existingSkills.map(skill => [skill.name.trim().toLocaleLowerCase('en-US'), skill]));
         const categories = Array.from(new Map(existingSkills
@@ -65,18 +83,30 @@ export class JobAnalysisService {
             const result = categorizationSchema.safeParse(await this.provider.categorize(
                 unmatched.map(skill => skill.name), categories, advertisement
             ));
-            if (!result.success || result.data.skills.length !== unmatched.length) {
+            if (!result.success) {
+                logSchemaIssues('categorization_schema', result.error);
+                throw new JobAnalysisInvalidResponseError();
+            }
+            if (result.data.skills.length !== unmatched.length) {
+                logAnalysisValidation('categorization_count', {
+                    expected: unmatched.length,
+                    received: result.data.skills.length,
+                });
                 throw new JobAnalysisInvalidResponseError();
             }
             proposed = new Map();
             for (const item of result.data.skills) {
                 const key = item.name.trim().toLocaleLowerCase('en-US');
                 if (proposed.has(key) || !unmatched.some(skill => skill.name.trim().toLocaleLowerCase('en-US') === key)) {
+                    logAnalysisValidation('categorization_skill_mapping', { reason: 'duplicate_or_unexpected_skill' });
                     throw new JobAnalysisInvalidResponseError();
                 }
                 proposed.set(key, item.category);
             }
-            if (proposed.size !== unmatched.length) throw new JobAnalysisInvalidResponseError();
+            if (proposed.size !== unmatched.length) {
+                logAnalysisValidation('categorization_skill_mapping', { reason: 'missing_skill' });
+                throw new JobAnalysisInvalidResponseError();
+            }
         }
 
         proposal.skills = proposal.skills.map(skill => {
@@ -88,7 +118,7 @@ export class JobAnalysisService {
             return { ...skill, category: normalized || null };
         });
 
-        return jobAdvertisementAnalysisSchema.parse({
+        const finalResult = jobAdvertisementAnalysisSchema.safeParse({
             dateFound: new Date().toISOString().slice(0, 10),
             originalText: advertisement,
             sourceUrl,
@@ -101,5 +131,10 @@ export class JobAnalysisService {
                         !categories.some(category => categoryKey(category) === categoryKey(skill.category ?? '')))
                 ),
         });
+        if (!finalResult.success) {
+            logSchemaIssues('final_analysis_schema', finalResult.error);
+            throw new JobAnalysisInvalidResponseError();
+        }
+        return finalResult.data;
     }
 }

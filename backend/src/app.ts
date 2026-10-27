@@ -89,10 +89,11 @@ export function buildApp(
         }
     );
 
+    const analysisProvider = new OpenAiJobAnalysisProvider();
     fastify.register(
         createJobAnalysisRoutes(
-            new JobAnalysisService(new OpenAiJobAnalysisProvider(), skillRepository),
-            new JobAdvertisementUrlFetcher()
+            new JobAnalysisService(analysisProvider, skillRepository),
+            new JobAdvertisementUrlFetcher(undefined, undefined, analysisProvider)
         ),
         { prefix: '/api/v1/job-analysis' }
     );

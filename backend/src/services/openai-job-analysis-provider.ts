@@ -11,9 +11,15 @@ import {
     jobAnalysisInstructions,
     skillCategorizationInstructions,
 } from '@/services/job-analysis-instructions';
+import {
+    contentClassificationInstructions,
+    contentClassificationJsonSchema,
+} from '@/services/job-advertisement-dom-classification';
 
 interface OpenAiResponse {
     status?: string;
+    incomplete_details?: { reason?: string } | null;
+    usage?: { input_tokens?: number; output_tokens?: number };
     output?: Array<{
         type?: string;
         content?: Array<{ type?: string; text?: string }>;
@@ -37,6 +43,16 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             JSON.stringify({ skills, existingCategories, advertisement }),
             skillCategorizationJsonSchema,
             'skill_categorization'
+        );
+    }
+
+    /** Experimental: not used by the existing URL-fetch or analysis services. */
+    classifyContent(tree: string): Promise<unknown> {
+        return this.request(
+            contentClassificationInstructions,
+            tree,
+            contentClassificationJsonSchema,
+            'html_content_classification'
         );
     }
 
@@ -83,6 +99,19 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             throw new JobAnalysisInvalidResponseError();
         }
 
+        if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+            console.warn('[OPENAI ANALYSIS DIAGNOSTIC]', JSON.stringify({
+                operation: name,
+                status: payload?.status ?? 'missing',
+                incompleteReason: payload?.incomplete_details?.reason ?? null,
+                inputTokens: payload?.usage?.input_tokens ?? null,
+                outputTokens: payload?.usage?.output_tokens ?? null,
+                outputTypes: Array.isArray(payload?.output)
+                    ? payload.output.map(item => item.type ?? 'missing')
+                    : null,
+            }));
+        }
+
         if (!payload || typeof payload !== 'object' ||
             payload.status !== 'completed' || !Array.isArray(payload.output)) {
             throw new JobAnalysisInvalidResponseError();
@@ -93,10 +122,18 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             .flatMap(item => item.content ?? [])
             .find(item => item && item.type === 'output_text' && typeof item.text === 'string')?.text;
 
-        if (!text) throw new JobAnalysisInvalidResponseError();
+        if (!text) {
+            if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+                console.warn('[OPENAI ANALYSIS DIAGNOSTIC] no output_text', name);
+            }
+            throw new JobAnalysisInvalidResponseError();
+        }
         try {
             return JSON.parse(text) as unknown;
         } catch {
+            if (process.env.DEBUG_HTML_CLASSIFICATION === '1') {
+                console.warn('[OPENAI ANALYSIS DIAGNOSTIC] invalid output JSON', name);
+            }
             throw new JobAnalysisInvalidResponseError();
         }
     }

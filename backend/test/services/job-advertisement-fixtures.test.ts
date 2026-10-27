@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { extractJobAdvertisementDetails } from '@/services/job-advertisement-content';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { classifyHtmlJobAdvertisement } from '@/services/job-advertisement-dom-classification';
+import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
 
 /**
  * Acceptance tests for separating advertisement prose from supplementary facts.
- * All fixture contents are fictional. These tests intentionally describe the
- * desired behavior; the DOM classifier has not been implemented yet.
+ * All fixture contents are fictional. These are live AI acceptance tests only. Set
+ * RUN_LIVE_HTML_CLASSIFICATION=1 to run them (requires an API key).
  *
  * Contract: "advertisement" becomes the stored originalText, while
  * "metadataContext" supplies additional facts for structured analysis.
@@ -197,14 +198,21 @@ function expectInOrder(text: string, fragments: string[]): void {
     }
 }
 
-describe('Fictional HTML job-advertisement fixtures (acceptance)', () => {
+const liveClassification = process.env.RUN_LIVE_HTML_CLASSIFICATION === '1';
+
+(liveClassification ? describe : describe.skip)('Fictional HTML job-advertisement fixtures (live AI acceptance)', () => {
     for (const scenario of cases) {
         describe(scenario.file, () => {
-            const result = extractJobAdvertisementDetails(loadFixture(scenario.file), 'text/html');
-            const advertisement = result.advertisement;
-            // Additive future field: the existing return type still has only advertisement/title.
-            // Access via a runtime shape check so the acceptance suite can run red without TS errors.
-            const metadataContext = (result as { metadataContext?: unknown }).metadataContext;
+            let result!: { advertisement: string; title: string | null; metadataContext?: string };
+            let advertisement!: string;
+            let metadataContext: unknown;
+
+            beforeAll(async () => {
+                const html = loadFixture(scenario.file);
+                result = await classifyHtmlJobAdvertisement(html, new OpenAiJobAnalysisProvider());
+                advertisement = result.advertisement;
+                metadataContext = result.metadataContext;
+            }, 120_000);
 
             it('retains all job advertisement sections in source order, without rewriting', () => {
                 expectInOrder(advertisement, scenario.advertisementInOrder);
