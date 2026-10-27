@@ -1240,3 +1240,48 @@ Extensions:
 Postcondition:
 The API consumer receives a consistent error response.
 
+UC-43: Merge Skills
+
+Primary Actor:
+User
+
+Goal:
+Merge duplicate or equivalent skills into a single canonical skill while preserving their existing associations and assessments.
+
+Preconditions:
+At least two skills exist in the skill catalogue.
+
+Trigger:
+User initiates a skill merge.
+
+Main Success Scenario:
+1. User selects a source skill to merge.
+2. User selects a target skill to retain.
+3. System identifies all job associations and personal skill assessments affected by the merge.
+4. System presents a preview of the merge, including potential conflicts.
+5. User reviews the consequences and resolves any conflicts.
+6. User confirms the merge.
+7. System transfers job associations from the source skill to the target skill.
+8. System transfers or reconciles personal skill assessments.
+9. System removes the source skill from the catalogue.
+10. System completes the operation within a database transaction.
+11. System confirms the successful merge.
+
+Extensions:
+1a. Source and target skills are identical:
+    System rejects the operation.
+
+3a. Both skills are associated with the same job:
+    System resolves duplicate associations, preserving must-have requirements when either association is must-have.
+
+3b. Both skills have personal proficiency assessments:
+    System requires the user to select which assessment to retain.
+
+5a. User cancels the merge:
+    System makes no changes.
+
+10a. Database operation fails:
+    System rolls back the transaction and returns an appropriate error.
+
+Postcondition:
+The target skill remains in the catalogue with all reconciled job associations and personal assessments. The source skill no longer exists, and all dependent analyses use the consolidated skill data.
