@@ -67,6 +67,39 @@ describe('LinkedIn public job retrieval', () => {
         expect(classifyContent).not.toHaveBeenCalled();
     });
 
+    it('retrieves the selected job from LinkedIn search results without HTML classification', async () => {
+        const input = 'https://www.linkedin.com/jobs/search-results/' +
+            '?currentJobId=4484232425' +
+            '&eBP=NON_CHARGEABLE_CHANNEL' +
+            '&refId=FVJlqA5E%2Ba2vvqkQmazs5Q%3D%3D' +
+            '&trackingId=SAzFB8LxV2FQG2dU4sPqqQ%3D%3D' +
+            '&keywords=jobs%20in%20Denmark' +
+            '&origin=SEMANTIC_SEARCH_JOB_ALERT_IN_APP_NOTIFICATION' +
+            '&originToLandingJobPostings=4484446108%2C4482231974%2C4466216482%2C4476447911%2C4484232425%2C4484212278' +
+            '&geoId=104514075' +
+            '&f_TPR=a1793106916-';
+        const { fetcher, resolveHost, transport, classifyContent } = setup();
+
+        const result = await fetcher.retrieve(input);
+
+        expect(result.sourceUrl).toBe(input);
+        expect(result.advertisement).toContain(description);
+        expect(result.advertisement).toContain('- TypeScript');
+        expect(result.advertisement).not.toContain('Sign in');
+        expect(result.title).toBe('Backend Developer');
+        expect(result.metadataContext).toContain('Company: Example Company');
+        expect(resolveHost).toHaveBeenCalledExactlyOnceWith('www.linkedin.com');
+        expect(transport).toHaveBeenCalledTimes(1);
+        expect(transport).toHaveBeenCalledWith(
+            expect.objectContaining({
+                href: 'https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/4484232425',
+            }),
+            { address: '8.8.8.8', family: 4 },
+            expect.anything()
+        );
+        expect(classifyContent).not.toHaveBeenCalled();
+    });
+
     it('does not classify large unrelated LinkedIn page content', async () => {
         const largeHtml = guestHtml + `<div>${'<p>Other jobs and navigation</p>'.repeat(5000)}</div>`;
         const { fetcher, classifyContent } = setup(largeHtml);
@@ -86,15 +119,25 @@ describe('LinkedIn public job retrieval', () => {
     it.each([
         'https://example.com/jobs/view/1234567890',
         'https://notlinkedin.com/jobs/view/1234567890',
-        'https://www.linkedin.com/jobs/search/?keywords=developer',
-        'https://www.linkedin.com/jobs/view/not-a-job',
-        'http://www.linkedin.com/jobs/view/1234567890',
-    ])('leaves other URLs untouched: %s', async input => {
+    ])('leaves non-LinkedIn URLs on the normal classification path: %s', async input => {
         const { fetcher, transport, classifyContent } = setup();
         const result = await fetcher.retrieve(input);
         expect(transport.mock.calls[0]?.[0].href).toBe(input);
         expect(result.advertisement).toContain(description);
         expect(classifyContent).toHaveBeenCalledTimes(1);
+    });
+
+    it.each([
+        'https://www.linkedin.com/jobs/search/?keywords=developer',
+        'https://www.linkedin.com/jobs/search-results/?currentJobId=not-a-job',
+        'https://www.linkedin.com/jobs/view/not-a-job',
+        'http://www.linkedin.com/jobs/view/1234567890',
+    ])('rejects unrecognized or insecure LinkedIn job URLs without classification: %s', async input => {
+        const { fetcher, resolveHost, transport, classifyContent } = setup();
+        await expect(fetcher.retrieve(input)).rejects.toThrow();
+        expect(resolveHost).not.toHaveBeenCalled();
+        expect(transport).not.toHaveBeenCalled();
+        expect(classifyContent).not.toHaveBeenCalled();
     });
 
     it('does not revert to the full LinkedIn page on guest retrieval failure', async () => {

@@ -66,15 +66,44 @@ function parseTarget(value: string): URL {
     return url;
 }
 
-/** Public LinkedIn job URLs resolve to a focused guest job-detail document. */
-function resolveLinkedInJobUrl(url: URL): URL {
+interface LinkedInJobTarget {
+    url: URL;
+    isGuest: boolean;
+}
+
+/** Resolve LinkedIn job links to their focused guest job-detail document. */
+function resolveLinkedInJobUrl(url: URL): LinkedInJobTarget {
     const hostname = url.hostname.toLowerCase();
-    if (url.protocol !== 'https:' || !['linkedin.com', 'www.linkedin.com'].includes(hostname)) {
-        return url;
+    if (!['linkedin.com', 'www.linkedin.com'].includes(hostname)) {
+        return { url, isGuest: false };
     }
-    const match = /^\/jobs\/view\/([0-9]+)\/?$/.exec(url.pathname);
-    if (!match) return url;
-    return new URL(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${match[1]}`);
+
+    const guestMatch = /^\/jobs-guest\/jobs\/api\/jobPosting\/([0-9]+)\/?$/.exec(url.pathname);
+    const isJobsPage = url.pathname === '/jobs' || url.pathname.startsWith('/jobs/');
+    const isGuestPage = url.pathname.startsWith('/jobs-guest/');
+    if (!isJobsPage && !isGuestPage) {
+        return { url, isGuest: false };
+    }
+    if (url.protocol !== 'https:') {
+        throw new JobAdvertisementRetrievalError('LinkedIn job URLs must use HTTPS.', 400, 'invalid_job_url');
+    }
+
+    // A selected job may be embedded in search results, alerts, or collections.
+    const viewMatch = /^\/jobs\/view\/(?:[^/]*-)?([0-9]+)\/?$/.exec(url.pathname);
+    const jobId = guestMatch?.[1] ?? viewMatch?.[1] ?? url.searchParams.get('currentJobId');
+    if (!jobId || !/^[0-9]+$/.test(jobId)) {
+        // Never classify a LinkedIn jobs listing as an advertisement.
+        throw new JobAdvertisementRetrievalError(
+            'Could not identify a LinkedIn job ID. Open a specific job and try again.',
+            400,
+            'invalid_job_url'
+        );
+    }
+
+    return {
+        url: new URL(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`),
+        isGuest: true,
+    };
 }
 
 async function requestPage(url: URL, pinned: ResolvedAddress, signal: AbortSignal): Promise<PageResponse> {
@@ -161,8 +190,9 @@ export class JobAdvertisementUrlFetcher {
 
     async retrieve(rawUrl: string): Promise<{ sourceUrl: string; advertisement: string; title?: string | null; metadataContext?: string }> {
         const original = parseTarget(rawUrl);
-        let current = resolveLinkedInJobUrl(original);
-        const linkedInGuest = current.href !== original.href;
+        const linkedInTarget = resolveLinkedInJobUrl(original);
+        let current = linkedInTarget.url;
+        const linkedInGuest = linkedInTarget.isGuest;
         const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
         for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
             const host = current.hostname.replace(/^\[|\]$/g, '');
