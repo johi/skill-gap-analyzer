@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
     jobAdvertisementAnalysisSchema,
+    jobProposalSchema,
     type JobAdvertisementAnalysis,
 } from '@/schemas/job-analysis';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
@@ -22,6 +23,23 @@ function logSchemaIssues(stage: string, error: z.ZodError): void {
             code: issue.code,
         })),
     });
+}
+
+/** Resolve yearless dates without trusting a year absent from the source. */
+function resolveYearlessDeadline(extraction: unknown, source: string): unknown {
+    if (!extraction || typeof extraction !== 'object' || !('applicationDeadline' in extraction)) return extraction;
+    let value = extraction.applicationDeadline;
+    if (typeof value !== 'string') return extraction;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        if (source.includes(value.slice(0, 4))) return extraction;
+        value = value.slice(5);
+    }
+    if (!/^\d{2}-\d{2}$/.test(value)) return extraction;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const year = Number(today.slice(0, 4)) + (value < today.slice(5) ? 1 : 0);
+    return { ...extraction, applicationDeadline: `${year}-${value}` };
 }
 
 const categorizationSchema = z.object({
@@ -50,20 +68,17 @@ export class JobAnalysisService {
             : baseInput;
 
         const rawExtraction = await this.provider.analyze(analysisInput);
-        const proposalSchema = jobAdvertisementAnalysisSchema.shape.proposal;
-        let extracted = proposalSchema.safeParse(rawExtraction);
+        let extracted = jobProposalSchema.safeParse(resolveYearlessDeadline(rawExtraction, analysisInput));
         if (!extracted.success) {
             logSchemaIssues('extraction_schema', extracted.error);
             if (!this.provider.correctAnalysis) throw new JobAnalysisInvalidResponseError();
             const issues: AnalysisValidationIssue[] = extracted.error.issues.map(issue => ({
                 path: issue.path.map(String).join('.'),
                 code: issue.code,
-                ...(issue.code === 'invalid_format' && issue.path.join('.') === 'applicationDeadline'
-                    ? { expected: 'YYYY-MM-DD or null' } : {}),
             }));
             logAnalysisValidation('extraction_correction', { attempt: 1, issueCount: issues.length });
             const corrected = await this.provider.correctAnalysis(analysisInput, rawExtraction, issues);
-            extracted = proposalSchema.safeParse(corrected);
+            extracted = jobProposalSchema.safeParse(resolveYearlessDeadline(corrected, analysisInput));
             if (!extracted.success) {
                 logSchemaIssues('extraction_correction_failed', extracted.error);
                 throw new JobAnalysisInvalidResponseError();

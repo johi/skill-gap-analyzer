@@ -36,12 +36,12 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
     ) {}
 
     analyze(advertisement: string): Promise<unknown> {
-        return this.request(jobAnalysisInstructions, advertisement, jobExtractionJsonSchema, 'job_advertisement_analysis');
+        return this.request(this.withCurrentDate(jobAnalysisInstructions), advertisement, jobExtractionJsonSchema, 'job_advertisement_analysis');
     }
 
     correctAnalysis(advertisement: string, previous: unknown, issues: AnalysisValidationIssue[]): Promise<unknown> {
         return this.request(
-            jobAnalysisCorrectionInstructions,
+            this.withCurrentDate(jobAnalysisCorrectionInstructions),
             JSON.stringify({ advertisement, previous, validationIssues: issues }),
             jobExtractionJsonSchema,
             'job_advertisement_correction'
@@ -65,6 +65,10 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
             contentClassificationJsonSchema,
             'html_content_classification'
         );
+    }
+
+    private withCurrentDate(instructions: string): string {
+        return `${instructions} Current date (UTC): ${new Date().toISOString().slice(0, 10)}.`;
     }
 
     private async request(

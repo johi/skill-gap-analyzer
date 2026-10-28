@@ -6,6 +6,7 @@ const advertisement = 'Example Company seeks a Senior TypeScript Developer for o
 
 function proposal() {
     return {
+        applicationDeadline: null,
         company: 'Example Company',
         title: 'Senior TypeScript Developer',
         location: 'Copenhagen',
@@ -21,7 +22,7 @@ function proposal() {
     };
 }
 
-describe('JobAnalysisService (UC-09–11)', () => {
+describe('JobAnalysisService', () => {
     it('returns structured metadata and skills without persistence', async () => {
         const provider = { analyze: vi.fn().mockResolvedValue(proposal()), categorize: vi.fn() };
         const result = await new JobAnalysisService(provider).analyze(advertisement);
@@ -79,38 +80,158 @@ describe('JobAnalysisService (UC-09–11)', () => {
     });
 
 
-    it('corrects invalid deadline using one schema-guided retry', async () => {
-        const initial = { ...proposal(), applicationDeadline: '30. november 2026' };
+    it('corrects an invalid deadline format using one schema-guided retry', async () => {
+        const source = 'Application deadline: 30 November 2026';
+        const deadlineAdvertisement = `${advertisement} ${source}`;
+        const initial = { ...proposal(), applicationDeadline: '30 November 2026' };
         const corrected = { ...proposal(), applicationDeadline: '2026-11-30' };
         const provider = {
             analyze: vi.fn().mockResolvedValue(initial),
             categorize: vi.fn(),
             correctAnalysis: vi.fn().mockResolvedValue(corrected),
         };
-        const result = await new JobAnalysisService(provider).analyze(advertisement);
+        const result = await new JobAnalysisService(provider).analyze(deadlineAdvertisement);
         expect(result.proposal.applicationDeadline).toBe('2026-11-30');
         expect(provider.analyze).toHaveBeenCalledTimes(1);
         expect(provider.correctAnalysis).toHaveBeenCalledTimes(1);
         expect(provider.correctAnalysis).toHaveBeenCalledWith(
-            advertisement,
+            deadlineAdvertisement,
             initial,
             expect.arrayContaining([expect.objectContaining({ path: 'applicationDeadline', code: 'invalid_format' })])
         );
     });
 
-    it('does not request a correction for valid extraction', async () => {
+    it('resolves a yearless deadline without allowing the AI to supply a year', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
+            const source = 'Application deadline: 16 November';
+            const provider = {
+                analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '11-16' }),
+                categorize: vi.fn(),
+                correctAnalysis: vi.fn(),
+            };
+            const result = await new JobAnalysisService(provider).analyze(`${advertisement} ${source}`);
+            expect(result.proposal.applicationDeadline).toBe('2026-11-16');
+            expect(provider.correctAnalysis).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('corrects an invented year when the source contains only a day and month', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
+            const provider = {
+                analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2023-11-16' }),
+                categorize: vi.fn(),
+                correctAnalysis: vi.fn(),
+            };
+            const source = `${advertisement} Application deadline: 16 November. The platform was updated in 2026.`;
+            const result = await new JobAnalysisService(provider).analyze(source);
+            expect(result.proposal.applicationDeadline).toBe('2026-11-16');
+            expect(provider.correctAnalysis).not.toHaveBeenCalled();
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('uses next year when the deadline has passed and the AI supplies an unsupported year', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-12-01T12:00:00Z'));
+            const provider = {
+                analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2023-11-16' }),
+                categorize: vi.fn(),
+            };
+            const result = await new JobAnalysisService(provider).analyze(`${advertisement} Application deadline: 16 November`);
+            expect(result.proposal.applicationDeadline).toBe('2027-11-16');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('resolves an elapsed yearless deadline to its next occurrence', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-12-01T12:00:00Z'));
+            const provider = {
+                analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '11-16' }),
+                categorize: vi.fn(),
+            };
+            const result = await new JobAnalysisService(provider).analyze(`${advertisement} Application deadline: 16 November`);
+            expect(result.proposal.applicationDeadline).toBe('2027-11-16');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it.each(['08-10', '2023-08-10'])(
+        'uses next year for a 10 August deadline when today is 28 October 2026 (AI output: %s)',
+        async extractedDeadline => {
+            vi.useFakeTimers();
+            try {
+                vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
+                const provider = {
+                    analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: extractedDeadline }),
+                    categorize: vi.fn(),
+                    correctAnalysis: vi.fn(),
+                };
+                const result = await new JobAnalysisService(provider).analyze(
+                    `${advertisement} Application deadline: 10 August`
+                );
+                expect(result.proposal.applicationDeadline).toBe('2027-08-10');
+                expect(provider.correctAnalysis).not.toHaveBeenCalled();
+            } finally {
+                vi.useRealTimers();
+            }
+        }
+    );
+
+    it('preserves the explicitly stated year, including dates in the past', async () => {
+        const source = 'Application deadline: 16 November 2023';
+        const provider = {
+            analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2023-11-16' }),
+            categorize: vi.fn(),
+        };
+        const result = await new JobAnalysisService(provider).analyze(`${advertisement} ${source}`);
+        expect(result.proposal.applicationDeadline).toBe('2023-11-16');
+    });
+
+    it('preserves null when the advertisement has no application deadline', async () => {
+        const provider = { analyze: vi.fn().mockResolvedValue(proposal()), categorize: vi.fn() };
+        const result = await new JobAnalysisService(provider).analyze(advertisement);
+        expect(result.proposal.applicationDeadline).toBeNull();
+    });
+
+    it('retains a deadline extracted from supplementary metadata without changing originalText', async () => {
+        const source = 'Deadline: 12 January 2027';
+        const provider = {
+            analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2027-01-12' }),
+            categorize: vi.fn(),
+        };
+        const result = await new JobAnalysisService(provider).analyze(advertisement, null, null, source);
+        expect(result.proposal.applicationDeadline).toBe('2027-01-12');
+        expect(result.originalText).toBe(advertisement);
+        expect(provider.analyze.mock.calls[0]?.[0]).toContain(source);
+    });
+
+    it('does not request a correction for a valid extracted date', async () => {
+        const source = 'Application deadline: 30 November 2026';
         const provider = {
             analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2026-11-30' }),
             categorize: vi.fn(),
             correctAnalysis: vi.fn(),
         };
-        await new JobAnalysisService(provider).analyze(advertisement);
+        const result = await new JobAnalysisService(provider).analyze(`${advertisement} ${source}`);
+        expect(result.proposal.applicationDeadline).toBe('2026-11-30');
         expect(provider.correctAnalysis).not.toHaveBeenCalled();
     });
 
     it('never retries extraction more than once', async () => {
         const provider = {
-            analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '30. november 2026' }),
+            analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '30 November 2026' }),
             categorize: vi.fn(),
             correctAnalysis: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: 'not a date' }),
         };

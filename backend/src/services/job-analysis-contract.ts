@@ -9,7 +9,6 @@ export interface JobAnalysisProvider {
 export interface AnalysisValidationIssue {
     path: string;
     code: string;
-    expected?: string;
 }
 
 // Structured Outputs requires all fields and additionalProperties: false.
@@ -24,7 +23,7 @@ export const jobExtractionJsonSchema = {
     type: 'object',
     additionalProperties: false,
     properties: {
-        applicationDeadline: { type: ['string', 'null'], description: 'ISO 8601 calendar date YYYY-MM-DD or null if not explicitly established' },
+        applicationDeadline: { type: ['string', 'null'], description: 'Application deadline as YYYY-MM-DD, or null when not established by the source' },
         contacts: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { name: nullableString, role: nullableString, email: nullableString, phone: nullableString }, required: ['name', 'role', 'email', 'phone'] } },
         company: nullableString,
         title: nullableString,

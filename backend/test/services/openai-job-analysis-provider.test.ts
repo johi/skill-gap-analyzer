@@ -34,7 +34,36 @@ describe('OpenAiJobAnalysisProvider', () => {
         expect(body.text.format.schema).toEqual(jobExtractionJsonSchema);
         expect(body.text.format.schema.properties).not.toHaveProperty('cleanedAdvertisement');
         expect(body.text.format.schema.required).not.toContain('cleanedAdvertisement');
-        expect(body.instructions).toBe(jobAnalysisInstructions);
+        expect(body.text.format.schema.properties).toHaveProperty('applicationDeadline');
+        expect(body.text.format.schema.required).toContain('applicationDeadline');
+        for (const obsoleteField of ['applicationDeadlineMonthDay', 'applicationDeadlineEvidence', 'applicationDeadlineYearEvidence']) {
+            expect(body.text.format.schema.properties).not.toHaveProperty(obsoleteField);
+            expect(body.text.format.schema.required).not.toContain(obsoleteField);
+        }
+        expect(body.instructions).toContain(jobAnalysisInstructions);
+        expect(body.instructions).toContain(`Current date (UTC): ${new Date().toISOString().slice(0, 10)}`);
+    });
+
+    it('supplies the reference date to both extraction and correction instructions', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
+            const fetchMock = vi.fn().mockImplementation(async () => response('{}'));
+            const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+            await provider.analyze(advertisement);
+            await provider.correctAnalysis(advertisement, { applicationDeadline: '2023-11-16' }, [
+                { path: 'applicationDeadline', code: 'invalid_format' },
+            ]);
+            const extraction = JSON.parse(fetchMock.mock.calls[0]![1].body);
+            const correction = JSON.parse(fetchMock.mock.calls[1]![1].body);
+            expect(extraction.instructions).toContain('Current date (UTC): 2026-10-28');
+            expect(correction.instructions).toContain('Current date (UTC): 2026-10-28');
+            expect(extraction.text.format.schema.properties).toHaveProperty('applicationDeadline');
+            expect(correction.text.format.schema.properties).toHaveProperty('applicationDeadline');
+            expect(correction.text.format.schema.properties).not.toHaveProperty('applicationDeadlineEvidence');
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('refuses to call the provider without an API key', async () => {
