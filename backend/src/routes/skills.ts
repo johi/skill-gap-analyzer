@@ -1,3 +1,4 @@
+import { listPaginationSchema, validateSort } from '@/schemas/list-pagination';
 import { FastifyPluginAsync } from 'fastify';
 
 import { SkillService } from '../services/skill-service';
@@ -12,8 +13,12 @@ export function createSkillRoutes(
     skillService: SkillService
 ): FastifyPluginAsync {
     return async (fastify) => {
-        fastify.get('/', async () => {
-            return skillService.list();
+        fastify.get('/', async (request) => {
+            const raw = request.query as Record<string, unknown>;
+            if (!('page' in raw || 'pageSize' in raw)) return skillService.list();
+            const query = listPaginationSchema.parse(raw);
+            validateSort(query.sortBy, ['name', 'category']);
+            return skillService.listPage(query);
         });
 
         fastify.post('/merge', async (request, reply) => {

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+import { paginationSchema, queryString, type ListQuery } from '@/schemas/list-pagination';
 import { apiRequest } from '@/api/client';
 import {
     skillSchema,
@@ -66,4 +68,9 @@ export function mergeSkills(sourceIds: number[], targetId: number): Promise<void
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sourceIds, targetId }),
     });
+}
+
+export function getSkillsPage(query: ListQuery) {
+  return apiRequest(`/api/v1/skills?${queryString(query)}`,
+    z.object({data: skillsSchema, pagination: paginationSchema}));
 }

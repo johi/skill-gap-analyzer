@@ -1,17 +1,18 @@
-import { onMounted, reactive, ref } from 'vue';
-import { createSkill, deleteSkill, getSkills, updateSkill } from '@/api/skills';
+import { useListPagination } from '@/composables/useListPagination';
+import type { Pagination } from '@/schemas/list-pagination';
+import { watch, reactive, ref } from 'vue';
+import { createSkill, deleteSkill, getSkillsPage, updateSkill } from '@/api/skills';
 import { ApiError } from '@/api/client';
 import type { Skill, SkillInput } from '@/types/skill';
-
-function compareSkills(first: Skill, second: Skill): number {
-  return first.name.localeCompare(second.name);
-}
 
 function getErrorMessage(err: unknown, fallback: string): string {
   return err instanceof Error ? err.message : fallback;
 }
 
 export function useSkills() {
+  const {query, update, search, searchInput} = useListPagination();
+  const pagination = ref<Pagination | null>(null);
+  let sequence = 0;
   const skills = ref<Skill[]>([]);
   const loading = ref(true);
   const saving = ref(false);
@@ -27,14 +28,19 @@ export function useSkills() {
   }
 
   async function loadSkills(): Promise<void> {
+    const current = ++sequence;
     loading.value = true;
     error.value = null;
     try {
-      skills.value = await getSkills();
+      const response = await getSkillsPage(query.value);
+      if (current !== sequence) return;
+      skills.value = response.data;
+      pagination.value = response.pagination;
+      if (response.pagination.page !== query.value.page) update({page: response.pagination.page}, false);
     } catch (err) {
-      error.value = getErrorMessage(err, 'Unable to load skills');
+      if (current === sequence) error.value = getErrorMessage(err, 'Unable to load skills');
     } finally {
-      loading.value = false;
+      if (current === sequence) loading.value = false;
     }
   }
 
@@ -75,15 +81,12 @@ export function useSkills() {
     };
     try {
       if (editingId.value === null) {
-        const created = await createSkill(input);
-        skills.value = [...skills.value, created].sort(compareSkills);
+        await createSkill(input);
       } else {
-        const updated = await updateSkill(editingId.value, input);
-        skills.value = skills.value
-          .map(skill => skill.id === updated.id ? updated : skill)
-          .sort(compareSkills);
+        await updateSkill(editingId.value, input);
       }
       startCreate();
+      await loadSkills();
     } catch (err) {
       handleApiError(err);
     } finally {
@@ -96,7 +99,7 @@ export function useSkills() {
     clearErrors();
     try {
       await deleteSkill(skill.id);
-      skills.value = skills.value.filter(item => item.id !== skill.id);
+      await loadSkills();
       if (editingId.value === skill.id) startCreate();
     } catch (err) {
       error.value = getErrorMessage(err, 'Unable to delete skill');
@@ -105,9 +108,10 @@ export function useSkills() {
     }
   }
 
-  onMounted(loadSkills);
+  watch(query, loadSkills, {immediate: true});
 
   return {
+    query, update, search, searchInput, pagination, loadSkills,
     skills, loading, saving, deletingId, error, validationErrors,
     editingId, form, startCreate, startEdit, cancelEdit,
     handleSubmit, removeSkill,

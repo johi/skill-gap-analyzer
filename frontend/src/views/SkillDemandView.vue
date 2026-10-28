@@ -1,6 +1,7 @@
-
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import SkillListControls from '@/components/ui/SkillListControls.vue';
+import { useListPagination } from '@/composables/useListPagination';
+import { computed, ref, watch } from 'vue';
 
 import {
   getSkillDemand,
@@ -35,6 +36,9 @@ type SortKey =
 type AnalysisSkill = SkillDemand | SkillGap | SkillPriority;
 
 const activeTab = ref<Tab>('demand');
+const {query, update, search, searchInput} = useListPagination('jobCount', 'desc');
+let requestSequence = 0;
+
 
 const demandResult = ref<SkillDemandResult | null>(null);
 const gapResult = ref<SkillGapResult | null>(null);
@@ -43,8 +47,8 @@ const priorityResult = ref<SkillPriorityResult | null>(null);
 const loading = ref(false);
 const error = ref<string | null>(null);
 
-const sortKey = ref<SortKey>('jobCount');
-const sortDescending = ref(true);
+const sortKey = computed(() => query.value.sortBy as SortKey);
+const sortDescending = computed(() => query.value.sortOrder === 'desc');
 
 const demandColumns: { key: SortKey; label: string }[] = [
   { key: 'name', label: 'Skill' },
@@ -117,50 +121,11 @@ const missingInformation = computed(
     () => priorityResult.value?.missingInformation ?? []
 );
 
-const sortedSkills = computed<AnalysisSkill[]>(() => {
-  const skills: AnalysisSkill[] = [...(result.value?.skills ?? [])];
-
-  return skills.sort((a, b) => {
-    const key = sortKey.value;
-
-    const left = key in a
-        ? (a as unknown as Record<SortKey, string | number | null>)[key]
-        : null;
-
-    const right = key in b
-        ? (b as unknown as Record<SortKey, string | number | null>)[key]
-        : null;
-
-    if (left === null && right === null) {
-      return a.name.localeCompare(b.name);
-    }
-
-    if (left === null) return 1;
-    if (right === null) return -1;
-
-    let comparison: number;
-
-    if (typeof left === 'number' && typeof right === 'number') {
-      comparison = left - right;
-    } else {
-      comparison = String(left).localeCompare(String(right));
-    }
-
-    if (comparison === 0) {
-      comparison = a.name.localeCompare(b.name);
-    }
-
-    return sortDescending.value ? -comparison : comparison;
-  });
-});
-
+const sortedSkills = computed<AnalysisSkill[]>(() => result.value?.skills ?? []);
 function sortBy(key: SortKey): void {
-  if (sortKey.value === key) {
-    sortDescending.value = !sortDescending.value;
-  } else {
-    sortKey.value = key;
-    sortDescending.value = !['name', 'category', 'status'].includes(key);
-  }
+  update({sortBy: key, sortOrder: sortKey.value === key
+    ? (sortDescending.value ? 'asc' : 'desc')
+    : (['name','category','status'].includes(key) ? 'asc' : 'desc')});
 }
 
 function sortIndicator(key: SortKey): string {
@@ -169,27 +134,28 @@ function sortIndicator(key: SortKey): string {
 }
 
 async function loadCurrentTab(): Promise<void> {
+  const sequence = ++requestSequence;
   loading.value = true;
   error.value = null;
 
   try {
     switch (activeTab.value) {
       case 'demand':
-        demandResult.value = await getSkillDemand();
+        {const response = await getSkillDemand(query.value); if (sequence === requestSequence) demandResult.value = response;}
         break;
       case 'gaps':
-        gapResult.value = await getSkillGaps();
+        {const response = await getSkillGaps(query.value); if (sequence === requestSequence) gapResult.value = response;}
         break;
       case 'priorities':
-        priorityResult.value = await getSkillPriorities();
+        {const response = await getSkillPriorities(query.value); if (sequence === requestSequence) priorityResult.value = response;}
         break;
     }
   } catch (err) {
-    error.value = err instanceof Error
+    if (sequence === requestSequence) error.value = err instanceof Error
         ? err.message
         : 'Unable to load analysis.';
   } finally {
-    loading.value = false;
+    if (sequence === requestSequence) loading.value = false;
   }
 }
 
@@ -197,12 +163,7 @@ async function selectTab(tab: Tab): Promise<void> {
   if (activeTab.value === tab) return;
 
   activeTab.value = tab;
-  sortKey.value = tab === 'priorities'
-      ? 'priorityScore'
-      : 'jobCount';
-  sortDescending.value = true;
-
-  await loadCurrentTab();
+  update({sortBy: tab === 'priorities' ? 'priorityScore' : 'jobCount', sortOrder: 'desc'});
 }
 
 function formatCell(
@@ -251,7 +212,10 @@ function formatCell(
   }
 }
 
-onMounted(loadCurrentTab);
+watch([activeTab, query], loadCurrentTab, {immediate: true});
+watch(() => result.value?.pagination?.page, page => {
+  if (page && page !== query.value.page) update({page}, false);
+});
 </script>
 
 <template>
@@ -288,6 +252,7 @@ onMounted(loadCurrentTab);
       </button>
     </div>
 
+    <SkillListControls :query="query" :pagination="result?.pagination ?? null" :search-input="searchInput" @search="search" @update="update" />
     <p
         v-if="loading"
         role="status"
@@ -347,8 +312,7 @@ onMounted(loadCurrentTab);
           v-if="result.skills.length === 0"
           class="rounded-lg border p-6 text-sm text-muted-foreground"
       >
-        No skill analysis data available. Add skills to active jobs to
-        generate the analysis.
+        {{ query.search ? 'No matching skills found.' : 'No skill analysis data available. Add skills to active jobs to generate the analysis.' }}
       </p>
 
       <div v-else class="overflow-x-auto rounded-lg border">

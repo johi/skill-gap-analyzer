@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, count } from 'drizzle-orm';
 
 import { jobSkills, skills } from '../db/schema';
 import { NotFoundError } from '@/errors/application-errors';
@@ -17,6 +17,20 @@ export class SkillRepository {
             .select()
             .from(skills)
             .orderBy(asc(skills.name));
+    }
+
+    async findPage(query: import('@/schemas/list-pagination').ListPaginationQuery) {
+        const pattern = `%${query.search.replace(/[\\%_]/g, '\\$&')}%`;
+        const filter = query.search ? ilike(skills.name, pattern) : undefined;
+        const [{ totalItems }] = await this.db.select({ totalItems: count() }).from(skills).where(filter);
+        const { pagination } = await import('@/schemas/list-pagination');
+        const meta = pagination(query.page, query.pageSize, totalItems);
+        const column = query.sortBy === 'category' ? skills.category : skills.name;
+        const ordering = query.sortOrder === 'desc' ? desc(column) : asc(column);
+        const data = await this.db.select().from(skills).where(filter)
+            .orderBy(ordering, asc(skills.name), asc(skills.id))
+            .limit(meta.pageSize).offset((meta.page - 1) * meta.pageSize);
+        return { data, pagination: meta };
     }
 
     async findById(id: number): Promise<Skill | undefined> {

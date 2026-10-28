@@ -1,3 +1,5 @@
+import { listPaginationSchema, validateSort } from '@/schemas/list-pagination';
+import { paginateAnalysis } from '@/services/paginate-analysis';
 
 import type { FastifyPluginAsync } from 'fastify';
 
@@ -11,16 +13,31 @@ export function createMarketAnalysisRoutes(
     skillPriorityService: SkillPriorityService
 ): FastifyPluginAsync {
     return async (fastify) => {
-        fastify.get('/skill-demand', async () => {
-            return marketAnalysisService.getSkillDemand();
+        fastify.get('/skill-demand', async (request) => {
+            const raw = request.query as Record<string, unknown>;
+            const result = await marketAnalysisService.getSkillDemand();
+            if (!('page' in raw || 'pageSize' in raw)) return result;
+            const query = listPaginationSchema.parse(raw);
+            validateSort(query.sortBy, ['name','category','jobCount','mustHaveCount','niceToHaveCount','demandPercentage']);
+            return paginateAnalysis(result, query);
         });
 
-        fastify.get('/skill-gaps', async () => {
-            return skillGapAnalysisService.getSkillGaps();
+        fastify.get('/skill-gaps', async (request) => {
+            const raw = request.query as Record<string, unknown>;
+            const result = await skillGapAnalysisService.getSkillGaps();
+            if (!('page' in raw || 'pageSize' in raw)) return result;
+            const query = listPaginationSchema.parse(raw);
+            validateSort(query.sortBy, ['name','category','jobCount','mustHaveCount','niceToHaveCount','demandPercentage','proficiency','gap','status']);
+            return paginateAnalysis(result, query);
         });
 
-        fastify.get('/skill-priorities', async () => {
-            return skillPriorityService.getSkillPriorities();
+        fastify.get('/skill-priorities', async (request) => {
+            const raw = request.query as Record<string, unknown>;
+            const result = await skillPriorityService.getSkillPriorities();
+            if (!('page' in raw || 'pageSize' in raw)) return result;
+            const query = listPaginationSchema.parse(raw);
+            validateSort(query.sortBy, ['name','category','jobCount','demandPercentage','demandWeight','proficiency','gap','priorityScore','status']);
+            return paginateAnalysis(result, query);
         });
     };
 }

@@ -17,6 +17,10 @@ export class UserSkillService {
         return this.userSkillRepository.findAll();
     }
 
+    async listCataloguePage(query: import('@/schemas/list-pagination').ListPaginationQuery) {
+        return this.userSkillRepository.findCataloguePage(query);
+    }
+
     async get(skillId: number): Promise<UserSkill> {
         const userSkill =
             await this.userSkillRepository.findBySkillId(skillId);

@@ -1,3 +1,4 @@
+import { paginationSchema } from '@/schemas/list-pagination';
 import { z } from 'zod';
 
 export const skillDemandSchema = z.object({
@@ -13,6 +14,7 @@ export const skillDemandSchema = z.object({
 export const skillDemandResultSchema = z.object({
     totalJobsAnalyzed: z.number().int().nonnegative(),
     skills: z.array(skillDemandSchema),
+    pagination: paginationSchema.optional(),
 });
 
 export const skillGapSchema = skillDemandSchema.extend({
@@ -24,6 +26,7 @@ export const skillGapSchema = skillDemandSchema.extend({
 export const skillGapResultSchema = z.object({
     totalJobsAnalyzed: z.number().int().nonnegative(),
     skills: z.array(skillGapSchema),
+    pagination: paginationSchema.optional(),
 });
 
 export const skillPrioritySchema = skillGapSchema.extend({
@@ -34,6 +37,7 @@ export const skillPrioritySchema = skillGapSchema.extend({
 export const skillPriorityResultSchema = z.object({
     totalJobsAnalyzed: z.number().int().nonnegative(),
     skills: z.array(skillPrioritySchema),
+    pagination: paginationSchema.optional(),
     missingInformation: z.array(
         z.enum(['market_demand', 'skill_assessments'])
     ),

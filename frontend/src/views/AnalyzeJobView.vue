@@ -248,7 +248,7 @@ function show(value: string | null): string {
       <Card v-if="reviewInput">
         <CardHeader>
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <CardTitle>Review and correct analysis (UC-12)</CardTitle>
+            <CardTitle>Review and correct analysis</CardTitle>
             <Button type="button" variant="outline" size="sm" :disabled="saving" @click="discard">Discard analysis</Button>
           </div>
           <CardDescription>

@@ -1,3 +1,4 @@
+import { listPaginationSchema, validateSort } from '@/schemas/list-pagination';
 import { FastifyPluginAsync } from 'fastify';
 
 import { UserSkillService } from '../services/user-skill-service';
@@ -10,6 +11,12 @@ export function createUserSkillRoutes(
     return async (fastify) => {
         fastify.get('/', async () => {
             return userSkillService.list();
+        });
+
+        fastify.get('/catalogue', async (request) => {
+            const query = listPaginationSchema.parse(request.query);
+            validateSort(query.sortBy, ['name', 'category', 'level']);
+            return userSkillService.listCataloguePage(query);
         });
 
         fastify.get('/:skillId', async (request) => {

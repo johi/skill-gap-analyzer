@@ -21,6 +21,10 @@ export class SkillService {
         return this.skillRepository.findAll();
     }
 
+    async listPage(query: import('@/schemas/list-pagination').ListPaginationQuery) {
+        return this.skillRepository.findPage(query);
+    }
+
     async get(id: number): Promise<Skill> {
         const skill = await this.skillRepository.findById(id);
 
