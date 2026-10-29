@@ -28,8 +28,9 @@ function logSchemaIssues(stage: string, error: z.ZodError): void {
 /** Resolve yearless dates without trusting a year absent from the source. */
 function resolveYearlessDeadline(extraction: unknown, source: string): unknown {
     if (!extraction || typeof extraction !== 'object' || !('applicationDeadline' in extraction)) return extraction;
-    let value = extraction.applicationDeadline;
-    if (typeof value !== 'string') return extraction;
+    const deadline = extraction.applicationDeadline;
+    if (typeof deadline !== 'string') return extraction;
+    let value: string = deadline;
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
         if (source.includes(value.slice(0, 4))) return extraction;
