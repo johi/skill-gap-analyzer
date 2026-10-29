@@ -21,7 +21,7 @@ function handleDelete(): void {
 </script>
 
 <template>
-  <section class="mx-auto max-w-6xl space-y-6">
+  <section class="w-full space-y-6">
     <Button variant="ghost" size="sm" as-child>
       <RouterLink to="/jobs">
         <ArrowLeft class="size-4" />
