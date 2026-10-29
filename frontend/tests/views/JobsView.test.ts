@@ -83,14 +83,16 @@ describe('JobsView', () => {
     const { wrapper, router } = await setup('/jobs?page=2');
     await changeSelect(wrapper, 'Work model', 'hybrid');
     expect(router.currentRoute.value.query).toEqual({ workModel: 'hybrid' });
-    await changeSelect(wrapper, 'Sort by', 'company');
-    expect(router.currentRoute.value.query).toEqual({ workModel: 'hybrid', sortBy: 'company' });
+    await wrapper.findAll('th button').find(button => button.text().includes('Company'))!.trigger('click');
+    await flushPromises();
+    expect(router.currentRoute.value.query).toEqual({ workModel: 'hybrid', sortBy: 'company', sortOrder: 'asc' });
     expect(getJobs).toHaveBeenLastCalledWith(expect.objectContaining({ workModel: 'hybrid', sortBy: 'company', page: 1 }));
   });
 
   it('sorts by calculated match through the URL', async () => {
     const { wrapper, router } = await setup();
-    await changeSelect(wrapper, 'Sort by', 'matchPercentage');
+    await wrapper.findAll('th button').find(button => button.text().includes('Calculated match'))!.trigger('click');
+    await flushPromises();
     expect(router.currentRoute.value.query.sortBy).toBe('matchPercentage');
     expect(getJobs).toHaveBeenLastCalledWith(expect.objectContaining({ sortBy: 'matchPercentage' }));
   });
@@ -117,9 +119,11 @@ describe('JobsView', () => {
     await next!.trigger('click');
     await flushPromises();
     expect(router.currentRoute.value.query.page).toBe('2');
-    await changeSelect(wrapper, 'Jobs per page', '10');
+    await wrapper.get('select').setValue('10');
+    await flushPromises();
     expect(router.currentRoute.value.query.page).toBeUndefined();
     expect(router.currentRoute.value.query.pageSize).toBe('10');
+    expect(wrapper.text()).toContain('matching jobs');
   });
 
   it('shows an API error', async () => {

@@ -7,8 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import JobListFilters from '@/components/jobs/JobListFilters.vue';
 import JobListTable from '@/components/jobs/JobListTable.vue';
-import JobListPagination from '@/components/jobs/JobListPagination.vue';
-const { route, filters, jobs, pagination, totalPages, startItem, endItem, loading, error, searchInput, updateFilters, setFilter, setPageSize, onSearch, resetFilters } = useJobs();
+import SkillListControls from '@/components/ui/SkillListControls.vue';
+import type { ListQuery } from '@/schemas/list-pagination';
+import type { JobListQuery } from '@/schemas/job-list';
+const { route, filters, jobs, pagination, loading, error, searchInput, updateFilters, setFilter, onSearch, resetFilters } = useJobs();
+function updateList(changes: Partial<ListQuery>, reset: boolean): void {
+  updateFilters(changes as Partial<JobListQuery>, reset);
+}
 function sortBy(key: 'dateFound' | 'applicationDeadline' | 'company' | 'interest' | 'matchPercentage'): void {
   const descending = filters.value.sortOrder === 'desc';
   updateFilters({sortBy: key, sortOrder: filters.value.sortBy === key
@@ -45,6 +50,17 @@ function sortBy(key: 'dateFound' | 'applicationDeadline' | 'company' | 'interest
       </div>
     </div>
 
+    <SkillListControls
+      :query="filters"
+      :pagination="!loading && !error ? pagination ?? null : null"
+      :search-input="searchInput"
+      item-label="jobs"
+      search-label="Search jobs"
+      search-placeholder="Company, title or location"
+      @search="onSearch"
+      @update="updateList"
+    />
+
     <Card>
       <CardHeader>
         <div class="flex items-center gap-3">
@@ -58,7 +74,7 @@ function sortBy(key: 'dateFound' | 'applicationDeadline' | 'company' | 'interest
         </div>
       </CardHeader>
       <CardContent class="space-y-5">
-        <JobListFilters :filters="filters" :search-input="searchInput" @search="onSearch" @filter="setFilter" @page-size="setPageSize" @reset="resetFilters" />
+        <JobListFilters :filters="filters" @filter="setFilter" @reset="resetFilters" />
 <div v-if="loading" class="space-y-3" role="status" aria-label="Loading jobs">
           <Skeleton class="h-10 w-full" /><Skeleton class="h-10 w-full" /><Skeleton class="h-10 w-full" />
         </div>
@@ -73,7 +89,6 @@ function sortBy(key: 'dateFound' | 'applicationDeadline' | 'company' | 'interest
           </p>
         </div>
         <JobListTable v-else :jobs="jobs" :sort-key="filters.sortBy" :sort-descending="filters.sortOrder === 'desc'" @sort="sortBy" />
-        <JobListPagination v-if="!loading && !error && pagination" :filters="filters" :pagination="pagination" :start-item="startItem" :end-item="endItem" :total-pages="totalPages" @page="page => updateFilters({ page }, false)" />
       </CardContent>
     </Card>
   </section>
