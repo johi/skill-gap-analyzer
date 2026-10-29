@@ -99,13 +99,13 @@ describe('AnalyzeJobView (URL-first)', () => {
         const wrapper = mountView();
         const url = 'https://careers.example.com/jobs/42';
         await wrapper.get('#job-url').setValue(url);
-        await wrapper.findAll('button').find(button => button.text().includes('Analyze URL'))!.trigger('click');
+        await wrapper.get('form').trigger('submit');
         await flushPromises();
         expect(analyzeJobAdvertisementUrl).toHaveBeenCalledExactlyOnceWith(url);
         expect((wrapper.get('#job-url').element as HTMLInputElement).value).toBe('');
         expect((wrapper.get('#source-url').element as HTMLInputElement).value).toBe(url);
         expect((wrapper.get('#original-text').element as HTMLTextAreaElement).value).toBe(advertisement);
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         await wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!.trigger('click');
         await flushPromises();
         expect(createJob).toHaveBeenCalledWith(expect.objectContaining({
@@ -119,7 +119,7 @@ describe('AnalyzeJobView (URL-first)', () => {
         );
         const wrapper = mountView();
         await wrapper.get('#job-url').setValue('https://careers.example.com/jobs/42');
-        await wrapper.findAll('button').find(button => button.text().includes('Analyze URL'))!.trigger('click');
+        await wrapper.get('form').trigger('submit');
         await flushPromises();
         expect(wrapper.text()).toContain('Paste the advertisement instead');
         expect((wrapper.get('#job-url').element as HTMLInputElement).value).toBe('https://careers.example.com/jobs/42');
@@ -197,7 +197,7 @@ describe('AnalyzeJobView (UC-12)', () => {
         expect(getSkills).toHaveBeenCalledOnce();
         expect((wrapper.get('#company').element as HTMLInputElement).value).toBe('Example Company');
         await wrapper.get('#company').setValue('Corrected Company');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         await flushPromises();
         expect(wrapper.text()).toContain('Review approved — not saved');
         expect(wrapper.text()).toContain('Corrected Company');
@@ -211,7 +211,7 @@ describe('AnalyzeJobView (UC-12)', () => {
         await wrapper.findAll('button').find(button => button.text().includes('Automated Testing'))!.trigger('click');
         expect((wrapper.get('#skill-name-0').element as HTMLInputElement).value).toBe('Automated Testing');
         expect((wrapper.get('#skill-category-0').element as HTMLInputElement).value).toBe('Testing');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         expect(wrapper.text()).toContain('Review approved — not saved');
     });
 
@@ -222,10 +222,10 @@ describe('AnalyzeJobView (UC-12)', () => {
         });
         const wrapper = await analyzedView();
         expect((wrapper.get('#skill-requirement-0').element as HTMLSelectElement).value).toBe('');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         expect(wrapper.text()).not.toContain('Review approved — not saved');
         await wrapper.get('#skill-requirement-0').setValue('nice_to_have');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         expect(wrapper.text()).toContain('Review approved — not saved');
     });
 
@@ -240,7 +240,7 @@ describe('AnalyzeJobView (UC-12)', () => {
         vi.mocked(getSkills).mockRejectedValueOnce(new Error('offline'));
         const wrapper = await analyzedView();
         expect(wrapper.text()).toContain('Unable to load the skill catalogue');
-        const submitButton = wrapper.get('form button[type="submit"]');
+        const submitButton = wrapper.findAll('form')[1].get('button[type="submit"]');
         expect(submitButton.attributes('disabled')).toBeDefined();
         await wrapper.findAll('button').find(button => button.text().includes('Retry loading skills'))!.trigger('click');
         await flushPromises();
@@ -260,7 +260,7 @@ describe('AnalyzeJobView (UC-13)', () => {
     }
 
     async function approve(wrapper: ReturnType<typeof mountView>) {
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         await flushPromises();
     }
 
@@ -346,7 +346,7 @@ describe('Browser-native review submission regression', () => {
 
         await wrapper.get('#skill-category-0').setValue('Programming Language');
         await wrapper.get('button[aria-label="Accept new category Programming Language"]').trigger('click');
-        (wrapper.get('form').element as HTMLFormElement).requestSubmit();
+        (wrapper.findAll('form')[1].element as HTMLFormElement).requestSubmit();
         await flushPromises();
 
         expect(wrapper.text()).toContain('Review approved — not saved');
@@ -368,7 +368,7 @@ describe('Browser-native review submission regression', () => {
         await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
         await flushPromises();
 
-        (wrapper.get('form').element as HTMLFormElement).requestSubmit();
+        (wrapper.findAll('form')[1].element as HTMLFormElement).requestSubmit();
         await flushPromises();
 
         expect(wrapper.text()).toContain('Enter the company before approving.');
@@ -396,18 +396,18 @@ describe('AI-proposed category review', () => {
     it('blocks approval until a new AI category is explicitly accepted', async () => {
         const wrapper = await withNewCategory();
         expect(wrapper.text()).toContain('New category: Messaging Systems');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         expect(wrapper.text()).toContain('Accept each new category');
         expect(wrapper.text()).not.toContain('Review approved — not saved');
         await wrapper.get('button[aria-label="Accept new category Messaging Systems"]').trigger('click');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         expect(wrapper.text()).toContain('Review approved — not saved');
     });
 
     it('allows replacing a new AI category with an existing one', async () => {
         const wrapper = await withNewCategory();
         await wrapper.get('select[aria-label="Replace category for RabbitMQ"]').setValue('Testing');
-        await wrapper.get('form').trigger('submit');
+        await wrapper.findAll('form')[1].trigger('submit');
         expect(wrapper.text()).toContain('Review approved — not saved');
         await wrapper.findAll('button').find(button => button.text().includes('Save approved job'))!.trigger('click');
         await flushPromises();
@@ -416,3 +416,53 @@ describe('AI-proposed category review', () => {
         }));
     });
 });
+
+describe('Job analysis loading feedback', () => {
+    it.each([
+        ['URL', 'https://careers.example.com/jobs/42'],
+        ['pasted text', advertisement],
+    ])('shows a loading status during %s analysis and removes it on completion', async (kind, input) => {
+        let resolve!: (value: JobAdvertisementAnalysis) => void;
+        const pending = new Promise<JobAdvertisementAnalysis>(done => { resolve = done; });
+        if (kind === 'URL') {
+            vi.mocked(analyzeJobAdvertisementUrl).mockReturnValueOnce(pending);
+        } else {
+            vi.mocked(analyzeJobAdvertisement).mockReturnValueOnce(pending);
+        }
+
+        const wrapper = mountView();
+        if (kind === 'URL') {
+            await wrapper.get('#job-url').setValue(input);
+            await wrapper.get('form').trigger('submit');
+        } else {
+            await wrapper.get('#job-advertisement').setValue(input);
+            await wrapper.findAll('button').find(button => button.text().includes('Analyze advertisement'))!.trigger('click');
+        }
+
+        expect(wrapper.get('[role="status"]').text()).toContain('Analyzing job advertisement');
+        expect(wrapper.get('#job-url').attributes('disabled')).toBeDefined();
+        expect(wrapper.get('#job-advertisement').attributes('disabled')).toBeDefined();
+
+        resolve(analysis);
+        await flushPromises();
+        expect(wrapper.findAll('[role="status"]').some(status => status.text().includes('Analyzing job advertisement'))).toBe(false);
+        expect(wrapper.text()).toContain('AI analysis completed');
+    });
+
+    it('removes loading feedback when analysis fails', async () => {
+        let reject!: (reason: Error) => void;
+        vi.mocked(analyzeJobAdvertisementUrl).mockReturnValueOnce(
+            new Promise<JobAdvertisementAnalysis>((_resolve, fail) => { reject = fail; })
+        );
+        const wrapper = mountView();
+        await wrapper.get('#job-url').setValue('https://careers.example.com/jobs/42');
+        await wrapper.get('form').trigger('submit');
+        expect(wrapper.get('[role="status"]').text()).toContain('Analyzing job advertisement');
+
+        reject(new Error('provider unavailable'));
+        await flushPromises();
+        expect(wrapper.find('[role="status"]').exists()).toBe(false);
+        expect(wrapper.get('[role="alert"]').text()).toContain('Unable to analyze');
+    });
+});
+

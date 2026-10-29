@@ -2,7 +2,7 @@
 import { employmentTypeLabels, jobSkillRequirementLabels, languageRequirementLabels } from '@/lib/job-labels';
 import { computed, ref, shallowRef, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Sparkles } from 'lucide-vue-next';
+import { ArrowLeft, LoaderCircle, Sparkles } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -192,6 +192,11 @@ function show(value: string | null): string {
         </Button>
       </CardContent>
     </Card>
+
+    <div v-if="analyzing" role="status" aria-live="polite" class="flex items-center gap-3 rounded-md border p-4 text-sm">
+      <LoaderCircle class="size-5 shrink-0 animate-spin" aria-hidden="true" />
+      <p>Analyzing job advertisement… This may take a moment.</p>
+    </div>
 
     <div v-if="error" role="alert" class="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
       <p>{{ error }}</p>
