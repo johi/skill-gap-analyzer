@@ -30,6 +30,15 @@ defineProps<{ job: JobWithSkills }>();
 
           <div>
             <dt class="text-sm text-muted-foreground">
+              Application Deadline
+            </dt>
+            <dd class="mt-1 text-sm font-medium">
+              {{ job.applicationDeadline ?? '—' }}
+            </dd>
+          </div>
+
+          <div>
+            <dt class="text-sm text-muted-foreground">
               Location
             </dt>
             <dd class="mt-1 text-sm font-medium">

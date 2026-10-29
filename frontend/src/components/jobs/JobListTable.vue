@@ -11,13 +11,14 @@ defineProps<{ jobs: PaginatedJobs['data'] }>();
 <div class="overflow-x-auto">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Date</TableHead><TableHead>Company</TableHead><TableHead>Title</TableHead>
+              <TableHead>Date</TableHead><TableHead>Deadline</TableHead><TableHead>Company</TableHead><TableHead>Title</TableHead>
               <TableHead>Location</TableHead><TableHead>Interest</TableHead><TableHead>Calculated match</TableHead><TableHead>Coverage</TableHead>
               <TableHead>Status</TableHead><TableHead>Ad</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               <TableRow v-for="job in jobs" :key="job.id">
                 <TableCell class="whitespace-nowrap text-muted-foreground">{{ job.dateFound }}</TableCell>
+                <TableCell class="whitespace-nowrap">{{ job.applicationDeadline ?? '—' }}</TableCell>
                 <TableCell class="font-medium">{{ job.company }}</TableCell>
                 <TableCell>
                   <RouterLink class="font-medium hover:underline" :to="{ name: 'job-detail', params: { id: job.id } }">{{ job.title }}</RouterLink>
