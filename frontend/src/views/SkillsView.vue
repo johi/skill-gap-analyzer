@@ -6,6 +6,7 @@ import type { Skill } from '@/types/skill';
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { mergeSkills, getSkillsPage } from '@/api/skills';
 import SkillListControls from '@/components/ui/SkillListControls.vue';
+import { Button } from '@/components/ui/button';
 
 const {
   skills, loading, saving, deletingId, error, validationErrors,
@@ -95,7 +96,7 @@ async function handleDelete(skill: Skill): Promise<void> {
       <select :value="query.sortBy" aria-label="Sort skills" class="rounded border bg-background p-2" @change="update({sortBy: ($event.target as HTMLSelectElement).value})">
         <option value="name">Name</option><option value="category">Category</option>
       </select>
-      <button type="button" class="rounded border p-2" @click="update({sortOrder: query.sortOrder === 'asc' ? 'desc' : 'asc'})">{{ query.sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
+      <Button type="button" variant="outline" size="sm" @click="update({sortOrder: query.sortOrder === 'asc' ? 'desc' : 'asc'})">{{ query.sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</Button>
     </div>
     <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
       <SkillCatalogue

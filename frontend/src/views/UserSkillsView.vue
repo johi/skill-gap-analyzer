@@ -3,6 +3,7 @@ import {useUserSkills} from '@/composables/useUserSkills';
 import SkillAssessmentTable from '@/components/user-skills/SkillAssessmentTable.vue';
 import SkillListControls from '@/components/ui/SkillListControls.vue';
 import SkillAssessmentGuide from '@/components/user-skills/SkillAssessmentGuide.vue';
+import { Button } from '@/components/ui/button';
 const {rows, loading, error, savingSkillId, setLevel, query, update, search, searchInput, pagination} = useUserSkills();
 </script>
 <template>
@@ -22,7 +23,7 @@ const {rows, loading, error, savingSkillId, setLevel, query, update, search, sea
       <select :value="query.sortBy" class="rounded border bg-background p-2" aria-label="Sort assessments" @change="update({sortBy: ($event.target as HTMLSelectElement).value})">
         <option value="name">Name</option><option value="category">Category</option><option value="level">Proficiency</option>
       </select>
-      <button class="rounded border p-2" @click="update({sortOrder: query.sortOrder === 'asc' ? 'desc' : 'asc'})">{{ query.sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</button>
+      <Button type="button" variant="outline" size="sm" @click="update({sortOrder: query.sortOrder === 'asc' ? 'desc' : 'asc'})">{{ query.sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</Button>
     </div>
     <SkillAssessmentTable
       :rows="rows"
