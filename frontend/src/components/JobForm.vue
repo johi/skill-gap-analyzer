@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { applicationStatusLabels, employmentTypeLabels, jobSkillRequirementLabels } from '@/lib/job-labels';
 import { computed, reactive, ref } from 'vue';
 import { canonicalCategory, categoryKey, existingCategories, normalizeSkillCategory } from '@/services/skill-category';
 import SkillCatalogueLookup from '@/components/jobs/SkillCatalogueLookup.vue';
@@ -401,10 +402,7 @@ function submit(): void {
               class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <option value="">Not specified</option>
-            <option value="full_time">Full-time</option>
-            <option value="part_time">Part-time</option>
-            <option value="contract">Contract</option>
-            <option value="temporary">Temporary</option>
+            <option v-for="(label, value) in employmentTypeLabels" :key="value" :value="value">{{ label }}</option>
           </select>
         </div>
 
@@ -601,12 +599,7 @@ function submit(): void {
               class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
           >
             <option value="">Not specified</option>
-            <option value="not_applied">Not applied</option>
-            <option value="applied">Applied</option>
-            <option value="interview">Interview</option>
-            <option value="rejected">Rejected</option>
-            <option value="offer">Offer</option>
-            <option value="expired">Expired</option>
+            <option v-for="(label, value) in applicationStatusLabels" :key="value" :value="value">{{ label }}</option>
           </select>
         </div>
 
@@ -726,13 +719,7 @@ function submit(): void {
                 class="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-xs outline-none transition-colors focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
             >
               <option v-if="reviewMode" value="" disabled>Review required</option>
-              <option value="must_have">
-                Must have
-              </option>
-
-              <option value="nice_to_have">
-                Nice to have
-              </option>
+              <option v-for="(label, value) in jobSkillRequirementLabels" :key="value" :value="value">{{ label }}</option>
             </select>
           </div>
           </div>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { applicationStatusLabels, employmentTypeLabels } from '@/lib/job-labels';
 import { Button } from '@/components/ui/button';
 import type { JobListQuery } from '@/schemas/job-list';
 
@@ -47,14 +48,14 @@ const resetFilters = () => emit('reset');
             <span class="font-medium">Employment type</span>
             <select aria-label="Employment type" class="w-full rounded-md border bg-background px-3 py-2" :value="filters.employmentType ?? ''" @change="setFilter('employmentType', ($event.target as HTMLSelectElement).value)">
               <option value="">All employment types</option>
-              <option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contract">Contract</option><option value="temporary">Temporary</option>
+              <option v-for="(label, value) in employmentTypeLabels" :key="value" :value="value">{{ label }}</option>
             </select>
           </label>
           <label class="space-y-1 text-sm">
             <span class="font-medium">Application status</span>
             <select aria-label="Application status" class="w-full rounded-md border bg-background px-3 py-2" :value="filters.applyStatus ?? ''" @change="setFilter('applyStatus', ($event.target as HTMLSelectElement).value)">
               <option value="">All statuses</option>
-              <option v-for="value in ['not_applied', 'applied', 'interview', 'rejected', 'offer', 'expired']" :key="value" :value="value">{{ value.replaceAll('_', ' ') }}</option>
+              <option v-for="(label, value) in applicationStatusLabels" :key="value" :value="value">{{ label }}</option>
             </select>
           </label>
           <label class="space-y-1 text-sm">

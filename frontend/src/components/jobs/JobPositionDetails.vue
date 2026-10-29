@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { employmentTypeLabels } from '@/lib/job-labels';
 import type { JobWithSkills } from '@/types/job';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,7 +51,7 @@ defineProps<{ job: JobWithSkills }>();
               Employment type
             </dt>
             <dd class="mt-1 text-sm font-medium">
-              {{ job.employmentType ?? '—' }}
+              {{ job.employmentType ? employmentTypeLabels[job.employmentType] : '—' }}
             </dd>
           </div>
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { applicationStatusLabels } from '@/lib/job-labels';
 import { ExternalLink } from 'lucide-vue-next';
 import { RouterLink } from 'vue-router';
 import { Badge } from '@/components/ui/badge';
@@ -25,7 +26,7 @@ defineProps<{ jobs: PaginatedJobs['data'] }>();
                 <TableCell><Badge v-if="job.interest !== null" variant="secondary">{{ job.interest }}%</Badge><span v-else>—</span></TableCell>
                 <TableCell><Badge v-if="job.matchPercentage !== null" variant="secondary">{{ job.matchPercentage }}%</Badge><span v-else>—</span></TableCell>
                 <TableCell><Badge variant="outline">{{ job.assessmentCoverage }}%</Badge></TableCell>
-                <TableCell><Badge v-if="job.applyStatus" variant="outline">{{ job.applyStatus.replaceAll('_', ' ') }}</Badge><span v-else>—</span></TableCell>
+                <TableCell><Badge v-if="job.applyStatus" variant="outline">{{ applicationStatusLabels[job.applyStatus] }}</Badge><span v-else>—</span></TableCell>
                 <TableCell>
                   <a v-if="job.sourceUrl" :href="job.sourceUrl" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-sm underline" :aria-label="`Open original advertisement for ${job.title}`">
                     Open <ExternalLink class="size-3" />

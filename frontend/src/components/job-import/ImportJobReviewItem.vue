@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { jobSkillRequirementLabels } from '@/lib/job-labels';
 import { categoryKey, normalizeSkillCategory } from '@/services/skill-category';
 import { Button } from '@/components/ui/button';
 import JobImportReviewForm from '@/components/JobImportReviewForm.vue';
@@ -14,9 +15,7 @@ function resolutionLabel(resolution: string): string {
     default: return resolution;
   }
 }
-function requirementLabel(requirement: string): string {
-  return requirement === 'must_have' ? 'Must have' : 'Nice to have';
-}
+
 </script>
 
 <template>
@@ -187,7 +186,7 @@ function requirementLabel(requirement: string): string {
                       </div>
                       <p class="mt-2 text-muted-foreground">
                         Requirement:
-                        {{ requirementLabel(skill.requirement) }}
+                        {{ jobSkillRequirementLabels[skill.requirement] }}
                       </p>
                       <p
                           v-if="skill.canonicalName !== skill.name"
@@ -203,7 +202,7 @@ function requirementLabel(requirement: string): string {
                         Conflicting requirements:
                         {{
                           skill.conflictingRequirements
-                              .map(requirementLabel)
+                              .map(requirement => jobSkillRequirementLabels[requirement as keyof typeof jobSkillRequirementLabels])
                               .join(', ')
                         }}
                       </p>

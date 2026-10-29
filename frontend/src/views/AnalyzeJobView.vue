@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { employmentTypeLabels, jobSkillRequirementLabels, languageRequirementLabels } from '@/lib/job-labels';
 import { computed, ref, shallowRef, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowLeft, Sparkles } from 'lucide-vue-next';
@@ -94,6 +95,7 @@ async function saveApprovedReview(): Promise<void> {
 function show(value: string | null): string {
   return value ?? 'Not specified';
 }
+
 </script>
 
 <template>
@@ -186,7 +188,7 @@ function show(value: string | null): string {
               { label: 'Job title', value: analysis.proposal.title },
               { label: 'Location', value: analysis.proposal.location },
               { label: 'Work model', value: analysis.proposal.workModel },
-              { label: 'Employment type', value: analysis.proposal.employmentType },
+              { label: 'Employment type', value: analysis.proposal.employmentType ? employmentTypeLabels[analysis.proposal.employmentType] : null },
               { label: 'Seniority', value: analysis.proposal.seniority },
               { label: 'Primary role', value: analysis.proposal.primaryRole },
               { label: 'Experience required', value: analysis.proposal.yearsRequired },
@@ -211,7 +213,7 @@ function show(value: string | null): string {
             <p v-if="analysis.proposal.languageRequirements.length === 0" class="mt-1 text-sm text-muted-foreground">Not specified</p>
             <ul v-else class="mt-2 list-disc pl-5 text-sm">
               <li v-for="item in analysis.proposal.languageRequirements" :key="item.language">
-                {{ item.language }} — {{ item.requirement }}
+                {{ item.language }} — {{ languageRequirementLabels[item.requirement] }}
               </li>
             </ul>
           </div>
@@ -238,7 +240,7 @@ function show(value: string | null): string {
                 <tr v-for="skill in analysis.proposal.skills" :key="skill.name" class="border-b last:border-0">
                   <td class="py-2 pr-4">{{ skill.name }}</td>
                   <td class="py-2 pr-4">{{ skill.category ?? 'Review required' }}</td>
-                  <td class="py-2">{{ skill.requirement ?? 'Review required' }}</td>
+                  <td class="py-2">{{ skill.requirement ? jobSkillRequirementLabels[skill.requirement] : 'Review required' }}</td>
                 </tr>
               </tbody>
             </table>

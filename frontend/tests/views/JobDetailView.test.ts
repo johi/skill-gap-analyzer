@@ -67,6 +67,8 @@ describe('JobDetailView', () => {
     expect(wrapper.text()).toContain('Senior Backend Engineer');
     expect(wrapper.text()).toContain('Example Company');
     expect(wrapper.text()).toContain('Position details');
+    expect(wrapper.text()).toContain('Not applied');
+    expect(wrapper.text()).not.toContain('not_applied');
     expect(wrapper.text()).toContain('No skills assigned');
   });
 

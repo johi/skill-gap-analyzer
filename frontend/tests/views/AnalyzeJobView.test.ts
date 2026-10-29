@@ -72,6 +72,8 @@ describe('AnalyzeJobView (UC-09–11)', () => {
         expect(analyzeJobAdvertisement).toHaveBeenCalledWith(advertisement);
         expect(wrapper.text()).toContain('Example Company');
         expect(wrapper.text()).toContain('TypeScript');
+        expect(wrapper.text()).toContain('Full-time');
+        expect(wrapper.text()).toContain('Must have');
         expect(wrapper.text()).toContain('not saved');
         expect((wrapper.get('#job-advertisement').element as HTMLTextAreaElement).value).toBe('');
         expect((wrapper.get('#original-text').element as HTMLTextAreaElement).value).toBe(advertisement);

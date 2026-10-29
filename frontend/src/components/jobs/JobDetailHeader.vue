@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { applicationStatusLabels } from '@/lib/job-labels';
 import type { JobWithSkills } from '@/types/job';
 import { RouterLink } from 'vue-router';
 import { MapPin, Pencil, Trash2 } from 'lucide-vue-next';
@@ -14,7 +15,7 @@ const emit = defineEmits<{ delete: [] }>();
     <div class="min-w-0">
       <div class="mb-2 flex flex-wrap items-center gap-2">
         <Badge v-if="job.applyStatus" variant="outline">
-          {{ job.applyStatus }}
+          {{ applicationStatusLabels[job.applyStatus] }}
         </Badge>
 
         <Badge v-if="job.interest !== null" variant="secondary">

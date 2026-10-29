@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { applicationStatusLabels } from '@/lib/job-labels';
 import type { JobWithSkills } from '@/types/job';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +41,7 @@ defineProps<{ job: JobWithSkills }>();
                   v-if="job.applyStatus"
                   variant="outline"
               >
-                {{ job.applyStatus }}
+                {{ applicationStatusLabels[job.applyStatus] }}
               </Badge>
 
               <span
