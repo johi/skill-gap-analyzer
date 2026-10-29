@@ -139,30 +139,32 @@ function show(value: string | null): string {
           Fetch the advertisement from a public website. If the site blocks access, paste the text below instead.
         </CardDescription>
       </CardHeader>
-      <CardContent class="space-y-4">
-        <label for="job-url" class="text-sm font-medium">Job URL</label>
-        <Input
-          id="job-url"
-          v-model="url"
-          type="url"
-          :disabled="analyzing"
-          placeholder="https://example.com/careers/job"
-        />
-        <div v-if="linkedInGuestUrl !== null" class="space-y-2 rounded-md border p-3 text-sm">
-          <p>LinkedIn requires manual import. Open the job description, copy its text, and paste it below.</p>
-          <a
-            v-if="linkedInGuestUrl"
-            :href="linkedInGuestUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="text-primary underline"
-          >Open LinkedIn job description</a>
-          <p v-else>Could not identify a job ID. Open the original listing and copy its description instead.</p>
-        </div>
-        <Button :disabled="!canAnalyzeUrl || linkedInGuestUrl !== null" @click="analyzeUrl">
-          <Sparkles class="size-4" />
-          {{ analyzing ? 'Analyzing…' : 'Analyze URL' }}
-        </Button>
+      <CardContent>
+        <form class="space-y-4" @submit.prevent="analyzeUrl">
+          <label for="job-url" class="text-sm font-medium">Job URL</label>
+          <Input
+            id="job-url"
+            v-model="url"
+            type="url"
+            :disabled="analyzing"
+            placeholder="https://example.com/careers/job"
+          />
+          <div v-if="linkedInGuestUrl !== null" class="space-y-2 rounded-md border p-3 text-sm">
+            <p>LinkedIn requires manual import. Open the job description, copy its text, and paste it below.</p>
+            <a
+              v-if="linkedInGuestUrl"
+              :href="linkedInGuestUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-primary underline"
+            >Open LinkedIn job description</a>
+            <p v-else>Could not identify a job ID. Open the original listing and copy its description instead.</p>
+          </div>
+          <Button type="submit" :disabled="!canAnalyzeUrl || linkedInGuestUrl !== null">
+            <Sparkles class="size-4" />
+            {{ analyzing ? 'Analyzing…' : 'Analyze URL' }}
+          </Button>
+        </form>
       </CardContent>
     </Card>
 
