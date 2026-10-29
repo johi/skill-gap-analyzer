@@ -135,6 +135,54 @@ describe('AnalyzeJobView (URL-first)', () => {
     });
 });
 
+describe('AnalyzeJobView (LinkedIn manual import)', () => {
+    it.each([
+        ['https://www.linkedin.com/jobs/view/1234567890/', '1234567890'],
+        ['https://www.linkedin.com/jobs/view/backend-engineer-1234567890/', '1234567890'],
+        ['https://linkedin.com/jobs/search-results/?currentJobId=4484232425', '4484232425'],
+        ['https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/9876543210', '9876543210'],
+    ])('shows the manual job description link for %s without fetching LinkedIn', async (url, id) => {
+        const wrapper = mountView();
+        await wrapper.get('#job-url').setValue(url);
+        const link = wrapper.get('a[href*="/jobs-guest/jobs/api/jobPosting/"]');
+        expect(link.attributes('href')).toBe(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${id}`);
+        expect(link.attributes('target')).toBe('_blank');
+        expect(link.attributes('rel')).toContain('noopener');
+        expect(wrapper.text()).toContain('LinkedIn requires manual import');
+        const button = wrapper.findAll('button').find(item => item.text().includes('Analyze URL'))!;
+        expect(button.attributes('disabled')).toBeDefined();
+        expect(analyzeJobAdvertisementUrl).not.toHaveBeenCalled();
+    });
+
+    it('supports manual text analysis while retaining the LinkedIn source URL', async () => {
+        const url = 'https://www.linkedin.com/jobs/view/1234567890/';
+        const wrapper = mountView();
+        await wrapper.get('#job-url').setValue(url);
+        await wrapper.get('#job-advertisement').setValue(advertisement);
+        await wrapper.findAll('button').find(item => item.text().includes('Analyze advertisement'))!.trigger('click');
+        await flushPromises();
+        expect(analyzeJobAdvertisement).toHaveBeenCalledExactlyOnceWith(advertisement, url);
+        expect(analyzeJobAdvertisementUrl).not.toHaveBeenCalled();
+    });
+
+    it('does not mistake similar hostnames for LinkedIn', async () => {
+        const wrapper = mountView();
+        await wrapper.get('#job-url').setValue('https://notlinkedin.com/jobs/view/1234567890');
+        expect(wrapper.find('a[href*="/jobs-guest/jobs/api/jobPosting/"]').exists()).toBe(false);
+        const button = wrapper.findAll('button').find(item => item.text().includes('Analyze URL'))!;
+        expect(button.attributes('disabled')).toBeUndefined();
+    });
+
+    it('keeps manual paste available when the LinkedIn URL has no job ID', async () => {
+        const wrapper = mountView();
+        await wrapper.get('#job-url').setValue('https://www.linkedin.com/jobs/search/?keywords=developer');
+        expect(wrapper.text()).toContain('Could not identify a job ID');
+        expect(wrapper.find('a[href*="/jobs-guest/jobs/api/jobPosting/"]').exists()).toBe(false);
+        const button = wrapper.findAll('button').find(item => item.text().includes('Analyze URL'))!;
+        expect(button.attributes('disabled')).toBeDefined();
+    });
+});
+
 describe('AnalyzeJobView (UC-12)', () => {
     async function analyzedView() {
         const wrapper = mountView();

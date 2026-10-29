@@ -7,7 +7,6 @@ import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
 import { extractJobAdvertisement } from '@/services/job-advertisement-content';
 import { classifyHtmlJobAdvertisement, type ContentClassificationProvider } from '@/services/job-advertisement-dom-classification';
-import { extractLinkedInJobContent } from '@/services/linkedin-job-content';
 
 const MAX_PAGE_BYTES = 2_000_000;
 const MAX_REDIRECTS = 4;
@@ -66,44 +65,16 @@ function parseTarget(value: string): URL {
     return url;
 }
 
-interface LinkedInJobTarget {
-    url: URL;
-    isGuest: boolean;
-}
-
-/** Resolve LinkedIn job links to their focused guest job-detail document. */
-function resolveLinkedInJobUrl(url: URL): LinkedInJobTarget {
-    const hostname = url.hostname.toLowerCase();
-    if (!['linkedin.com', 'www.linkedin.com'].includes(hostname)) {
-        return { url, isGuest: false };
-    }
-
-    const guestMatch = /^\/jobs-guest\/jobs\/api\/jobPosting\/([0-9]+)\/?$/.exec(url.pathname);
-    const isJobsPage = url.pathname === '/jobs' || url.pathname.startsWith('/jobs/');
-    const isGuestPage = url.pathname.startsWith('/jobs-guest/');
-    if (!isJobsPage && !isGuestPage) {
-        return { url, isGuest: false };
-    }
-    if (url.protocol !== 'https:') {
-        throw new JobAdvertisementRetrievalError('LinkedIn job URLs must use HTTPS.', 400, 'invalid_job_url');
-    }
-
-    // A selected job may be embedded in search results, alerts, or collections.
-    const viewMatch = /^\/jobs\/view\/(?:[^/]*-)?([0-9]+)\/?$/.exec(url.pathname);
-    const jobId = guestMatch?.[1] ?? viewMatch?.[1] ?? url.searchParams.get('currentJobId');
-    if (!jobId || !/^[0-9]+$/.test(jobId)) {
-        // Never classify a LinkedIn jobs listing as an advertisement.
+/** LinkedIn job content must be copied manually; never request it server-side. */
+function rejectLinkedIn(url: URL): void {
+    const host = url.hostname.toLowerCase().replace(/\.$/, '');
+    if (host === 'linkedin.com' || host.endsWith('.linkedin.com')) {
         throw new JobAdvertisementRetrievalError(
-            'Could not identify a LinkedIn job ID. Open a specific job and try again.',
-            400,
-            'invalid_job_url'
+            'LinkedIn job ads cannot be imported automatically. Open the listing and paste the job description instead.',
+            422,
+            'linkedin_manual_import_required'
         );
     }
-
-    return {
-        url: new URL(`https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`),
-        isGuest: true,
-    };
 }
 
 async function requestPage(url: URL, pinned: ResolvedAddress, signal: AbortSignal): Promise<PageResponse> {
@@ -190,9 +161,8 @@ export class JobAdvertisementUrlFetcher {
 
     async retrieve(rawUrl: string): Promise<{ sourceUrl: string; advertisement: string; title?: string | null; metadataContext?: string }> {
         const original = parseTarget(rawUrl);
-        const linkedInTarget = resolveLinkedInJobUrl(original);
-        let current = linkedInTarget.url;
-        const linkedInGuest = linkedInTarget.isGuest;
+        rejectLinkedIn(original);
+        let current = original;
         const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
         for (let redirect = 0; redirect <= MAX_REDIRECTS; redirect++) {
             const host = current.hostname.replace(/^\[|\]$/g, '');
@@ -221,13 +191,7 @@ export class JobAdvertisementUrlFetcher {
                 }
                 try {
                     const redirected = parseTarget(new URL(location, current).toString());
-                    // Never fall back to a full LinkedIn page or an unrelated endpoint.
-                    if (linkedInGuest && (redirected.hostname !== 'www.linkedin.com' ||
-                        !/^\/jobs-guest\/jobs\/api\/jobPosting\/[0-9]+\/?$/.test(redirected.pathname))) {
-                        throw new JobAdvertisementRetrievalError(
-                            'LinkedIn job details are unavailable. Paste the advertisement instead.'
-                        );
-                    }
+                    rejectLinkedIn(redirected);
                     current = redirected;
                 } catch (error) {
                     if (error instanceof JobAdvertisementRetrievalError) throw error;
@@ -236,27 +200,11 @@ export class JobAdvertisementUrlFetcher {
                 continue;
             }
             if (response.status !== 200) {
-                if (linkedInGuest) {
-                    throw new JobAdvertisementRetrievalError(
-                        `LinkedIn job details could not be retrieved (HTTP ${response.status}). Paste the advertisement instead.`
-                    );
-                }
                 throw new JobAdvertisementRetrievalError(
                     `The job website returned HTTP ${response.status}. Paste the advertisement instead.`
                 );
             }
             const contentType = String(response.headers['content-type'] ?? '');
-            if (linkedInGuest) {
-                const mediaType = contentType.toLowerCase().split(';')[0]?.trim();
-                if (mediaType && !['text/html', 'application/xhtml+xml'].includes(mediaType)) {
-                    throw new JobAdvertisementRetrievalError(
-                        'LinkedIn did not return an HTML job description. Paste the advertisement instead.'
-                    );
-                }
-                return { sourceUrl: original.toString(), ...extractLinkedInJobContent(response.body) };
-            }
-
-            // Other sources retain their existing HTML classification and plain-text extraction.
             const type = contentType.toLowerCase().split(';')[0]?.trim();
             const isHtml = type !== 'text/plain' &&
                 /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(response.body);

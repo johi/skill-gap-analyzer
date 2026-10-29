@@ -37,6 +37,24 @@ let skillsRequest = 0;
 
 const reviewInput = computed(() => analysis.value ? analysisToReviewInput(analysis.value) : null);
 
+// LinkedIn is manual-only. Build the public guest URL locally, without fetching it.
+const linkedInGuestUrl = computed((): string | null => {
+  try {
+    const parsed = new URL(url.value.trim());
+    const host = parsed.hostname.toLowerCase();
+    if (host !== 'linkedin.com' && !host.endsWith('.linkedin.com')) return null;
+
+    const jobId = /^\/jobs\/view\/(?:[^/]*-)?([0-9]+)\/?$/.exec(parsed.pathname)?.[1]
+      ?? /^\/jobs-guest\/jobs\/api\/jobPosting\/([0-9]+)\/?$/.exec(parsed.pathname)?.[1]
+      ?? (parsed.pathname.startsWith('/jobs/') ? parsed.searchParams.get('currentJobId') : null);
+    return jobId && /^[0-9]+$/.test(jobId)
+      ? `https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/${jobId}`
+      : '';
+  } catch {
+    return null;
+  }
+});
+
 async function loadSkillCatalogue(): Promise<void> {
   const request = ++skillsRequest;
   loadingSkills.value = true;
@@ -130,7 +148,18 @@ function show(value: string | null): string {
           :disabled="analyzing"
           placeholder="https://example.com/careers/job"
         />
-        <Button :disabled="!canAnalyzeUrl" @click="analyzeUrl">
+        <div v-if="linkedInGuestUrl !== null" class="space-y-2 rounded-md border p-3 text-sm">
+          <p>LinkedIn requires manual import. Open the job description, copy its text, and paste it below.</p>
+          <a
+            v-if="linkedInGuestUrl"
+            :href="linkedInGuestUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary underline"
+          >Open LinkedIn job description</a>
+          <p v-else>Could not identify a job ID. Open the original listing and copy its description instead.</p>
+        </div>
+        <Button :disabled="!canAnalyzeUrl || linkedInGuestUrl !== null" @click="analyzeUrl">
           <Sparkles class="size-4" />
           {{ analyzing ? 'Analyzing…' : 'Analyze URL' }}
         </Button>
