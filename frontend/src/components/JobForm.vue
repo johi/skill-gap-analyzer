@@ -699,7 +699,7 @@ function submit(): void {
                 </select>
                 <Button
                     v-if="reviewMode && !approvedCategories.includes(categoryKey(skill.category))"
-                    type="button" variant="outline" size="sm"
+                    type="button" variant="default" size="sm"
                     :aria-label="`Accept new category ${normalizeSkillCategory(skill.category)}`"
                     @click="acceptCategory(skill.category)"
                 >Accept new category</Button>
