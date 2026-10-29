@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { employmentTypeLabels } from '@/lib/job-labels';
+import { ExternalLink } from 'lucide-vue-next';
 import type { JobWithSkills } from '@/types/job';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 defineProps<{ job: JobWithSkills }>();
@@ -139,6 +141,12 @@ defineProps<{ job: JobWithSkills }>();
             </dd>
           </div>
         </dl>
+        <Button v-if="job.sourceUrl" variant="outline" as-child class="mt-6">
+          <a :href="job.sourceUrl" target="_blank" rel="noopener noreferrer">
+            <ExternalLink class="size-4" />
+            Original job advertisement
+          </a>
+        </Button>
       </CardContent>
     </Card>
 </template>

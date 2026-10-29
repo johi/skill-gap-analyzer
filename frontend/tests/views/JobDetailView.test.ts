@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import JobDetailView from '../../src/views/JobDetailView.vue';
+import JobMatch from '../../src/components/jobs/JobMatch.vue';
 import { deleteJob, getJob } from '../../src/api/jobs';
 import { ApiError } from '../../src/api/client';
 import type { JobWithSkills } from '../../src/types/job';
@@ -69,7 +70,7 @@ describe('JobDetailView', () => {
     expect(wrapper.text()).toContain('Position details');
     expect(wrapper.text()).toContain('Not applied');
     expect(wrapper.text()).not.toContain('not_applied');
-    expect(wrapper.text()).toContain('No skills assigned');
+    expect(wrapper.text()).not.toContain('Required skills');
   });
 
   it('renders all saved recruitment contacts with clickable email and phone links', async () => {
@@ -88,6 +89,17 @@ describe('JobDetailView', () => {
     expect(wrapper.text()).toContain('Bo Example');
     expect(wrapper.find('a[href="mailto:anna@example.com"]').exists()).toBe(true);
     expect(wrapper.find('a[href="tel:+45 12345678"]').exists()).toBe(true);
+  });
+
+  it('passes job skill categories to the calculated match table', async () => {
+    const skills: JobWithSkills['skills'] = [
+      { id: 1, name: 'TypeScript', category: 'Programming Languages', requirement: 'must_have' },
+    ];
+    vi.mocked(getJob).mockResolvedValue({ ...job, skills });
+    const wrapper = mountView();
+    await flushPromises();
+    expect(wrapper.getComponent(JobMatch).props('skills')).toEqual(skills);
+    expect(wrapper.text()).not.toContain('Required skills');
   });
 
   it('rejects invalid IDs without requesting a job', async () => {
@@ -142,5 +154,20 @@ describe('JobDetailView', () => {
     await flushPromises();
     expect(wrapper.text()).toContain('Deletion failed');
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('places the source link inside Position details and contacts below Assessment', async () => {
+    vi.mocked(getJob).mockResolvedValue({
+      ...job,
+      sourceUrl: 'https://careers.example.com/jobs/7',
+      contacts: [{ id: 1, name: 'Anna Example', role: 'Recruiter', email: 'anna@example.com', phone: null }],
+    });
+    const wrapper = mountView();
+    await flushPromises();
+
+    const sourceLink = wrapper.get('a[href="https://careers.example.com/jobs/7"]');
+    expect(sourceLink.element.closest('[data-slot="card"]')?.textContent).toContain('Position details');
+    expect(wrapper.text().indexOf('Assessment')).toBeLessThan(wrapper.text().indexOf('Recruitment contacts'));
+    expect(wrapper.text()).not.toContain('Required skills');
   });
 });

@@ -7,7 +7,7 @@ import JobDetailHeader from '@/components/jobs/JobDetailHeader.vue';
 import JobPositionDetails from '@/components/jobs/JobPositionDetails.vue';
 import JobAssessment from '@/components/jobs/JobAssessment.vue';
 import JobMatch from '@/components/jobs/JobMatch.vue';
-import JobSkillsTable from '@/components/jobs/JobSkillsTable.vue';
+import JobRecruitmentContacts from '@/components/jobs/JobRecruitmentContacts.vue';
 import JobAdditionalDetails from '@/components/jobs/JobAdditionalDetails.vue';
 import { useJobDetail } from '@/composables/useJobDetail';
 
@@ -44,12 +44,13 @@ function handleDelete(): void {
 
       <div class="grid gap-6 lg:grid-cols-3">
         <JobPositionDetails :job="job" />
-        <JobAssessment :job="job" />
+        <div class="space-y-6">
+          <JobAssessment :job="job" />
+          <JobRecruitmentContacts :job="job" />
+        </div>
       </div>
 
-      <JobMatch :job-id="job.id" />
-
-      <JobSkillsTable :job="job" />
+      <JobMatch :job-id="job.id" :skills="job.skills" />
 
       <JobAdditionalDetails :job="job" />
     </template>

@@ -2,6 +2,7 @@
 import { computed, toRef } from 'vue';
 
 import { getJobMatch } from '@/api/job-match';
+import type { JobWithSkills } from '@/types/job';
 import { useJobMatch } from '@/composables/useJobMatch';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,10 +24,15 @@ import {
 
 const props = defineProps<{
   jobId: number;
+  skills?: JobWithSkills['skills'];
 }>();
 
 const { result, loading, error, loadMatch } =
     useJobMatch(toRef(props, 'jobId'));
+
+const categoriesBySkillId = computed(() =>
+    new Map((props.skills ?? []).map(skill => [skill.id, skill.category]))
+);
 
 const hasUnassessedSkills = computed(
     () => result.value?.missingInformation.includes('skill_assessments') ?? false
@@ -145,6 +151,7 @@ function formatMatchFactor(value: number | null): string {
               <TableHeader>
                 <TableRow>
                   <TableHead>Skill</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Requirement</TableHead>
                   <TableHead>Proficiency</TableHead>
                   <TableHead>Match factor</TableHead>
@@ -158,6 +165,13 @@ function formatMatchFactor(value: number | null): string {
                 >
                   <TableCell class="font-medium">
                     {{ skill.name }}
+                  </TableCell>
+
+                  <TableCell>
+                    <Badge v-if="categoriesBySkillId.get(skill.id)" variant="secondary">
+                      {{ categoriesBySkillId.get(skill.id) }}
+                    </Badge>
+                    <span v-else>—</span>
                   </TableCell>
 
                   <TableCell>
