@@ -7,13 +7,11 @@ defineProps<{ filters: JobListQuery; searchInput: string }>();
 const emit = defineEmits<{
   search: [value: string];
   filter: [key: 'workModel' | 'seniority' | 'employmentType' | 'applyStatus', value: string];
-  sort: [changes: Partial<JobListQuery>];
   pageSize: [value: string];
   reset: [];
 }>();
 const onSearch = (value: string) => emit('search', value);
 const setFilter = (key: 'workModel' | 'seniority' | 'employmentType' | 'applyStatus', value: string) => emit('filter', key, value);
-const updateFilters = (changes: Partial<JobListQuery>) => emit('sort', changes);
 const setPageSize = (value: string) => emit('pageSize', value);
 const resetFilters = () => emit('reset');
 </script>
@@ -56,18 +54,6 @@ const resetFilters = () => emit('reset');
             <select aria-label="Application status" class="w-full rounded-md border bg-background px-3 py-2" :value="filters.applyStatus ?? ''" @change="setFilter('applyStatus', ($event.target as HTMLSelectElement).value)">
               <option value="">All statuses</option>
               <option v-for="(label, value) in applicationStatusLabels" :key="value" :value="value">{{ label }}</option>
-            </select>
-          </label>
-          <label class="space-y-1 text-sm">
-            <span class="font-medium">Sort by</span>
-            <select aria-label="Sort by" class="w-full rounded-md border bg-background px-3 py-2" :value="filters.sortBy" @change="updateFilters({ sortBy: ($event.target as HTMLSelectElement).value as JobListQuery['sortBy'] })">
-              <option value="dateFound">Date found</option><option value="company">Company</option><option value="interest">Interest</option><option value="matchPercentage">Calculated match</option>
-            </select>
-          </label>
-          <label class="space-y-1 text-sm">
-            <span class="font-medium">Sort direction</span>
-            <select aria-label="Sort direction" class="w-full rounded-md border bg-background px-3 py-2" :value="filters.sortOrder" @change="updateFilters({ sortOrder: ($event.target as HTMLSelectElement).value as JobListQuery['sortOrder'] })">
-              <option value="desc">Descending</option><option value="asc">Ascending</option>
             </select>
           </label>
           <label class="space-y-1 text-sm">

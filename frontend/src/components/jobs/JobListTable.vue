@@ -5,14 +5,22 @@ import { RouterLink } from 'vue-router';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import type { PaginatedJobs } from '@/schemas/job-list';
-defineProps<{ jobs: PaginatedJobs['data'] }>();
+defineProps<{ jobs: PaginatedJobs['data']; sortKey: string; sortDescending: boolean }>();
+const emit = defineEmits<{sort: [key: 'dateFound' | 'applicationDeadline' | 'company' | 'interest' | 'matchPercentage']}>();
 </script>
 <template>
 <div class="overflow-x-auto">
           <Table>
             <TableHeader><TableRow>
-              <TableHead>Date</TableHead><TableHead>Deadline</TableHead><TableHead>Company</TableHead><TableHead>Title</TableHead>
-              <TableHead>Location</TableHead><TableHead>Interest</TableHead><TableHead>Calculated match</TableHead><TableHead>Coverage</TableHead>
+              <TableHead v-for="column in [{key: 'dateFound', label: 'Date'}, {key: 'applicationDeadline', label: 'Deadline'}, {key: 'company', label: 'Company'}] as const" :key="column.key" :aria-sort="sortKey === column.key ? (sortDescending ? 'descending' : 'ascending') : 'none'">
+                <button type="button" class="hover:underline" @click="emit('sort', column.key)">{{ column.label }}{{ sortKey === column.key ? (sortDescending ? ' ↓' : ' ↑') : '' }}</button>
+              </TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead v-for="column in [{key: 'interest', label: 'Interest'}, {key: 'matchPercentage', label: 'Calculated match'}] as const" :key="column.key" :aria-sort="sortKey === column.key ? (sortDescending ? 'descending' : 'ascending') : 'none'">
+                <button type="button" class="hover:underline" @click="emit('sort', column.key)">{{ column.label }}{{ sortKey === column.key ? (sortDescending ? ' ↓' : ' ↑') : '' }}</button>
+              </TableHead>
+              <TableHead>Coverage</TableHead>
               <TableHead>Status</TableHead><TableHead>Ad</TableHead>
             </TableRow></TableHeader>
             <TableBody>

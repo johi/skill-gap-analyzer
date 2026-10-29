@@ -6,13 +6,20 @@ import type { Skill } from '@/types/skill';
 import { ref, computed, watch, onUnmounted } from 'vue';
 import { mergeSkills, getSkillsPage } from '@/api/skills';
 import SkillListControls from '@/components/ui/SkillListControls.vue';
-import { Button } from '@/components/ui/button';
 
 const {
   skills, loading, saving, deletingId, error, validationErrors,
   query, update, search, searchInput, pagination, loadSkills,
   editingId, form, startEdit, cancelEdit, handleSubmit, removeSkill,
 } = useSkills();
+
+const sortKey = computed(() => query.value.sortBy);
+const sortDescending = computed(() => query.value.sortOrder === 'desc');
+
+function sortBy(key: 'name' | 'category'): void {
+  update({sortBy: key, sortOrder: sortKey.value === key
+    ? (sortDescending.value ? 'asc' : 'desc') : 'asc'});
+}
 
 const selectedIds = ref<number[]>([]);
 const targetId = ref<number | null>(null);
@@ -91,16 +98,12 @@ async function handleDelete(skill: Skill): Promise<void> {
       </p>
     </div>
     <SkillListControls :query="query" :pagination="pagination" :search-input="searchInput" @search="search" @update="update" />
-    <div class="flex items-center gap-2 text-sm">
-      <span>Sort:</span>
-      <select :value="query.sortBy" aria-label="Sort skills" class="rounded border bg-background p-2" @change="update({sortBy: ($event.target as HTMLSelectElement).value})">
-        <option value="name">Name</option><option value="category">Category</option>
-      </select>
-      <Button type="button" variant="outline" size="sm" @click="update({sortOrder: query.sortOrder === 'asc' ? 'desc' : 'asc'})">{{ query.sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</Button>
-    </div>
     <div class="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
       <SkillCatalogue
         :skills="skills"
+        :sort-key="sortKey"
+        :sort-descending="sortDescending"
+        @sort="sortBy"
         :selected-ids="selectedIds"
         @toggle="toggleSkill"
         :loading="loading"

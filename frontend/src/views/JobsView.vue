@@ -9,6 +9,12 @@ import JobListFilters from '@/components/jobs/JobListFilters.vue';
 import JobListTable from '@/components/jobs/JobListTable.vue';
 import JobListPagination from '@/components/jobs/JobListPagination.vue';
 const { route, filters, jobs, pagination, totalPages, startItem, endItem, loading, error, searchInput, updateFilters, setFilter, setPageSize, onSearch, resetFilters } = useJobs();
+function sortBy(key: 'dateFound' | 'applicationDeadline' | 'company' | 'interest' | 'matchPercentage'): void {
+  const descending = filters.value.sortOrder === 'desc';
+  updateFilters({sortBy: key, sortOrder: filters.value.sortBy === key
+    ? (descending ? 'asc' : 'desc')
+    : (key === 'company' ? 'asc' : 'desc')});
+}
 </script>
 <template>
 
@@ -52,7 +58,7 @@ const { route, filters, jobs, pagination, totalPages, startItem, endItem, loadin
         </div>
       </CardHeader>
       <CardContent class="space-y-5">
-        <JobListFilters :filters="filters" :search-input="searchInput" @search="onSearch" @filter="setFilter" @sort="updateFilters" @page-size="setPageSize" @reset="resetFilters" />
+        <JobListFilters :filters="filters" :search-input="searchInput" @search="onSearch" @filter="setFilter" @page-size="setPageSize" @reset="resetFilters" />
 <div v-if="loading" class="space-y-3" role="status" aria-label="Loading jobs">
           <Skeleton class="h-10 w-full" /><Skeleton class="h-10 w-full" /><Skeleton class="h-10 w-full" />
         </div>
@@ -66,7 +72,7 @@ const { route, filters, jobs, pagination, totalPages, startItem, endItem, loadin
             {{ pagination?.totalItems === 0 && Object.keys(route.query).length === 0 ? 'Add or import jobs to start tracking opportunities.' : 'Try adjusting your filters or selecting another page.' }}
           </p>
         </div>
-        <JobListTable v-else :jobs="jobs" />
+        <JobListTable v-else :jobs="jobs" :sort-key="filters.sortBy" :sort-descending="filters.sortOrder === 'desc'" @sort="sortBy" />
         <JobListPagination v-if="!loading && !error && pagination" :filters="filters" :pagination="pagination" :start-item="startItem" :end-item="endItem" :total-pages="totalPages" @page="page => updateFilters({ page }, false)" />
       </CardContent>
     </Card>

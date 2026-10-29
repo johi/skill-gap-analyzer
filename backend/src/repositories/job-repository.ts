@@ -72,6 +72,7 @@ export class JobRepository {
 
         const sortColumns = {
             dateFound: jobs.dateFound,
+            applicationDeadline: jobs.applicationDeadline,
             company: jobs.company,
             interest: jobs.interest,
         };

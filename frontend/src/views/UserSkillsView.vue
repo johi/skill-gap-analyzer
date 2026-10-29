@@ -3,8 +3,14 @@ import {useUserSkills} from '@/composables/useUserSkills';
 import SkillAssessmentTable from '@/components/user-skills/SkillAssessmentTable.vue';
 import SkillListControls from '@/components/ui/SkillListControls.vue';
 import SkillAssessmentGuide from '@/components/user-skills/SkillAssessmentGuide.vue';
-import { Button } from '@/components/ui/button';
+import { computed } from 'vue';
 const {rows, loading, error, savingSkillId, setLevel, query, update, search, searchInput, pagination} = useUserSkills();
+const sortKey = computed(() => query.value.sortBy);
+const sortDescending = computed(() => query.value.sortOrder === 'desc');
+function sortBy(key: 'name' | 'category' | 'level'): void {
+  update({sortBy: key, sortOrder: sortKey.value === key
+    ? (sortDescending.value ? 'asc' : 'desc') : (key === 'level' ? 'desc' : 'asc')});
+}
 </script>
 <template>
   <section class="space-y-6">
@@ -19,14 +25,11 @@ const {rows, loading, error, savingSkillId, setLevel, query, update, search, sea
       <p class="text-sm text-destructive">{{ error }}</p>
     </div>
     <SkillListControls :query="query" :pagination="pagination" :search-input="searchInput" @search="search" @update="update" />
-    <div class="flex items-center gap-2 text-sm">Sort:
-      <select :value="query.sortBy" class="rounded border bg-background p-2" aria-label="Sort assessments" @change="update({sortBy: ($event.target as HTMLSelectElement).value})">
-        <option value="name">Name</option><option value="category">Category</option><option value="level">Proficiency</option>
-      </select>
-      <Button type="button" variant="outline" size="sm" @click="update({sortOrder: query.sortOrder === 'asc' ? 'desc' : 'asc'})">{{ query.sortOrder === 'asc' ? 'Ascending' : 'Descending' }}</Button>
-    </div>
     <SkillAssessmentTable
       :rows="rows"
+      :sort-key="sortKey"
+      :sort-descending="sortDescending"
+      @sort="sortBy"
       :loading="loading"
       :saving-skill-id="savingSkillId"
       :set-level="setLevel"

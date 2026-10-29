@@ -207,7 +207,7 @@ export const listJobsQuerySchema = z.object({
     seniority: senioritySchema.optional(),
     employmentType: employmentTypeSchema.optional(),
     applyStatus: applicationStatusSchema.optional(),
-    sortBy: z.enum(['dateFound', 'company', 'interest', 'matchPercentage'])
+    sortBy: z.enum(['dateFound', 'applicationDeadline', 'company', 'interest', 'matchPercentage'])
         .optional().default('dateFound'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
     page: z.coerce.number().int().positive().optional().default(1),

@@ -9,6 +9,8 @@ import type { Skill } from '@/types/skill';
 
 defineProps<{
   skills: Skill[];
+  sortKey: string;
+  sortDescending: boolean;
   loading: boolean;
   editingId: number | null;
   deletingId: number | null;
@@ -19,6 +21,7 @@ const emit = defineEmits<{
   edit: [skill: Skill];
   delete: [skill: Skill];
   toggle: [id: number];
+  sort: [key: 'name' | 'category'];
 }>();
 </script>
 
@@ -46,8 +49,9 @@ const emit = defineEmits<{
           <TableHeader>
             <TableRow>
               <TableHead class="w-10">Select</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
+              <TableHead v-for="column in [{key: 'name', label: 'Name'}, {key: 'category', label: 'Category'}] as const" :key="column.key" :aria-sort="sortKey === column.key ? (sortDescending ? 'descending' : 'ascending') : 'none'">
+                <button type="button" class="hover:underline" @click="emit('sort', column.key)">{{ column.label }}{{ sortKey === column.key ? (sortDescending ? ' ↓' : ' ↑') : '' }}</button>
+              </TableHead>
               <TableHead class="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>

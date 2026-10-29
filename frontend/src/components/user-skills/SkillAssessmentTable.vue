@@ -7,8 +7,12 @@ import {Skeleton} from '@/components/ui/skeleton';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import type {SkillRow} from '@/composables/useUserSkills';
 
+const emit = defineEmits<{sort: [key: 'name' | 'category' | 'level']}>();
+
 const props = defineProps<{
   rows: SkillRow[];
+  sortKey: string;
+  sortDescending: boolean;
   loading: boolean;
   savingSkillId: number | null;
   setLevel: (row: SkillRow, value: string) => Promise<void>;
@@ -111,10 +115,8 @@ async function onLevelChange(row: SkillRow, event: Event): Promise<void> {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Skill</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead class="w-56">
-                  Proficiency
+                <TableHead v-for="column in [{key: 'name', label: 'Skill'}, {key: 'category', label: 'Category'}, {key: 'level', label: 'Proficiency'}] as const" :key="column.key" :class="column.key === 'level' ? 'w-56' : ''" :aria-sort="sortKey === column.key ? (sortDescending ? 'descending' : 'ascending') : 'none'">
+                  <button type="button" class="hover:underline" @click="emit('sort', column.key)">{{ column.label }}{{ sortKey === column.key ? (sortDescending ? ' ↓' : ' ↑') : '' }}</button>
                 </TableHead>
               </TableRow>
             </TableHeader>
