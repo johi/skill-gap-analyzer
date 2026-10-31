@@ -1,4 +1,5 @@
 import { asc, desc, eq, ilike, count } from 'drizzle-orm';
+import { containsLikePattern } from '@/db/sql-pattern';
 
 import { skills, userSkills } from '@/db/schema';
 import { DatabaseExecutor } from './types';
@@ -30,7 +31,7 @@ export class UserSkillRepository {
     }
 
     async findCataloguePage(query: import('@/schemas/list-pagination').ListPaginationQuery) {
-        const pattern = `%${query.search.replace(/[\\%_]/g, '\\$&')}%`;
+        const pattern = containsLikePattern(query.search);
         const filter = query.search ? ilike(skills.name, pattern) : undefined;
         const [{ totalItems }] = await this.db.select({ totalItems: count() }).from(skills).where(filter);
         const { pagination } = await import('@/schemas/list-pagination');

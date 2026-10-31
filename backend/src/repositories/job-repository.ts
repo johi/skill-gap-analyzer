@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { ListJobsQuery } from '@/schemas/job';
+import { containsLikePattern } from '@/db/sql-pattern';
 
 import {
     jobs,
@@ -51,8 +52,7 @@ export class JobRepository {
         const conditions = [];
 
         if (query.search) {
-            const escaped = query.search.replace(/[\\%_]/g, '\\$&');
-            const pattern = `%${escaped}%`;
+            const pattern = containsLikePattern(query.search);
             conditions.push(or(
                 ilike(jobs.company, pattern),
                 ilike(jobs.title, pattern),

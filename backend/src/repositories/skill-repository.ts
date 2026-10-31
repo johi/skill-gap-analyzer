@@ -1,6 +1,7 @@
 import { and, asc, desc, eq, ilike, inArray, count } from 'drizzle-orm';
+import { containsLikePattern } from '@/db/sql-pattern';
 
-import { jobSkills, skills } from '../db/schema';
+import { jobSkills, skills } from '@/db/schema';
 import { NotFoundError } from '@/errors/application-errors';
 import { DatabaseExecutor } from './types';
 
@@ -20,7 +21,7 @@ export class SkillRepository {
     }
 
     async findPage(query: import('@/schemas/list-pagination').ListPaginationQuery) {
-        const pattern = `%${query.search.replace(/[\\%_]/g, '\\$&')}%`;
+        const pattern = containsLikePattern(query.search);
         const filter = query.search ? ilike(skills.name, pattern) : undefined;
         const [{ totalItems }] = await this.db.select({ totalItems: count() }).from(skills).where(filter);
         const { pagination } = await import('@/schemas/list-pagination');
