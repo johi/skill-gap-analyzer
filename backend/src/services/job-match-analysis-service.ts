@@ -3,7 +3,6 @@ import type { JobService } from '@/services/job-service';
 import {
     JobMatchService,
     type JobMatchResult,
-    type JobMatchSkill,
 } from '@/services/job-match-service';
 import type { UserSkillRepository } from '@/repositories/user-skill-repository';
 
@@ -20,21 +19,6 @@ export class JobMatchAnalysisService {
             this.userSkillRepository.findAll(),
         ]);
 
-        const jobSkills: JobMatchSkill[] = job.skills.map(
-            (skill) => ({
-                id: skill.id,
-                name: skill.name,
-                category: skill.category,
-                requirement: skill.requirement as JobMatchSkill['requirement'],
-            })
-        );
-
-        return this.jobMatchService.calculate(
-            jobSkills,
-            assessments.map((assessment) => ({
-                skillId: assessment.skillId,
-                level: assessment.level,
-            }))
-        );
+        return this.jobMatchService.calculate(job.skills, assessments);
     }
 }

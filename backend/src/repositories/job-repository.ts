@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { ListJobsQuery } from '@/schemas/job';
+import type { JobSkillRequirement } from '@/services/job-match-service';
 import { containsLikePattern } from '@/db/sql-pattern';
 
 import {
@@ -19,7 +20,7 @@ export interface JobSkill {
     id: number;
     name: string;
     category: string;
-    requirement: string;
+    requirement: JobSkillRequirement;
 }
 
 export interface JobLanguageRequirement {
@@ -160,7 +161,7 @@ export class JobRepository {
             .where(inArray(jobLanguageRequirements.jobId, ids));
 
         return {
-            data: this.assembleJobs(pageJobs, assignedSkills, contacts, languages),
+            data: this.assembleJobs(pageJobs, assignedSkills as Array<JobSkill & { jobId: number }>, contacts, languages),
             pagination,
         };
     }
@@ -199,7 +200,7 @@ export class JobRepository {
 
         const contacts = await this.db.select().from(jobContacts);
 
-        return this.assembleJobs(allJobs, assignedSkills, contacts, languageRequirements);
+        return this.assembleJobs(allJobs, assignedSkills as Array<JobSkill & { jobId: number }>, contacts, languageRequirements);
     }
 
     async findById(id: number): Promise<JobWithSkills | undefined> {
@@ -242,7 +243,7 @@ export class JobRepository {
         return {
             ...job,
             contacts,
-            skills: assignedSkills,
+            skills: assignedSkills as JobSkill[],
             languageRequirements,
         };
     }
