@@ -35,10 +35,44 @@ export interface JobWithSkills extends Job {
     languageRequirements: JobLanguageRequirement[];
 }
 
+function groupByJobId<T extends { jobId: number }>(rows: T[]): Map<number, T[]> {
+    const grouped = new Map<number, T[]>();
+
+    for (const row of rows) {
+        const group = grouped.get(row.jobId);
+        if (group) {
+            group.push(row);
+        } else {
+            grouped.set(row.jobId, [row]);
+        }
+    }
+
+    return grouped;
+}
+
 export class JobRepository {
     constructor(
         private readonly db: DatabaseExecutor
     ) {}
+
+    private assembleJobs(
+        selectedJobs: Job[],
+        assignedSkills: Array<JobSkill & { jobId: number }>,
+        contacts: JobContact[],
+        languageRequirements: Array<JobLanguageRequirement & { jobId: number }>
+    ): JobWithSkills[] {
+        const skillsByJob = groupByJobId(assignedSkills);
+        const contactsByJob = groupByJobId(contacts);
+        const languagesByJob = groupByJobId(languageRequirements);
+
+        return selectedJobs.map((job) => ({
+            ...job,
+            contacts: contactsByJob.get(job.id) ?? [],
+            skills: (skillsByJob.get(job.id) ?? []).map(({ jobId: _, ...skill }) => skill),
+            languageRequirements: (languagesByJob.get(job.id) ?? [])
+                .map(({ jobId: _, ...requirement }) => requirement),
+        }));
+    }
 
     async findPage(query: ListJobsQuery): Promise<{
         data: JobWithSkills[];
@@ -126,16 +160,7 @@ export class JobRepository {
             .where(inArray(jobLanguageRequirements.jobId, ids));
 
         return {
-            data: pageJobs.map((job) => ({
-                ...job,
-                contacts: contacts.filter((contact) => contact.jobId === job.id),
-                skills: assignedSkills
-                    .filter((skill) => skill.jobId === job.id)
-                    .map(({ jobId: _, ...skill }) => skill),
-                languageRequirements: languages
-                    .filter((requirement) => requirement.jobId === job.id)
-                    .map(({ jobId: _, ...requirement }) => requirement),
-            })),
+            data: this.assembleJobs(pageJobs, assignedSkills, contacts, languages),
             pagination,
         };
     }
@@ -174,18 +199,7 @@ export class JobRepository {
 
         const contacts = await this.db.select().from(jobContacts);
 
-        return allJobs.map((job) => ({
-            ...job,
-            contacts: contacts.filter((contact) => contact.jobId === job.id),
-
-            skills: assignedSkills
-                .filter((skill) => skill.jobId === job.id)
-                .map(({ jobId: _, ...skill }) => skill),
-
-            languageRequirements: languageRequirements
-                .filter((requirement) => requirement.jobId === job.id)
-                .map(({ jobId: _, ...requirement }) => requirement),
-        }));
+        return this.assembleJobs(allJobs, assignedSkills, contacts, languageRequirements);
     }
 
     async findById(id: number): Promise<JobWithSkills | undefined> {

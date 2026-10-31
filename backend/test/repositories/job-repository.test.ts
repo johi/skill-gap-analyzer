@@ -7,6 +7,7 @@ import {
 } from 'vitest';
 
 import { db } from '@/db';
+import { skills } from '@/db/schema';
 import { JobRepository } from '@/repositories/job-repository';
 import { cleanDatabase } from '../helpers/database';
 
@@ -234,6 +235,78 @@ describe('JobRepository', () => {
 
         expect(deleted).toBe(false);
     });
+    it('keeps each job’s relationships separate in paginated and complete results', async () => {
+        const first = await repository.create({
+            dateFound: '2026-10-15',
+            company: 'Alpha',
+            title: 'Developer A',
+        });
+        const second = await repository.create({
+            dateFound: '2026-10-14',
+            company: 'Beta',
+            title: 'Developer B',
+        });
+        const withoutRelations = await repository.create({
+            dateFound: '2026-10-13',
+            company: 'Gamma',
+            title: 'Developer C',
+        });
+
+        const [typescript, postgres] = await db.insert(skills).values([
+            { name: 'TypeScript', category: 'Programming Languages' },
+            { name: 'PostgreSQL', category: 'Databases' },
+        ]).returning();
+
+        await repository.replaceSkills(first.id, [
+            { skillId: typescript.id, requirement: 'must_have' },
+        ]);
+        await repository.replaceSkills(second.id, [
+            { skillId: postgres.id, requirement: 'nice_to_have' },
+        ]);
+        await repository.replaceContacts(first.id, [{ email: 'alpha@example.com' }]);
+        await repository.replaceContacts(second.id, [{ email: 'beta@example.com' }]);
+        await repository.replaceLanguageRequirements(first.id, [
+            { language: 'en', requirement: 'required' },
+        ]);
+        await repository.replaceLanguageRequirements(second.id, [
+            { language: 'da', requirement: 'preferred' },
+        ]);
+
+        const page = await repository.findPage({
+            search: '', sortBy: 'company', sortOrder: 'asc', page: 1, pageSize: 10,
+        });
+        const all = await repository.findAll();
+
+        for (const results of [page.data, all]) {
+            expect(results).toHaveLength(3);
+            const byId = new Map(results.map((job) => [job.id, job]));
+
+            expect(byId.get(first.id)?.skills).toEqual([
+                { id: typescript.id, name: 'TypeScript',
+                    category: 'Programming Languages', requirement: 'must_have' },
+            ]);
+            expect(byId.get(second.id)?.skills).toEqual([
+                { id: postgres.id, name: 'PostgreSQL',
+                    category: 'Databases', requirement: 'nice_to_have' },
+            ]);
+            expect(byId.get(first.id)?.contacts).toEqual([
+                expect.objectContaining({ jobId: first.id, email: 'alpha@example.com' }),
+            ]);
+            expect(byId.get(second.id)?.contacts).toEqual([
+                expect.objectContaining({ jobId: second.id, email: 'beta@example.com' }),
+            ]);
+            expect(byId.get(first.id)?.languageRequirements).toEqual([
+                { language: 'en', requirement: 'required' },
+            ]);
+            expect(byId.get(second.id)?.languageRequirements).toEqual([
+                { language: 'da', requirement: 'preferred' },
+            ]);
+            expect(byId.get(withoutRelations.id)).toMatchObject({
+                contacts: [], skills: [], languageRequirements: [],
+            });
+        }
+    });
+
     it('filters and paginates without losing totals', async () => {
         for (const [company, workModel] of [
             ['Alpha', 'hybrid'], ['Beta', 'hybrid'], ['Gamma', 'remote'],
