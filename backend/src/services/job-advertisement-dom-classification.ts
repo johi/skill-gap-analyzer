@@ -1,3 +1,4 @@
+import { findJsonLdObjectsByType } from '@/lib/json-ld';
 import { parse } from 'parse5';
 import { z } from 'zod';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
@@ -213,29 +214,10 @@ function renderRole(root: ContentNode, roles: Map<number, ContentRole>, requeste
         .trim();
 }
 
-function findJobPosting(value: unknown): Record<string, unknown> | null {
-    if (Array.isArray(value)) {
-        for (const item of value) {
-            const result = findJobPosting(item);
-            if (result) return result;
-        }
-        return null;
-    }
-    if (!value || typeof value !== 'object') return null;
-    const object = value as Record<string, unknown>;
-    const type = object['@type'];
-    if (type === 'JobPosting' ||
-        (Array.isArray(type) && type.includes('JobPosting')) ||
-        (typeof type === 'string' && type.endsWith('/JobPosting'))) return object;
-    return findJobPosting(object['@graph']);
-}
-
-function structuredJobMetadata(html: string): string | null {
-    for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
-        if (!/\btype\s*=\s*(?:["']application\/ld\+json["']|application\/ld\+json(?:\s|$))/i.test(match[1] ?? '')) continue;
+function structuredJobMetadata(postings: Iterable<Record<string, unknown>>): string | null {
+    for (const posting of postings) {
         try {
-            const posting = findJobPosting(JSON.parse(match[2] ?? ''));
-            if (!posting || typeof posting.description !== 'string') continue;
+            if (typeof posting.description !== 'string') continue;
             const organization = posting.hiringOrganization;
             const name = organization && typeof organization === 'object' && !Array.isArray(organization)
                 ? (organization as Record<string, unknown>).name : null;
@@ -257,9 +239,10 @@ export async function classifyHtmlJobAdvertisement(
     provider: ContentClassificationProvider
 ): Promise<{ advertisement: string; title: string | null; metadataContext: string }> {
     // JSON-LD already supplies a trustworthy description; do not replace it with AI.
-    const jsonLdMetadata = structuredJobMetadata(html);
+    const postings = [...findJsonLdObjectsByType(html, 'JobPosting')];
+    const jsonLdMetadata = structuredJobMetadata(postings);
     if (jsonLdMetadata !== null) {
-        const extracted = extractJobAdvertisementDetails(html, 'text/html');
+        const extracted = extractJobAdvertisementDetails(html, 'text/html', postings);
         return { ...extracted, metadataContext: jsonLdMetadata };
     }
 

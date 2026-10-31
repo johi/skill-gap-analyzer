@@ -1,3 +1,4 @@
+import { findJsonLdObjectsByType } from '@/lib/json-ld';
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
 
 const MAX_ADVERTISEMENT_LENGTH = 30_000;
@@ -44,44 +45,12 @@ function htmlToText(html: string): string {
         .replace(/<[^>]*>/g, ' '));
 }
 
-function record(value: unknown): Record<string, unknown> | null {
-    return value !== null && typeof value === 'object' && !Array.isArray(value)
-        ? value as Record<string, unknown> : null;
-}
-
-function jobPostingFrom(value: unknown): Record<string, unknown> | null {
-    if (Array.isArray(value)) {
-        for (const item of value) {
-            const posting = jobPostingFrom(item);
-            if (posting) return posting;
-        }
-        return null;
-    }
-
-    const object = record(value);
-    if (!object) return null;
-
-    const type = object['@type'];
-    if (type === 'JobPosting' ||
-        (Array.isArray(type) && type.includes('JobPosting')) ||
-        (typeof type === 'string' && type.endsWith('/JobPosting'))) {
-        return object;
-    }
-
-    return jobPostingFrom(object['@graph']);
-}
-
-function extractJsonLd(html: string): { advertisement: string; title: string | null } | null {
-    const scripts = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
-
-    for (const match of html.matchAll(scripts)) {
-        if (!/\btype\s*=\s*(?:["']application\/ld\+json["']|application\/ld\+json(?:\s|$))/i.test(match[1] ?? '')) {
-            continue;
-        }
-
+function extractJsonLd(
+    postings: Iterable<Record<string, unknown>>
+): { advertisement: string; title: string | null } | null {
+    for (const posting of postings) {
         try {
-            const posting = jobPostingFrom(JSON.parse(match[2] ?? ''));
-            if (!posting || typeof posting.description !== 'string') continue;
+            if (typeof posting.description !== 'string') continue;
 
             const description = htmlToText(posting.description);
             if (description.length < MIN_ADVERTISEMENT_LENGTH) continue;
@@ -104,7 +73,8 @@ function extractJsonLd(html: string): { advertisement: string; title: string | n
 
 /** Extract a reviewable advertisement from HTML or plain text; no AI or persistence. */
 export function extractJobAdvertisementDetails(
-    body: string, contentType: string
+    body: string, contentType: string,
+    postings?: Iterable<Record<string, unknown>>
 ): { advertisement: string; title: string | null } {
     const type = contentType.toLowerCase().split(';')[0]?.trim();
 
@@ -123,7 +93,7 @@ export function extractJobAdvertisementDetails(
     if (!isHtml) {
         text = normalizeText(body);
     } else {
-        const jsonLd = extractJsonLd(body);
+        const jsonLd = extractJsonLd(postings ?? findJsonLdObjectsByType(body, 'JobPosting'));
         const main = body.match(/<main\b[^>]*>([\s\S]*?)<\/main\s*>/i)
             ?? body.match(/<article\b[^>]*>([\s\S]*?)<\/article\s*>/i);
 

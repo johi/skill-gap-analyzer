@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
     classifyHtmlJobAdvertisement,
     type ContentClassificationProvider,
@@ -98,6 +98,25 @@ describe('Experimental DOM classification assembly (deterministic)', () => {
         await expect(classifyHtmlJobAdvertisement(example, {
             classifyContent: async () => ({ regions: [{ id: 1, role: 'advertisement' }] }),
         })).rejects.toThrow();
+    });
+
+    it('parses JSON-LD only once when classification delegates to extraction', async () => {
+        const html = `<html><body><script type="application/ld+json">${JSON.stringify({
+            '@type': 'JobPosting', title: 'Example Developer',
+            description: 'Develop backend APIs and maintain reliable services with automated testing and clear documentation.',
+            hiringOrganization: { name: 'Example Company' },
+        })}</script></body></html>`;
+        const parseSpy = vi.spyOn(JSON, 'parse');
+        try {
+            const result = await classifyHtmlJobAdvertisement(html, {
+                classifyContent: async () => { throw new Error('AI classification should not run'); },
+            });
+            expect(result.title).toBe('Example Developer');
+            expect(result.metadataContext).toContain('Example Company');
+            expect(parseSpy).toHaveBeenCalledTimes(1);
+        } finally {
+            parseSpy.mockRestore();
+        }
     });
 
     it('keeps the existing JSON-LD path without making an AI call', async () => {
