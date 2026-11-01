@@ -52,7 +52,7 @@ export class JobImportReviewService {
 
             for (const skill of reviewedJob.job.skills) {
                 const canonicalKey =
-                    skill.name.trim().toLowerCase();
+                    skill.name.toLowerCase();
 
                 const previousRequirement =
                     requirementsBySkill.get(canonicalKey);

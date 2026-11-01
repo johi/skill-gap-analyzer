@@ -84,7 +84,7 @@ export class JobImportService {
                 existing?.name ?? skill.name;
 
             const canonicalKey =
-                canonicalName.trim().toLowerCase();
+                canonicalName.toLowerCase();
 
             const previous = analyzed.get(canonicalKey);
 

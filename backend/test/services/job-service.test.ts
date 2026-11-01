@@ -13,6 +13,8 @@ import {
     NotFoundError,
 } from '../../src/errors/application-errors';
 
+import { createJobSchema } from '../../src/schemas/job';
+
 import type {
     CreateJobInput,
     UpdateJobInput,
@@ -358,7 +360,7 @@ describe('JobService', () => {
         });
 
         await expect(
-            service.create({
+            service.create(createJobSchema.parse({
                 ...input,
                 skills: [
                     {
@@ -372,7 +374,7 @@ describe('JobService', () => {
                         requirement: 'nice_to_have',
                     },
                 ],
-            })
+            }))
         ).rejects.toThrow(ConflictError);
     });
 

@@ -182,7 +182,7 @@ export class JobService {
 
         for (const requestedSkill of requestedSkills) {
             const normalizedName =
-                requestedSkill.name.trim().toLowerCase();
+                requestedSkill.name.toLowerCase();
 
             if (seen.has(normalizedName)) {
                 throw new ConflictError(

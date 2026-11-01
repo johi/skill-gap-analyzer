@@ -45,7 +45,7 @@ function resolveYearlessDeadline(extraction: unknown, source: string): unknown {
 
 const categorizationSchema = z.object({
     skills: z.array(z.object({
-        name: z.string().min(1),
+        name: z.string().trim().min(1),
         category: z.string().min(1),
     })),
 });
@@ -91,11 +91,11 @@ export class JobAnalysisService {
         // A trusted source title takes precedence over an AI-inferred title.
         if (extractedTitle && extractedTitle.length <= 255) proposal.title = extractedTitle;
         const existingSkills = await this.skillCatalogue?.findAll() ?? [];
-        const byName = new Map(existingSkills.map(skill => [skill.name.trim().toLocaleLowerCase('en-US'), skill]));
+        const byName = new Map(existingSkills.map(skill => [skill.name.toLocaleLowerCase('en-US'), skill]));
         const categories = Array.from(new Map(existingSkills
             .filter(skill => normalizeSkillCategory(skill.category))
             .map(skill => [categoryKey(skill.category), normalizeSkillCategory(skill.category)] as const)).values());
-        const unmatched = proposal.skills.filter(skill => !byName.has(skill.name.trim().toLocaleLowerCase('en-US')));
+        const unmatched = proposal.skills.filter(skill => !byName.has(skill.name.toLocaleLowerCase('en-US')));
 
         // Extraction and categorization are separate AI stages. Catalogue matches
         // are resolved deterministically and are never recategorized by the model.
@@ -117,8 +117,8 @@ export class JobAnalysisService {
             }
             proposed = new Map();
             for (const item of result.data.skills) {
-                const key = item.name.trim().toLocaleLowerCase('en-US');
-                if (proposed.has(key) || !unmatched.some(skill => skill.name.trim().toLocaleLowerCase('en-US') === key)) {
+                const key = item.name.toLocaleLowerCase('en-US');
+                if (proposed.has(key) || !unmatched.some(skill => skill.name.toLocaleLowerCase('en-US') === key)) {
                     logAnalysisValidation('categorization_skill_mapping', { reason: 'duplicate_or_unexpected_skill' });
                     throw new JobAnalysisInvalidResponseError();
                 }
@@ -131,7 +131,7 @@ export class JobAnalysisService {
         }
 
         proposal.skills = proposal.skills.map(skill => {
-            const key = skill.name.trim().toLocaleLowerCase('en-US');
+            const key = skill.name.toLocaleLowerCase('en-US');
             const existing = byName.get(key);
             if (existing) return { ...skill, name: existing.name, category: normalizeSkillCategory(existing.category) || null };
             const category = proposed.get(key) ?? skill.category;
