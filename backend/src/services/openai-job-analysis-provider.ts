@@ -8,11 +8,9 @@ import {
     type JobAnalysisProvider,
     type AnalysisValidationIssue,
 } from '@/services/job-analysis-contract';
-import {
-    jobAnalysisInstructions,
-    jobAnalysisCorrectionInstructions,
-    skillCategorizationInstructions,
-} from '@/services/job-analysis-instructions';
+import { jobAnalysisInstructions } from '@/ai/instructions/extract-job-details';
+import { jobAnalysisCorrectionInstructions } from '@/ai/instructions/correct-job-extraction';
+import { skillCategorizationInstructions } from '@/ai/instructions/categorize-skills';
 import {
     contentClassificationInstructions,
     contentClassificationJsonSchema,

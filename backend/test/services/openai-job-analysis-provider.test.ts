@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
 import { jobExtractionJsonSchema } from '@/services/job-analysis-contract';
-import { jobAnalysisInstructions } from '@/services/job-analysis-instructions';
+import { jobAnalysisInstructions } from '@/ai/instructions/extract-job-details';
 import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
