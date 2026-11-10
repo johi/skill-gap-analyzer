@@ -1,6 +1,6 @@
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
-import { extractJobAdvertisement } from '@/services/job-advertisement-content';
-import { classifyHtmlJobAdvertisement } from '@/services/job-advertisement-dom-classification';
+import { extractJobAdvertisement } from '@/job-advertisements/extract-content';
+import { classifyHtmlJobAdvertisement } from '@/job-advertisements/classify-html-content';
 import type { ContentClassificationProvider } from '@/ai/content-classification-provider';
 import {
     defaultHostResolver,

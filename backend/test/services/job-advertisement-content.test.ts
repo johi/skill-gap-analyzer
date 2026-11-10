@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractJobAdvertisement, extractJobAdvertisementDetails } from '@/services/job-advertisement-content';
+import { extractJobAdvertisement, extractJobAdvertisementDetails } from '@/job-advertisements/extract-content';
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
 
 const description = 'Develop Laravel APIs and Vue interfaces. Work with PostgreSQL, Redis, and Docker on a collaborative engineering team.';

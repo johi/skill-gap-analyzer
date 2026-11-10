@@ -2,7 +2,7 @@ import { findJsonLdObjectsByType } from '@/lib/json-ld';
 import { parse } from 'parse5';
 import { z } from 'zod';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
-import { extractJobAdvertisementDetails } from '@/services/job-advertisement-content';
+import { extractJobAdvertisementDetails } from '@/job-advertisements/extract-content';
 import type { ContentClassificationProvider } from '@/ai/content-classification-provider';
 
 type ContentRole = 'advertisement' | 'metadata' | 'noise' | 'unknown';

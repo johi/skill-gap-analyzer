@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { classifyHtmlJobAdvertisement } from '@/services/job-advertisement-dom-classification';
+import { classifyHtmlJobAdvertisement } from '@/job-advertisements/classify-html-content';
 import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
 
 /**

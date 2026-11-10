@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import { classifyHtmlJobAdvertisement } from '@/services/job-advertisement-dom-classification';
+import { classifyHtmlJobAdvertisement } from '@/job-advertisements/classify-html-content';
 import type { ContentClassificationProvider } from '@/ai/content-classification-provider';
 
 interface ModelInput {
