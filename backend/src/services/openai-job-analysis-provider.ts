@@ -8,10 +8,8 @@ import { skillCategorizationJsonSchema } from '@/ai/schemas/categorize-skills';
 import { jobAnalysisInstructions } from '@/ai/instructions/extract-job-details';
 import { jobAnalysisCorrectionInstructions } from '@/ai/instructions/correct-job-extraction';
 import { skillCategorizationInstructions } from '@/ai/instructions/categorize-skills';
-import {
-    contentClassificationInstructions,
-    contentClassificationJsonSchema,
-} from '@/services/job-advertisement-dom-classification';
+import { contentClassificationInstructions } from '@/ai/instructions/classify-advertisement-content';
+import { contentClassificationJsonSchema } from '@/ai/schemas/classify-advertisement-content';
 
 interface OpenAiResponse {
     status?: string;
@@ -52,7 +50,6 @@ export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
         );
     }
 
-    /** Experimental: not used by the existing URL-fetch or analysis services. */
     classifyContent(tree: string): Promise<unknown> {
         return this.request(
             contentClassificationInstructions,

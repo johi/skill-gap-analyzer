@@ -1,6 +1,7 @@
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
 import { extractJobAdvertisement } from '@/services/job-advertisement-content';
-import { classifyHtmlJobAdvertisement, type ContentClassificationProvider } from '@/services/job-advertisement-dom-classification';
+import { classifyHtmlJobAdvertisement } from '@/services/job-advertisement-dom-classification';
+import type { ContentClassificationProvider } from '@/ai/content-classification-provider';
 import {
     defaultHostResolver,
     fetchSecurePage,
