@@ -72,11 +72,13 @@ export function buildApp(
 
     const jobService = new JobService();
 
+    const jobMatchService = new JobMatchService();
+
     const jobMatchAnalysisService =
         new JobMatchAnalysisService(
             jobService,
             userSkillRepository,
-            new JobMatchService()
+            jobMatchService
         );
 
     const jobImportService =
@@ -106,7 +108,7 @@ export function buildApp(
     );
 
     fastify.register(
-        createJobRoutes(jobService, jobMatchAnalysisService, new JobComparisonService(userSkillRepository, new JobMatchService())),
+        createJobRoutes(jobService, jobMatchAnalysisService, new JobComparisonService(userSkillRepository, jobMatchService)),
         {
             prefix: '/api/v1/jobs',
         }
