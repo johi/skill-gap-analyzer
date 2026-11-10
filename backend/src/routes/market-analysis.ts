@@ -1,5 +1,5 @@
 import { listPaginationSchema, validateSort } from '@/schemas/list-pagination';
-import { paginateAnalysis } from '@/services/paginate-analysis';
+import { filterSortAndPaginateAnalysis } from '@/lib/paginate-analysis';
 
 import type { FastifyPluginAsync } from 'fastify';
 
@@ -19,7 +19,7 @@ export function createMarketAnalysisRoutes(
             if (!('page' in raw || 'pageSize' in raw)) return result;
             const query = listPaginationSchema.parse(raw);
             validateSort(query.sortBy, ['name','category','jobCount','mustHaveCount','niceToHaveCount','demandPercentage']);
-            return paginateAnalysis(result, query);
+            return filterSortAndPaginateAnalysis(result, query);
         });
 
         fastify.get('/skill-gaps', async (request) => {
@@ -28,7 +28,7 @@ export function createMarketAnalysisRoutes(
             if (!('page' in raw || 'pageSize' in raw)) return result;
             const query = listPaginationSchema.parse(raw);
             validateSort(query.sortBy, ['name','category','jobCount','mustHaveCount','niceToHaveCount','demandPercentage','proficiency','gap','status']);
-            return paginateAnalysis(result, query);
+            return filterSortAndPaginateAnalysis(result, query);
         });
 
         fastify.get('/skill-priorities', async (request) => {
@@ -37,7 +37,7 @@ export function createMarketAnalysisRoutes(
             if (!('page' in raw || 'pageSize' in raw)) return result;
             const query = listPaginationSchema.parse(raw);
             validateSort(query.sortBy, ['name','category','jobCount','demandPercentage','demandWeight','proficiency','gap','priorityScore','status']);
-            return paginateAnalysis(result, query);
+            return filterSortAndPaginateAnalysis(result, query);
         });
     };
 }

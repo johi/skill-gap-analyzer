@@ -1,7 +1,7 @@
 import type { ListPaginationQuery } from '@/schemas/list-pagination';
 import { pagination } from '@/schemas/list-pagination';
 
-export function paginateAnalysis<
+export function filterSortAndPaginateAnalysis<
     R extends { skills: Array<{ skillId: number; name: string }> },
 >(result: R, query: ListPaginationQuery) {
     const filtered = result.skills.filter(skill => skill.name.toLocaleLowerCase().includes(query.search.toLocaleLowerCase()));
