@@ -2,6 +2,7 @@ import { db } from '@/db';
 import { JobRepository, type JobWithSkills } from '@/repositories/job-repository';
 import type { UserSkillRepository } from '@/repositories/user-skill-repository';
 import type { ListJobsQuery } from '@/schemas/job';
+import { pagination } from '@/schemas/list-pagination';
 import { JobMatchService } from '@/services/job-match-service';
 
 export interface ComparedJob extends JobWithSkills {
@@ -53,16 +54,11 @@ export class JobComparisonService {
             }
             return b.id - a.id;
         });
-        const totalItems = compared.length;
-        const start = (query.page - 1) * query.pageSize;
+        const meta = pagination(query.page, query.pageSize, compared.length);
+        const start = (meta.page - 1) * meta.pageSize;
         return {
-            data: compared.slice(start, start + query.pageSize),
-            pagination: {
-                page: query.page,
-                pageSize: query.pageSize,
-                totalItems,
-                totalPages: Math.ceil(totalItems / query.pageSize),
-            },
+            data: compared.slice(start, start + meta.pageSize),
+            pagination: meta,
         };
     }
 }

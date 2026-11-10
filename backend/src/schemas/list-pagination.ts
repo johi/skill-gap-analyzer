@@ -8,7 +8,7 @@ export const listPaginationSchema = z.object({
     pageSize: z.coerce.number().refine(n => [10, 25, 50].includes(n)).default(25),
 });
 export type ListPaginationQuery = z.infer<typeof listPaginationSchema>;
-export function pagination(page: number, pageSize: number, totalItems: number) {
+export function pagination<T extends number>(page: number, pageSize: T, totalItems: number) {
     const totalPages = Math.ceil(totalItems / pageSize);
     return { page: Math.min(page, Math.max(1, totalPages)), pageSize, totalItems, totalPages };
 }

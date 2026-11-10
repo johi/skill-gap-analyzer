@@ -47,6 +47,14 @@ describe('JobComparisonService', () => {
         expect(result.data.map(j => j.id)).toEqual([2, 1, 3, 4]);
         expect(result.pagination.totalItems).toBe(4);
     });
+    it('clamps an out-of-range page to the last available page', async () => {
+        const result = await setup().list(query({ page: 100, pageSize: 10 }));
+        expect(result.data).toHaveLength(5);
+        expect(result.pagination).toEqual({
+            page: 1, pageSize: 10, totalItems: 5, totalPages: 1,
+        });
+    });
+
     it('returns an empty page for no matches', async () => {
         const result = await setup().list(query({ search: 'unfindable' }));
         expect(result.data).toEqual([]);

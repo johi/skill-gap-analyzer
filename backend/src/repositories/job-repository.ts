@@ -1,5 +1,6 @@
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { ListJobsQuery } from '@/schemas/job';
+import { pagination } from '@/schemas/list-pagination';
 import type { JobSkillRequirement } from '@/services/job-match-service';
 import { containsLikePattern } from '@/db/sql-pattern';
 
@@ -116,22 +117,17 @@ export class JobRepository {
             ? sql`${column} ASC NULLS LAST`
             : sql`${column} DESC NULLS LAST`;
 
+        const meta = pagination(query.page, query.pageSize, totalItems);
+
         const pageJobs = await this.db
             .select()
             .from(jobs)
             .where(where)
             .orderBy(ordering, desc(jobs.id))
-            .limit(query.pageSize)
-            .offset((query.page - 1) * query.pageSize);
+            .limit(meta.pageSize)
+            .offset((meta.page - 1) * meta.pageSize);
 
-        const pagination = {
-            page: query.page,
-            pageSize: query.pageSize,
-            totalItems,
-            totalPages: Math.ceil(totalItems / query.pageSize),
-        };
-
-        if (pageJobs.length === 0) return { data: [], pagination };
+        if (pageJobs.length === 0) return { data: [], pagination: meta };
 
         const ids = pageJobs.map((job) => job.id);
         const assignedSkills = await this.db
@@ -162,7 +158,7 @@ export class JobRepository {
 
         return {
             data: this.assembleJobs(pageJobs, assignedSkills as Array<JobSkill & { jobId: number }>, contacts, languages),
-            pagination,
+            pagination: meta,
         };
     }
 
@@ -359,3 +355,4 @@ export class JobRepository {
             );
     }
 }
+
