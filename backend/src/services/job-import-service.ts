@@ -1,4 +1,4 @@
-import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
+import { canonicalSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
 import { SkillRepository } from '@/repositories/skill-repository';
 import {
     JobDataset,
@@ -37,9 +37,7 @@ export class JobImportService {
         dataset: JobDataset
     ): Promise<JobImportAnalysis> {
         const catalogue = await this.skillRepository.findAll();
-        const existingCategories = Array.from(new Map(catalogue.map(skill => [
-            categoryKey(skill.category), normalizeSkillCategory(skill.category),
-        ] as const)).values());
+        const existingCategories = uniqueSkillCategories(catalogue.map(skill => skill.category));
         const jobs: AnalyzedJob[] = [];
 
         for (const job of dataset.jobs) {

@@ -7,7 +7,7 @@ import {
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
 import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/services/job-analysis-contract';
 import type { SkillRepository } from '@/repositories/skill-repository';
-import { canonicalSkillCategory, categoryKey, normalizeSkillCategory } from '@/services/skill-category';
+import { canonicalSkillCategory, categoryKey, normalizeSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
 
 // Disabled by default. Logs validation structure only, never returned field values.
 function logAnalysisValidation(stage: string, details: object): void {
@@ -92,9 +92,7 @@ export class JobAnalysisService {
         if (extractedTitle && extractedTitle.length <= 255) proposal.title = extractedTitle;
         const existingSkills = await this.skillCatalogue?.findAll() ?? [];
         const byName = new Map(existingSkills.map(skill => [skill.name.toLocaleLowerCase('en-US'), skill]));
-        const categories = Array.from(new Map(existingSkills
-            .filter(skill => normalizeSkillCategory(skill.category))
-            .map(skill => [categoryKey(skill.category), normalizeSkillCategory(skill.category)] as const)).values());
+        const categories = uniqueSkillCategories(existingSkills.map(skill => skill.category));
         const unmatched = proposal.skills.filter(skill => !byName.has(skill.name.toLocaleLowerCase('en-US')));
 
         // Extraction and categorization are separate AI stages. Catalogue matches

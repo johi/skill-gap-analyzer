@@ -18,3 +18,11 @@ export function canonicalSkillCategory(value: string, known: readonly string[]):
     const normalized = normalizeSkillCategory(value);
     return known.find(category => categoryKey(category) === categoryKey(normalized)) ?? normalized;
 }
+
+export function uniqueSkillCategories(categories: readonly string[]): string[] {
+    return Array.from(new Map(categories
+        .map(category => normalizeSkillCategory(category))
+        .filter(Boolean)
+        .map(category => [categoryKey(category), category] as const)
+    ).values());
+}
