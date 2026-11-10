@@ -1,5 +1,7 @@
 import { asc, desc, eq, ilike, count } from 'drizzle-orm';
 import { containsLikePattern } from '@/db/sql-pattern';
+import { pagination } from '@/schemas/list-pagination';
+import type { ListPaginationQuery } from '@/schemas/list-pagination';
 
 import { skills, userSkills } from '@/db/schema';
 import { DatabaseExecutor } from './types';
@@ -30,11 +32,10 @@ export class UserSkillRepository {
             .orderBy(asc(skills.name));
     }
 
-    async findCataloguePage(query: import('@/schemas/list-pagination').ListPaginationQuery) {
+    async findCataloguePage(query: ListPaginationQuery) {
         const pattern = containsLikePattern(query.search);
         const filter = query.search ? ilike(skills.name, pattern) : undefined;
         const [{ totalItems }] = await this.db.select({ totalItems: count() }).from(skills).where(filter);
-        const { pagination } = await import('@/schemas/list-pagination');
         const meta = pagination(query.page, query.pageSize, totalItems);
         const column = query.sortBy === 'category' ? skills.category
             : query.sortBy === 'level' ? userSkills.level : skills.name;
