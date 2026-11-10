@@ -5,7 +5,7 @@ import type { JobAnalysisService } from '@/services/job-analysis-service';
 
 export function createJobAnalysisRoutes(
     service: JobAnalysisService,
-    urlFetcher?: JobAdvertisementUrlFetcher
+    urlFetcher?: Pick<JobAdvertisementUrlFetcher, 'retrieve'>
 ): FastifyPluginAsync {
     return async fastify => {
         fastify.post('/analyze', async request => {

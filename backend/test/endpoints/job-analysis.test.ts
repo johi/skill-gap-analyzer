@@ -4,7 +4,6 @@ import { registerErrorHandler } from '@/errors/error-handler';
 import { createJobAnalysisRoutes } from '@/routes/job-analysis';
 import { JobAnalysisService } from '@/services/job-analysis-service';
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
-import type { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
 import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
@@ -30,7 +29,7 @@ describe('POST /api/v1/job-analysis/analyze (UC-09–11)', () => {
 
     beforeAll(async () => {
         registerErrorHandler(app);
-        await app.register(createJobAnalysisRoutes(new JobAnalysisService(provider), { retrieve } as unknown as JobAdvertisementUrlFetcher), {
+        await app.register(createJobAnalysisRoutes(new JobAnalysisService(provider), { retrieve }), {
             prefix: '/api/v1/job-analysis',
         });
         await app.ready();
