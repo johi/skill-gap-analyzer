@@ -1,5 +1,5 @@
 import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retrieval-error';
-import { extractJobAdvertisement } from '@/job-advertisements/extract-content';
+import { extractJobAdvertisement, isHtmlContent } from '@/job-advertisements/extract-content';
 import { classifyHtmlJobAdvertisement } from '@/job-advertisements/classify-html-content';
 import type { ContentClassificationProvider } from '@/ai/content-classification-provider';
 import {
@@ -9,8 +9,6 @@ import {
     type HostResolver,
     type PageTransport,
 } from '@/lib/secure-http-fetch';
-
-export type { HostResolver, PageTransport, PageResponse, ResolvedAddress } from '@/lib/secure-http-fetch';
 
 /** LinkedIn job content must be copied manually; never request it server-side. */
 function rejectLinkedIn(url: URL): void {
@@ -36,8 +34,7 @@ export class JobAdvertisementUrlFetcher {
         const { original, response } = await fetchSecurePage(rawUrl, this.resolveHost, this.transport, rejectLinkedIn);
         const contentType = String(response.headers['content-type'] ?? '');
         const type = contentType.toLowerCase().split(';')[0]?.trim();
-        const isHtml = type !== 'text/plain' &&
-            /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(response.body);
+        const isHtml = isHtmlContent(response.body, contentType);
         if (this.classifier && isHtml) {
             // Validate the media type before invoking AI.
             if (type && !['text/html', 'application/xhtml+xml'].includes(type)) {

@@ -71,6 +71,13 @@ function extractJsonLd(
     return null;
 }
 
+/** Detects HTML content using the same rule for extraction and optional classification. */
+export function isHtmlContent(body: string, contentType: string): boolean {
+    const type = contentType.toLowerCase().split(';')[0]?.trim();
+    return type !== 'text/plain' &&
+        /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(body);
+}
+
 /** Extract a reviewable advertisement from HTML or plain text; no AI or persistence. */
 export function extractJobAdvertisementDetails(
     body: string, contentType: string,
@@ -84,8 +91,7 @@ export function extractJobAdvertisementDetails(
         );
     }
 
-    const isHtml = type !== 'text/plain' &&
-        /<\s*(?:!doctype|html|head|body|main|article|div|p|script)\b/i.test(body);
+    const isHtml = isHtmlContent(body, contentType);
 
     let text: string;
     let title: string | null = null;

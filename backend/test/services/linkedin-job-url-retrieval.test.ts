@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import {
-    JobAdvertisementUrlFetcher,
-    type HostResolver,
-    type PageTransport,
-} from '@/services/job-advertisement-url-fetcher';
+import { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
+import type { HostResolver, PageTransport } from '@/lib/secure-http-fetch';
 
 const jobId = '1234567890';
 const description = 'Build reliable TypeScript APIs and improve PostgreSQL queries in a collaborative engineering team.';

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { JobAdvertisementUrlFetcher, type PageTransport, type HostResolver } from '@/services/job-advertisement-url-fetcher';
+import { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
+import type { PageTransport, HostResolver } from '@/lib/secure-http-fetch';
 
 const description = 'Develop Laravel APIs and Vue interfaces. Work with PostgreSQL, Redis, and Docker on a collaborative engineering team.';
 const resolveHost = vi.fn<HostResolver>();
