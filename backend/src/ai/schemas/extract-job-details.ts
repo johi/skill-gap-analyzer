@@ -1,16 +1,3 @@
-/** Provider-independent contract for job advertisement extraction. */
-export interface JobAnalysisProvider {
-    analyze(advertisement: string): Promise<unknown>;
-    categorize(skills: string[], existingCategories: string[], advertisement: string): Promise<unknown>;
-    /** Optional provider correction of a rejected structured extraction. */
-    correctAnalysis?(advertisement: string, previous: unknown, issues: AnalysisValidationIssue[]): Promise<unknown>;
-}
-
-export interface AnalysisValidationIssue {
-    path: string;
-    code: string;
-}
-
 // Structured Outputs requires all fields and additionalProperties: false.
 // Null is used for facts that the advertisement does not establish.
 const nullableString = { type: ['string', 'null'] };
@@ -73,26 +60,4 @@ export const jobExtractionJsonSchema = {
         'seniority', 'primaryRole', 'yearsRequired', 'educationRequirement',
         'languageRequirements', 'salaryRate', 'skills',
     ],
-} as const;
-
-
-/** Stage two: classify only the skills that are absent from the catalogue. */
-export const skillCategorizationJsonSchema = {
-    type: 'object',
-    additionalProperties: false,
-    properties: {
-        skills: {
-            type: 'array',
-            items: {
-                type: 'object',
-                additionalProperties: false,
-                properties: {
-                    name: { type: 'string' },
-                    category: { type: 'string' },
-                },
-                required: ['name', 'category'],
-            },
-        },
-    },
-    required: ['skills'],
 } as const;

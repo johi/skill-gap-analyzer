@@ -2,12 +2,9 @@ import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
 } from '@/errors/job-analysis-errors';
-import {
-    jobExtractionJsonSchema,
-    skillCategorizationJsonSchema,
-    type JobAnalysisProvider,
-    type AnalysisValidationIssue,
-} from '@/services/job-analysis-contract';
+import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/ai/job-analysis-provider';
+import { jobExtractionJsonSchema } from '@/ai/schemas/extract-job-details';
+import { skillCategorizationJsonSchema } from '@/ai/schemas/categorize-skills';
 import { jobAnalysisInstructions } from '@/ai/instructions/extract-job-details';
 import { jobAnalysisCorrectionInstructions } from '@/ai/instructions/correct-job-extraction';
 import { skillCategorizationInstructions } from '@/ai/instructions/categorize-skills';

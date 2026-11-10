@@ -5,7 +5,7 @@ import {
     type JobAdvertisementAnalysis,
 } from '@/schemas/job-analysis';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
-import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/services/job-analysis-contract';
+import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/ai/job-analysis-provider';
 import type { SkillRepository } from '@/repositories/skill-repository';
 import { canonicalSkillCategory, categoryKey, normalizeSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
 
