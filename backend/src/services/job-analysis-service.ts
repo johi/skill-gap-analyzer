@@ -94,6 +94,7 @@ export class JobAnalysisService {
         const byName = new Map(existingSkills.map(skill => [skill.name.toLocaleLowerCase('en-US'), skill]));
         const categories = uniqueSkillCategories(existingSkills.map(skill => skill.category));
         const unmatched = proposal.skills.filter(skill => !byName.has(skill.name.toLocaleLowerCase('en-US')));
+        const unmatchedNames = new Set(unmatched.map(skill => skill.name.toLocaleLowerCase('en-US')));
 
         // Extraction and categorization are separate AI stages. Catalogue matches
         // are resolved deterministically and are never recategorized by the model.
@@ -113,10 +114,9 @@ export class JobAnalysisService {
                 });
                 throw new JobAnalysisInvalidResponseError();
             }
-            proposed = new Map();
             for (const item of result.data.skills) {
                 const key = item.name.toLocaleLowerCase('en-US');
-                if (proposed.has(key) || !unmatched.some(skill => skill.name.toLocaleLowerCase('en-US') === key)) {
+                if (proposed.has(key) || !unmatchedNames.has(key)) {
                     logAnalysisValidation('categorization_skill_mapping', { reason: 'duplicate_or_unexpected_skill' });
                     throw new JobAnalysisInvalidResponseError();
                 }
