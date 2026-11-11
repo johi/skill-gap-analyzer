@@ -33,7 +33,20 @@ function resolveYearlessDeadline(extraction: unknown, source: string): unknown {
     let value: string = deadline;
 
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-        if (source.includes(value.slice(0, 4))) return extraction;
+        const [year, month, day] = value.split('-');
+        // Compare numeric date components; do not maintain a month-name lookup.
+        const numericDate = new RegExp(
+            `\\b${day}[./-]${month}[./-]${year}\\b|\\b${year}-${month}-${day}\\b`
+        );
+        const writtenDates = source.match(/\b(?:\d{1,2}\s+[A-Za-z]+\s*,?\s*\d{4}|[A-Za-z]+\s+\d{1,2},?\s*\d{4})\b/g) ?? [];
+        const hasMatchingWrittenDate = writtenDates.some(text => {
+            const parsed = new Date(text);
+            return !Number.isNaN(parsed.getTime()) &&
+                parsed.getUTCFullYear() === Number(year) &&
+                parsed.getUTCMonth() + 1 === Number(month) &&
+                parsed.getUTCDate() === Number(day);
+        });
+        if (numericDate.test(source) || hasMatchingWrittenDate) return extraction;
         value = value.slice(5);
     }
     if (!/^\d{2}-\d{2}$/.test(value)) return extraction;

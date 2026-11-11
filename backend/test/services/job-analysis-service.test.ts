@@ -189,6 +189,22 @@ describe('JobAnalysisService', () => {
         }
     );
 
+    it('does not treat an unrelated company founding year as a deadline year', async () => {
+        vi.useFakeTimers();
+        try {
+            vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
+            const provider = {
+                analyze: vi.fn().mockResolvedValue({ ...proposal(), applicationDeadline: '2023-11-16' }),
+                categorize: vi.fn(),
+            };
+            const source = `${advertisement} Founded in 2023. Application deadline: 16 November.`;
+            const result = await new JobAnalysisService(provider).analyze(source);
+            expect(result.proposal.applicationDeadline).toBe('2026-11-16');
+        } finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('preserves the explicitly stated year, including dates in the past', async () => {
         const source = 'Application deadline: 16 November 2023';
         const provider = {
