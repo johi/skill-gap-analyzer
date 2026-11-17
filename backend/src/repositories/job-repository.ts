@@ -1,8 +1,5 @@
-import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
-import type { ListJobsQuery } from '@/schemas/job';
-import { pagination } from '@/lib/pagination';
+import { desc, eq, inArray } from 'drizzle-orm';
 import type { JobSkillRequirement } from '@/services/job-match-service';
-import { containsLikePattern } from '@/db/sql-pattern';
 
 import {
     jobs,
@@ -74,92 +71,6 @@ export class JobRepository {
             languageRequirements: (languagesByJob.get(job.id) ?? [])
                 .map(({ jobId: _, ...requirement }) => requirement),
         }));
-    }
-
-    async findPage(query: ListJobsQuery): Promise<{
-        data: JobWithSkills[];
-        pagination: {
-            page: number;
-            pageSize: 10 | 25 | 50;
-            totalItems: number;
-            totalPages: number;
-        };
-    }> {
-        const conditions = [];
-
-        if (query.search) {
-            const pattern = containsLikePattern(query.search);
-            conditions.push(or(
-                ilike(jobs.company, pattern),
-                ilike(jobs.title, pattern),
-                ilike(jobs.location, pattern),
-            ));
-        }
-        if (query.workModel) conditions.push(eq(jobs.workModel, query.workModel));
-        if (query.seniority) conditions.push(eq(jobs.seniority, query.seniority));
-        if (query.employmentType) conditions.push(eq(jobs.employmentType, query.employmentType));
-        if (query.applyStatus) conditions.push(eq(jobs.applyStatus, query.applyStatus));
-
-        const where = and(...conditions);
-        const [{ totalItems }] = await this.db
-            .select({ totalItems: count() })
-            .from(jobs)
-            .where(where);
-
-        const sortColumns = {
-            dateFound: jobs.dateFound,
-            applicationDeadline: jobs.applicationDeadline,
-            company: jobs.company,
-            interest: jobs.interest,
-        };
-        const column = sortColumns[query.sortBy === 'matchPercentage' ? 'dateFound' : query.sortBy];
-        const ordering = query.sortOrder === 'asc'
-            ? sql`${column} ASC NULLS LAST`
-            : sql`${column} DESC NULLS LAST`;
-
-        const meta = pagination(query.page, query.pageSize, totalItems);
-
-        const pageJobs = await this.db
-            .select()
-            .from(jobs)
-            .where(where)
-            .orderBy(ordering, desc(jobs.id))
-            .limit(meta.pageSize)
-            .offset((meta.page - 1) * meta.pageSize);
-
-        if (pageJobs.length === 0) return { data: [], pagination: meta };
-
-        const ids = pageJobs.map((job) => job.id);
-        const assignedSkills = await this.db
-            .select({
-                jobId: jobSkills.jobId,
-                id: skills.id,
-                name: skills.name,
-                category: skills.category,
-                requirement: jobSkills.requirement,
-            })
-            .from(jobSkills)
-            .innerJoin(skills, eq(jobSkills.skillId, skills.id))
-            .where(inArray(jobSkills.jobId, ids));
-
-        const contacts = await this.db
-            .select()
-            .from(jobContacts)
-            .where(inArray(jobContacts.jobId, ids));
-
-        const languages = await this.db
-            .select({
-                jobId: jobLanguageRequirements.jobId,
-                language: jobLanguageRequirements.language,
-                requirement: jobLanguageRequirements.requirement,
-            })
-            .from(jobLanguageRequirements)
-            .where(inArray(jobLanguageRequirements.jobId, ids));
-
-        return {
-            data: this.assembleJobs(pageJobs, assignedSkills as Array<JobSkill & { jobId: number }>, contacts, languages),
-            pagination: meta,
-        };
     }
 
     async findAll(): Promise<JobWithSkills[]> {

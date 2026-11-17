@@ -23,7 +23,6 @@ import type {
 const mocks = vi.hoisted(() => {
     const jobRepository = {
         findAll: vi.fn(),
-        findPage: vi.fn(),
         findById: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
@@ -114,19 +113,6 @@ describe('JobService', () => {
         );
 
         service = new JobService();
-    });
-
-    it('lists jobs with validated query parameters', async () => {
-        const query = {
-            search: '', sortBy: 'dateFound' as const,
-            sortOrder: 'desc' as const, page: 1, pageSize: 25 as const,
-        };
-        const result = { data: [job], pagination: {
-            page: 1, pageSize: 25, totalItems: 1, totalPages: 1,
-        } };
-        mocks.jobRepository.findPage.mockResolvedValue(result);
-        expect(await service.list(query)).toEqual(result);
-        expect(mocks.jobRepository.findPage).toHaveBeenCalledWith(query);
     });
 
     it('retrieves an existing job', async () => {

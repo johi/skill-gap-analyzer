@@ -17,7 +17,6 @@ import {
     CreateJobInput,
     JobSkillInput,
     UpdateJobInput,
-    ListJobsQuery,
 } from '@/schemas/job';
 
 import { canonicalSkillCategory, normalizeSkillCategory } from '@/services/skill-category';
@@ -29,12 +28,6 @@ import {
 } from '@/errors/application-errors';
 
 export class JobService {
-    async list(query: ListJobsQuery) {
-        const repository = new JobRepository(db);
-
-        return repository.findPage(query);
-    }
-
     async get(id: number): Promise<JobWithSkills> {
         const repository = new JobRepository(db);
 
