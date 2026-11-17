@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { classifyHtmlJobAdvertisement } from '@/job-advertisements/classify-html-content';
-import { OpenAiJobAnalysisProvider } from '@/ai/openai-job-analysis-provider';
+import { OpenAiJobAnalysisProvider } from '@/ai/providers/openai-job-analysis-provider';
 
 /**
  * Acceptance tests for separating advertisement prose from supplementary facts.

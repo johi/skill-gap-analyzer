@@ -3,7 +3,7 @@ import { parse } from 'parse5';
 import { z } from 'zod';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
 import { extractJobAdvertisementDetails } from '@/job-advertisements/extract-content';
-import type { ContentClassificationProvider } from '@/ai/content-classification-provider';
+import type { ContentClassificationProvider } from '@/ai/contracts/content-classification-provider';
 
 type ContentRole = 'advertisement' | 'metadata' | 'noise' | 'unknown';
 
