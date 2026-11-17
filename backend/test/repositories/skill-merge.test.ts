@@ -4,9 +4,11 @@ import { asc, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { jobSkills, jobs, skills, userSkills } from '@/db/schema';
 import { SkillRepository } from '@/repositories/skill-repository';
+import { SkillService } from '@/services/skill-service';
 import { cleanDatabase } from '../helpers/database';
 
 const repository = new SkillRepository(db);
+const service = new SkillService(repository);
 
 async function skill(name: string) {
     return repository.create({ name, category: 'Programming Languages' });
@@ -26,7 +28,7 @@ async function associations(jobId: number) {
         .orderBy(asc(jobSkills.skillId));
 }
 
-describe('SkillRepository.merge', () => {
+describe('SkillService.merge transaction', () => {
     beforeEach(async () => {
         await cleanDatabase();
     });
@@ -53,7 +55,7 @@ describe('SkillRepository.merge', () => {
             { skillId: target.id, level: 2 },
         ]);
 
-        await repository.merge([sourceA.id, sourceB.id], target.id);
+        await service.merge([sourceA.id, sourceB.id], target.id);
 
         expect(await associations(firstJob.id)).toEqual([
             { skillId: target.id, requirement: 'must_have' },
@@ -83,7 +85,7 @@ describe('SkillRepository.merge', () => {
             { jobId: secondJob.id, skillId: sourceB.id, requirement: 'must_have' },
         ]);
 
-        await repository.merge([sourceA.id, sourceB.id], target.id);
+        await service.merge([sourceA.id, sourceB.id], target.id);
 
         // Existing target association wins, even when source was must_have.
         expect(await associations(firstJob.id)).toEqual([
@@ -104,7 +106,7 @@ describe('SkillRepository.merge', () => {
             jobId: existingJob.id, skillId: source.id, requirement: 'must_have',
         });
 
-        await expect(repository.merge([source.id, 999999], target.id)).rejects.toThrow();
+        await expect(service.merge([source.id, 999999], target.id)).rejects.toThrow();
         expect(await associations(existingJob.id)).toEqual([
             { skillId: source.id, requirement: 'must_have' },
         ]);
@@ -134,7 +136,7 @@ describe('SkillRepository.merge', () => {
             FOR EACH ROW EXECUTE FUNCTION uc43_reject_skill_delete()
         `);
 
-        await expect(repository.merge([source.id], target.id))
+        await expect(service.merge([source.id], target.id))
             .rejects.toThrow();
         expect(await associations(existingJob.id)).toEqual([
             { skillId: source.id, requirement: 'must_have' },

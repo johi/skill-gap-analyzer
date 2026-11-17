@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { mergeSkillsSchema } from '@/schemas/skill';
 import { SkillService } from '@/services/skill-service';
-import type { SkillRepository } from '@/repositories/skill-repository';
+import { SkillRepository } from '@/repositories/skill-repository';
+import type { Database } from '@/repositories/types';
 
-function createService(merge: ReturnType<typeof vi.fn>) {
-    return new SkillService({ merge } as unknown as SkillRepository);
+const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback({}));
+
+function createService(merge: SkillRepository['merge']) {
+    vi.spyOn(SkillRepository.prototype, 'merge').mockImplementation(merge);
+    transaction.mockClear();
+    return new SkillService({} as SkillRepository, { transaction } as unknown as Pick<Database, 'transaction'>);
 }
 
 describe('Merge skills service and validation', () => {
@@ -27,12 +32,14 @@ describe('Merge skills service and validation', () => {
         const merge = vi.fn().mockResolvedValue(undefined);
         await createService(merge).merge([1, 2], 3);
         expect(merge).toHaveBeenCalledExactlyOnceWith([1, 2], 3);
+        expect(transaction).toHaveBeenCalledOnce();
     });
 
     it('rejects merging a skill into itself', async () => {
         const merge = vi.fn();
         await expect(createService(merge).merge([1, 2], 2)).rejects.toThrow();
         expect(merge).not.toHaveBeenCalled();
+        expect(transaction).not.toHaveBeenCalled();
     });
 
     it('propagates repository failures', async () => {

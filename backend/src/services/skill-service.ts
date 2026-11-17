@@ -1,3 +1,5 @@
+import { db } from '@/db';
+import type { Database } from '@/repositories/types';
 import {
     NewSkill,
     Skill,
@@ -14,7 +16,8 @@ import {
 
 export class SkillService {
     constructor(
-        private readonly skillRepository: SkillRepository
+        private readonly skillRepository: SkillRepository,
+        private readonly database: Pick<Database, 'transaction'> = db
     ) {}
 
     async list(): Promise<Skill[]> {
@@ -91,7 +94,9 @@ export class SkillService {
         if (sourceIds.includes(targetId)) {
             throw new ValidationError('Target skill cannot be a source skill');
         }
-        await this.skillRepository.merge(sourceIds, targetId);
+        await this.database.transaction(async tx => {
+            await new SkillRepository(tx).merge(sourceIds, targetId);
+        });
     }
 
     async delete(id: number): Promise<void> {

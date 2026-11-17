@@ -82,42 +82,34 @@ export class SkillRepository {
 
 
     async merge(sourceIds: number[], targetId: number): Promise<void> {
-        // DatabaseExecutor is shared with transaction-scoped repositories; a
-        // merge specifically requires the root Drizzle executor.
-        const database = this.db as DatabaseExecutor & {
-            transaction<T>(callback: (tx: DatabaseExecutor) => Promise<T>): Promise<T>;
-        };
+        const ids = [...sourceIds, targetId];
+        const existing = await this.db.select({ id: skills.id })
+            .from(skills)
+            .where(inArray(skills.id, ids));
 
-        await database.transaction(async (tx) => {
-            const ids = [...sourceIds, targetId];
-            const existing = await tx.select({ id: skills.id })
-                .from(skills)
-                .where(inArray(skills.id, ids));
+        if (existing.length !== ids.length) {
+            throw new NotFoundError('One or more skills were not found');
+        }
 
-            if (existing.length !== ids.length) {
-                throw new NotFoundError('One or more skills were not found');
-            }
+        for (const sourceId of sourceIds) {
+            // An existing target association takes precedence. Discard
+            // the source association rather than changing its requirement.
+            const targetJobs = this.db.select({ jobId: jobSkills.jobId })
+                .from(jobSkills)
+                .where(eq(jobSkills.skillId, targetId));
 
-            for (const sourceId of sourceIds) {
-                // An existing target association takes precedence. Discard
-                // the source association rather than changing its requirement.
-                const targetJobs = tx.select({ jobId: jobSkills.jobId })
-                    .from(jobSkills)
-                    .where(eq(jobSkills.skillId, targetId));
+            await this.db.delete(jobSkills).where(and(
+                eq(jobSkills.skillId, sourceId),
+                inArray(jobSkills.jobId, targetJobs)
+            ));
 
-                await tx.delete(jobSkills).where(and(
-                    eq(jobSkills.skillId, sourceId),
-                    inArray(jobSkills.jobId, targetJobs)
-                ));
+            await this.db.update(jobSkills)
+                .set({ skillId: targetId })
+                .where(eq(jobSkills.skillId, sourceId));
+        }
 
-                await tx.update(jobSkills)
-                    .set({ skillId: targetId })
-                    .where(eq(jobSkills.skillId, sourceId));
-            }
-
-            // ON DELETE CASCADE removes source proficiency assessments.
-            await tx.delete(skills).where(inArray(skills.id, sourceIds));
-        });
+        // ON DELETE CASCADE removes source proficiency assessments.
+        await this.db.delete(skills).where(inArray(skills.id, sourceIds));
     }
 
     async delete(id: number): Promise<boolean> {
