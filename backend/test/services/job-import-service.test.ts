@@ -11,7 +11,6 @@ import type { SkillRepository } from '@/repositories/skill-repository';
 
 describe('JobImportService', () => {
     const skillRepository = {
-        findByName: vi.fn(),
         findAll: vi.fn(),
     };
 
@@ -40,16 +39,15 @@ describe('JobImportService', () => {
             jobs: [],
         });
 
-        expect(skillRepository.findByName)
-            .not.toHaveBeenCalled();
+        expect(skillRepository.findAll).toHaveBeenCalledTimes(1);
     });
 
     it('resolves an existing skill to its canonical skill', async () => {
-        skillRepository.findByName.mockResolvedValue({
+        skillRepository.findAll.mockResolvedValue([{
             id: 10,
             name: 'TypeScript',
             category: 'language',
-        });
+        }]);
 
         const job = {
             dateFound: '2026-10-05',
@@ -70,8 +68,7 @@ describe('JobImportService', () => {
             jobs: [job],
         });
 
-        expect(skillRepository.findByName)
-            .toHaveBeenCalledWith('typescript');
+        expect(skillRepository.findAll).toHaveBeenCalledTimes(1);
 
         expect(result.jobs[0].skills).toEqual([
             {
@@ -86,10 +83,6 @@ describe('JobImportService', () => {
     });
 
     it('marks an unknown skill as new without creating it', async () => {
-        skillRepository.findByName.mockResolvedValue(
-            undefined
-        );
-
         const job = {
             dateFound: '2026-10-05',
             company: 'Example Company',
@@ -122,11 +115,11 @@ describe('JobImportService', () => {
     });
 
     it('collapses duplicate canonical skills with the same requirement', async () => {
-        skillRepository.findByName.mockResolvedValue({
+        skillRepository.findAll.mockResolvedValue([{
             id: 10,
             name: 'TypeScript',
             category: 'language',
-        });
+        }]);
 
         const result = await service.analyze({
             version: 1,
@@ -161,11 +154,11 @@ describe('JobImportService', () => {
     });
 
     it('marks duplicate canonical skills with different requirements for review', async () => {
-        skillRepository.findByName.mockResolvedValue({
+        skillRepository.findAll.mockResolvedValue([{
             id: 10,
             name: 'TypeScript',
             category: 'language',
-        });
+        }]);
 
         const result = await service.analyze({
             version: 1,
@@ -203,10 +196,6 @@ describe('JobImportService', () => {
     });
 
     it('collapses duplicate unknown skills case-insensitively', async () => {
-        skillRepository.findByName.mockResolvedValue(
-            undefined
-        );
-
         const result = await service.analyze({
             version: 1,
             jobs: [{
@@ -238,5 +227,24 @@ describe('JobImportService', () => {
             canonicalName: 'Fastify',
             requirement: 'must_have',
         });
+    });
+    it('loads the catalogue once for multiple jobs and resolves names case-insensitively', async () => {
+        skillRepository.findAll.mockResolvedValue([{
+            id: 10,
+            name: 'TypeScript',
+            category: 'language',
+        }]);
+        const job = {
+            dateFound: '2026-10-05',
+            company: 'Example Company',
+            title: 'Backend Developer',
+            languageRequirements: [],
+            skills: [{ name: 'TYPESCRIPT', category: 'language', requirement: 'must_have' as const }],
+        };
+
+        const result = await service.analyze({ version: 1, jobs: [job, job] });
+
+        expect(skillRepository.findAll).toHaveBeenCalledTimes(1);
+        expect(result.jobs.map(item => item.skills[0].canonicalSkillId)).toEqual([10, 10]);
     });
 });

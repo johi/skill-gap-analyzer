@@ -26,16 +26,9 @@ export class JobImportReviewService {
             );
         }
 
-        for (
-            let jobIndex = 0;
-            jobIndex < analysis.jobs.length;
-            jobIndex++
-        ) {
-            const reviewedJob = reviewedImport.jobs.find(
-                (job) => job.jobIndex === jobIndex
-            );
-
-            if (!reviewedJob) {
+        const reviewedIndices = new Set(reviewedImport.jobs.map(job => job.jobIndex));
+        for (let jobIndex = 0; jobIndex < analysis.jobs.length; jobIndex++) {
+            if (!reviewedIndices.has(jobIndex)) {
                 throw new ValidationError(
                     `Missing review decision for job index ${jobIndex}`
                 );

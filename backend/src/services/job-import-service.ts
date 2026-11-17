@@ -1,32 +1,13 @@
 import { canonicalSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
-import { SkillRepository } from '@/repositories/skill-repository';
+import type { Skill, SkillRepository } from '@/repositories/skill-repository';
 import {
     JobDataset,
     JobImportAnalysis,
 } from '@/schemas/job-dataset';
 
 
-type SkillRequirement =
-    'must_have' |
-    'nice_to_have';
-
-export interface AnalyzedSkill {
-    name: string;
-    category: string;
-    requirement: SkillRequirement;
-    resolution:
-        'existing' |
-        'new' |
-        'review_required';
-    canonicalSkillId: number | null;
-    canonicalName: string;
-    conflictingRequirements?: SkillRequirement[];
-}
-
-export interface AnalyzedJob {
-    job: JobDataset['jobs'][number];
-    skills: AnalyzedSkill[];
-}
+export type AnalyzedSkill = JobImportAnalysis['jobs'][number]['skills'][number];
+export type AnalyzedJob = JobImportAnalysis['jobs'][number];
 
 export class JobImportService {
     constructor(
@@ -38,11 +19,12 @@ export class JobImportService {
     ): Promise<JobImportAnalysis> {
         const catalogue = await this.skillRepository.findAll();
         const existingCategories = uniqueSkillCategories(catalogue.map(skill => skill.category));
+        const skillsByName = new Map(catalogue.map(skill => [skill.name.toLowerCase(), skill]));
         const jobs: AnalyzedJob[] = [];
 
         for (const job of dataset.jobs) {
             const analyzedSkills =
-                await this.analyzeSkills(job.skills, existingCategories);
+                this.analyzeSkills(job.skills, existingCategories, skillsByName);
 
             jobs.push({
                 job,
@@ -66,17 +48,15 @@ export class JobImportService {
         };
     }
 
-    private async analyzeSkills(
+    private analyzeSkills(
         skills: JobDataset['jobs'][number]['skills'],
-        knownCategories: string[]
-    ): Promise<AnalyzedSkill[]> {
+        knownCategories: string[],
+        skillsByName: ReadonlyMap<string, Skill>
+    ): AnalyzedSkill[] {
         const analyzed = new Map<string, AnalyzedSkill>();
 
         for (const skill of skills) {
-            const existing =
-                await this.skillRepository.findByName(
-                    skill.name
-                );
+            const existing = skillsByName.get(skill.name.toLowerCase());
 
             const canonicalName =
                 existing?.name ?? skill.name;
@@ -110,7 +90,7 @@ export class JobImportService {
 
             const conflictingRequirements =
                 Array.from(
-                    new Set<SkillRequirement>([
+                    new Set<AnalyzedSkill['requirement']>([
                         previous.requirement,
                         skill.requirement,
                     ])
