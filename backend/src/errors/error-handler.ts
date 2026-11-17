@@ -6,13 +6,13 @@ import { JobAdvertisementRetrievalError } from '@/errors/job-advertisement-retri
 import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
-} from './job-analysis-errors';
+} from '@/errors/job-analysis-errors';
 
 import {
     ConflictError,
     NotFoundError,
     ValidationError,
-} from './application-errors';
+} from '@/errors/application-errors';
 
 export function registerErrorHandler(fastify: FastifyInstance): void {
     fastify.setErrorHandler(

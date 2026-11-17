@@ -11,7 +11,7 @@ import {
 
 import {
     DatabaseExecutor,
-} from '@/repositories/types';
+} from '@/db/types';
 
 import {
     CreateJobInput,

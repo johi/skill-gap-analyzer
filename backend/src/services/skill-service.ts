@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import type { Database } from '@/repositories/types';
+import type { Database } from '@/db/types';
 import {
     NewSkill,
     Skill,

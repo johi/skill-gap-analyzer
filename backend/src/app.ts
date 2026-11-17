@@ -1,34 +1,34 @@
 import Fastify, { FastifyServerOptions } from 'fastify';
 
-import { db } from './db';
+import { db } from '@/db';
 
-import { registerErrorHandler } from './errors/error-handler';
+import { registerErrorHandler } from '@/errors/error-handler';
 
-import { SkillRepository } from './repositories/skill-repository';
-import { UserSkillRepository } from './repositories/user-skill-repository';
-import { MarketAnalysisRepository } from './repositories/market-analysis-repository';
+import { SkillRepository } from '@/repositories/skill-repository';
+import { UserSkillRepository } from '@/repositories/user-skill-repository';
+import { MarketAnalysisRepository } from '@/repositories/market-analysis-repository';
 
-import { SkillService } from './services/skill-service';
-import { UserSkillService } from './services/user-skill-service';
-import { JobService } from './services/job-service';
-import { JobImportService } from './services/job-import-service';
-import { MarketAnalysisService } from './services/market-analysis-service';
-import { JobAnalysisService } from './services/job-analysis-service';
+import { SkillService } from '@/services/skill-service';
+import { UserSkillService } from '@/services/user-skill-service';
+import { JobService } from '@/services/job-service';
+import { JobImportService } from '@/services/job-import-service';
+import { MarketAnalysisService } from '@/services/market-analysis-service';
+import { JobAnalysisService } from '@/services/job-analysis-service';
 import { SkillGapAnalysisService } from '@/services/skill-gap-analysis-service';
 import { SkillPriorityService } from '@/services/skill-priority-service';
 import { JobMatchService } from '@/services/job-match-service';
 import { JobMatchAnalysisService } from '@/services/job-match-analysis-service';
 import { JobComparisonService } from '@/services/job-comparison-service';
 
-import { healthRoutes } from './routes/health';
-import { createJobRoutes } from './routes/jobs';
-import { createSkillRoutes } from './routes/skills';
-import { createUserSkillRoutes } from './routes/user-skills';
-import { createMarketAnalysisRoutes } from './routes/market-analysis';
-import { createJobImportRoutes } from './routes/job-import';
-import { createJobAnalysisRoutes } from './routes/job-analysis';
+import { healthRoutes } from '@/routes/health';
+import { createJobRoutes } from '@/routes/jobs';
+import { createSkillRoutes } from '@/routes/skills';
+import { createUserSkillRoutes } from '@/routes/user-skills';
+import { createMarketAnalysisRoutes } from '@/routes/market-analysis';
+import { createJobImportRoutes } from '@/routes/job-import';
+import { createJobAnalysisRoutes } from '@/routes/job-analysis';
 
-import { OpenAiJobAnalysisProvider } from './services/openai-job-analysis-provider';
+import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
 import { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
 
 export function buildApp(

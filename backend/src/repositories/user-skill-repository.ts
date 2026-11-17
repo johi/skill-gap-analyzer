@@ -4,7 +4,7 @@ import { pagination } from '@/lib/pagination';
 import type { ListPaginationQuery } from '@/schemas/list-pagination';
 
 import { skills, userSkills } from '@/db/schema';
-import { DatabaseExecutor } from './types';
+import { DatabaseExecutor } from '@/db/types';
 import type { SkillLevel } from '@/schemas/user-skill';
 
 export type UserSkill = typeof userSkills.$inferSelect;

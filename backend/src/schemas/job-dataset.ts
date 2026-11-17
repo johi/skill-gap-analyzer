@@ -3,8 +3,8 @@ import { z } from 'zod';
 import {
     createJobSchema,
     jobSkillRequirementSchema,
-} from './job';
-import { skillCategorySchema } from './skill';
+} from '@/schemas/job';
+import { skillCategorySchema } from '@/schemas/skill';
 
 export const jobDatasetVersionSchema = z.literal(1);
 

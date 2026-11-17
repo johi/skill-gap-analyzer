@@ -1,7 +1,7 @@
 import { FastifyPluginAsync } from 'fastify';
 import { sql } from 'drizzle-orm';
 
-import { db } from '../db';
+import { db } from '@/db';
 
 export const healthRoutes: FastifyPluginAsync = async (fastify) => {
     fastify.get('/', async () => {

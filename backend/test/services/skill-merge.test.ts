@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { mergeSkillsSchema } from '@/schemas/skill';
 import { SkillService } from '@/services/skill-service';
 import { SkillRepository } from '@/repositories/skill-repository';
-import type { Database } from '@/repositories/types';
+import type { Database } from '@/db/types';
 
 const transaction = vi.fn(async (callback: (tx: unknown) => Promise<unknown>) => callback({}));
 

@@ -1,8 +1,7 @@
-
 import { and, countDistinct, eq, ne, or, sql } from 'drizzle-orm';
 
 import { jobs, jobSkills, skills } from '@/db/schema';
-import type { DatabaseExecutor } from '@/repositories/types';
+import type { DatabaseExecutor } from '@/db/types';
 
 export interface SkillDemandRow {
     skillId: number;

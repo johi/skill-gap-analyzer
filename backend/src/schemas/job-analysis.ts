@@ -6,7 +6,7 @@ import {
     languageRequirementSchema,
     senioritySchema,
     workModelSchema,
-} from './job';
+} from '@/schemas/job';
 
 // This is a proposal, NOT a CreateJobInput. Missing facts remain null.
 export const jobAdvertisementRequestSchema = z.object({

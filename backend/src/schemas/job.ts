@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { skillCategorySchema } from './skill';
+import { skillCategorySchema } from '@/schemas/skill';
 
 export const jobSkillRequirementSchema = z.enum([
     'must_have',

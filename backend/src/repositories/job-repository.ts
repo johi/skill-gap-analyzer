@@ -9,7 +9,7 @@ import {
     skills,
 } from '@/db/schema';
 
-import { DatabaseExecutor } from './types';
+import type { DatabaseExecutor } from '@/db/types';
 
 export type Job = typeof jobs.$inferSelect;
 export type NewJob = typeof jobs.$inferInsert;
@@ -266,4 +266,3 @@ export class JobRepository {
             );
     }
 }
-

@@ -1,9 +1,9 @@
 import { listPaginationSchema, validateSort } from '@/schemas/list-pagination';
 import { FastifyPluginAsync } from 'fastify';
 
-import { UserSkillService } from '../services/user-skill-service';
-import { skillIdParamSchema } from '../schemas/common';
-import { userSkillSchema } from '../schemas/user-skill';
+import { UserSkillService } from '@/services/user-skill-service';
+import { skillIdParamSchema } from '@/schemas/common';
+import { userSkillSchema } from '@/schemas/user-skill';
 
 export function createUserSkillRoutes(
     userSkillService: UserSkillService

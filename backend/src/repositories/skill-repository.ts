@@ -5,7 +5,7 @@ import type { ListPaginationQuery } from '@/schemas/list-pagination';
 
 import { jobSkills, skills } from '@/db/schema';
 import { NotFoundError } from '@/errors/application-errors';
-import { DatabaseExecutor } from './types';
+import { DatabaseExecutor } from '@/db/types';
 
 export type Skill = typeof skills.$inferSelect;
 export type NewSkill = typeof skills.$inferInsert;
