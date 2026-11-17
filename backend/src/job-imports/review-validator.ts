@@ -6,7 +6,7 @@ import {
 
 import { ValidationError } from '@/errors/application-errors';
 
-export class JobImportReviewService {
+export class JobImportReviewValidator {
     validate(
         analysis: JobImportAnalysis,
         reviewedImport: ReviewedImport

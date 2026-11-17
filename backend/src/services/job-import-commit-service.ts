@@ -3,7 +3,7 @@ import { jobs } from '@/db/schema';
 
 import { JobService } from '@/services/job-service';
 import { JobImportService } from '@/services/job-import-service';
-import { JobImportReviewService } from '@/services/job-import-review-service';
+import { JobImportReviewValidator } from '@/job-imports/review-validator';
 
 import { SkillRepository } from '@/repositories/skill-repository';
 
@@ -18,7 +18,7 @@ export class JobImportCommitService {
     constructor(
         private readonly jobService = new JobService(),
         private readonly reviewService =
-        new JobImportReviewService()
+        new JobImportReviewValidator()
     ) {}
 
     async commit(

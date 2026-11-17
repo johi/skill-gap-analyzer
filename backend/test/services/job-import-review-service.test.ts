@@ -4,14 +4,14 @@ import {
     it,
 } from 'vitest';
 
-import { JobImportReviewService } from '@/services/job-import-review-service';
+import { JobImportReviewValidator } from '@/job-imports/review-validator';
 import {
     JobImportAnalysis,
     ReviewedImport,
 } from '@/schemas/job-dataset';
 
-describe('JobImportReviewService', () => {
-    const service = new JobImportReviewService();
+describe('JobImportReviewValidator', () => {
+    const service = new JobImportReviewValidator();
 
     const analysis: JobImportAnalysis = {
         version: 1,
