@@ -19,7 +19,7 @@ import {
     UpdateJobInput,
 } from '@/schemas/job';
 
-import { canonicalSkillCategory, normalizeSkillCategory } from '@/services/skill-category';
+import { canonicalSkillCategory, normalizeSkillCategory } from '@/skills/skill-category';
 
 import {
     ConflictError,

@@ -1,4 +1,4 @@
-import { canonicalSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
+import { canonicalSkillCategory, uniqueSkillCategories } from '@/skills/skill-category';
 import type { Skill, SkillRepository } from '@/repositories/skill-repository';
 import {
     JobDataset,

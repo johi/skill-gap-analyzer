@@ -7,7 +7,7 @@ import {
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
 import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/ai/job-analysis-provider';
 import type { SkillRepository } from '@/repositories/skill-repository';
-import { canonicalSkillCategory, categoryKey, normalizeSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
+import { canonicalSkillCategory, categoryKey, normalizeSkillCategory, uniqueSkillCategories } from '@/skills/skill-category';
 
 // Disabled by default. Logs validation structure only, never returned field values.
 function logAnalysisValidation(stage: string, details: object): void {

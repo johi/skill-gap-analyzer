@@ -6,7 +6,7 @@ import {
     SkillRepository,
 } from '@/repositories/skill-repository';
 
-import { canonicalSkillCategory } from '@/services/skill-category';
+import { canonicalSkillCategory } from '@/skills/skill-category';
 
 import {
     ConflictError,

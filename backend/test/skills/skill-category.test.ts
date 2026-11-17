@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalSkillCategory, normalizeSkillCategory, uniqueSkillCategories } from '@/services/skill-category';
+import { canonicalSkillCategory, normalizeSkillCategory, uniqueSkillCategories } from '@/skills/skill-category';
 import { skillCategorySchema } from '@/schemas/skill';
 
 describe('industry-independent skill categories', () => {

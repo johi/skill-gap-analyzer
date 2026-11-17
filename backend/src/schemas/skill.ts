@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { normalizeSkillCategory } from '@/services/skill-category';
+import { normalizeSkillCategory } from '@/skills/skill-category';
 
 export const skillCategorySchema = z.string()
     .transform(normalizeSkillCategory)
