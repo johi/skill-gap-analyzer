@@ -29,7 +29,7 @@ import { createJobImportRoutes } from '@/routes/job-import';
 import { createJobAnalysisRoutes } from '@/routes/job-analysis';
 
 import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
-import { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
+import { JobAdvertisementUrlFetcher } from '@/job-advertisements/job-advertisement-url-fetcher';
 
 export function buildApp(
     options: FastifyServerOptions = {

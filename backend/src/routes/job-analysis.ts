@@ -1,6 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify';
 import { jobAdvertisementRequestSchema, jobUrlAnalysisRequestSchema } from '@/schemas/job-analysis';
-import type { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
+import type { JobAdvertisementUrlFetcher } from '@/job-advertisements/job-advertisement-url-fetcher';
 import type { JobAnalysisService } from '@/services/job-analysis-service';
 
 export function createJobAnalysisRoutes(

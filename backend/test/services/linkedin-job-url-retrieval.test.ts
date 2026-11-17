@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { JobAdvertisementUrlFetcher } from '@/services/job-advertisement-url-fetcher';
+import { JobAdvertisementUrlFetcher } from '@/job-advertisements/job-advertisement-url-fetcher';
 import type { HostResolver, PageTransport } from '@/lib/secure-http-fetch';
 
 const jobId = '1234567890';
