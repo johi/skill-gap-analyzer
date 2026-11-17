@@ -44,9 +44,7 @@ export class SkillService {
             );
         }
 
-        const known = (await this.skillRepository.findAll()).map(skill => skill.category);
-        const category = canonicalSkillCategory(data.category, known);
-        if (!category) throw new ValidationError('Skill category is required');
+        const category = await this.canonicalCategory(data.category);
         return this.skillRepository.create({ ...data, category });
     }
 
@@ -72,9 +70,7 @@ export class SkillService {
             );
         }
 
-        const known = (await this.skillRepository.findAll()).map(skill => skill.category);
-        const category = canonicalSkillCategory(data.category, known);
-        if (!category) throw new ValidationError('Skill category is required');
+        const category = await this.canonicalCategory(data.category);
         const updated = await this.skillRepository.update(id, { ...data, category });
 
         if (!updated) {
@@ -82,6 +78,13 @@ export class SkillService {
         }
 
         return updated;
+    }
+
+    private async canonicalCategory(value: string): Promise<string> {
+        const known = (await this.skillRepository.findAll()).map(skill => skill.category);
+        const category = canonicalSkillCategory(value, known);
+        if (!category) throw new ValidationError('Skill category is required');
+        return category;
     }
 
     async merge(sourceIds: number[], targetId: number): Promise<void> {

@@ -178,7 +178,9 @@ export class JobService {
         }> = [];
 
         const seen = new Set<string>();
-        const knownCategories = (await skillRepository.findAll()).map(skill => skill.category);
+        const catalogue = await skillRepository.findAll();
+        const knownCategories = catalogue.map(skill => skill.category);
+        const skillsByName = new Map(catalogue.map(skill => [skill.name.toLowerCase(), skill]));
 
         for (const requestedSkill of requestedSkills) {
             const normalizedName =
@@ -192,9 +194,10 @@ export class JobService {
 
             seen.add(normalizedName);
 
-            let skill = await skillRepository.findByName(
-                requestedSkill.name
-            );
+            // ILIKE treats % and _ as patterns; retain repository semantics for those names.
+            let skill = /[%_]/.test(requestedSkill.name)
+                ? await skillRepository.findByName(requestedSkill.name)
+                : skillsByName.get(normalizedName);
 
             if (skill && !normalizeSkillCategory(skill.category)) {
                 throw new ValidationError(`Existing skill '${skill.name}' has no valid category; correct it in the skill catalogue`);
@@ -207,6 +210,7 @@ export class JobService {
                     name: requestedSkill.name,
                     category,
                 });
+                skillsByName.set(normalizedName, skill);
             }
 
             if (!knownCategories.includes(skill.category)) knownCategories.push(skill.category);

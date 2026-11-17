@@ -248,11 +248,11 @@ describe('JobService', () => {
     it('reuses existing skills', async () => {
         mocks.jobRepository.create.mockResolvedValue(job);
 
-        mocks.skillRepository.findByName.mockResolvedValue({
+        mocks.skillRepository.findAll.mockResolvedValue([{
             id: 10,
             name: 'TypeScript',
             category: 'language',
-        });
+        }]);
 
         mocks.jobRepository.findById.mockResolvedValue(
             jobWithSkills
@@ -267,8 +267,8 @@ describe('JobService', () => {
             }],
         });
 
-        expect(mocks.skillRepository.findByName)
-            .toHaveBeenCalledWith('TypeScript');
+        expect(mocks.skillRepository.findAll).toHaveBeenCalledOnce();
+        expect(mocks.skillRepository.findByName).not.toHaveBeenCalled();
 
         expect(mocks.skillRepository.create)
             .not.toHaveBeenCalled();
@@ -282,10 +282,6 @@ describe('JobService', () => {
 
     it('creates missing skills', async () => {
         mocks.jobRepository.create.mockResolvedValue(job);
-
-        mocks.skillRepository.findByName.mockResolvedValue(
-            undefined
-        );
 
         mocks.skillRepository.create.mockResolvedValue({
             id: 20,
@@ -319,14 +315,55 @@ describe('JobService', () => {
             }]);
     });
 
+    it('resolves multiple catalogue skills without per-skill queries', async () => {
+        mocks.jobRepository.create.mockResolvedValue(job);
+        mocks.jobRepository.findById.mockResolvedValue(jobWithSkills);
+        mocks.skillRepository.findAll.mockResolvedValue([
+            { id: 10, name: 'TypeScript', category: 'Language' },
+            { id: 11, name: 'PostgreSQL', category: 'Database' },
+        ]);
+
+        await service.create({
+            ...input,
+            skills: [
+                { name: 'typescript', category: 'language', requirement: 'must_have' },
+                { name: 'POSTGRESQL', category: 'database', requirement: 'nice_to_have' },
+            ],
+        });
+
+        expect(mocks.skillRepository.findAll).toHaveBeenCalledOnce();
+        expect(mocks.skillRepository.findByName).not.toHaveBeenCalled();
+        expect(mocks.skillRepository.create).not.toHaveBeenCalled();
+        expect(mocks.jobRepository.replaceSkills).toHaveBeenCalledWith(1, [
+            { skillId: 10, requirement: 'must_have' },
+            { skillId: 11, requirement: 'nice_to_have' },
+        ]);
+    });
+
+    it('preserves ILIKE pattern matching for skill names containing underscores', async () => {
+        mocks.jobRepository.create.mockResolvedValue(job);
+        mocks.jobRepository.findById.mockResolvedValue(jobWithSkills);
+        mocks.skillRepository.findByName.mockResolvedValue({
+            id: 12, name: 'CI/CD', category: 'Tooling',
+        });
+        await service.create({
+            ...input,
+            skills: [{ name: 'CI_CD', category: 'Tooling', requirement: 'must_have' }],
+        });
+        expect(mocks.skillRepository.findByName).toHaveBeenCalledWith('CI_CD');
+        expect(mocks.jobRepository.replaceSkills).toHaveBeenCalledWith(1, [
+            { skillId: 12, requirement: 'must_have' },
+        ]);
+    });
+
     it('rejects duplicate skill names case-insensitively', async () => {
         mocks.jobRepository.create.mockResolvedValue(job);
 
-        mocks.skillRepository.findByName.mockResolvedValue({
+        mocks.skillRepository.findAll.mockResolvedValue([{
             id: 10,
             name: 'TypeScript',
             category: 'language',
-        });
+        }]);
 
         await expect(
             service.create({
@@ -353,11 +390,11 @@ describe('JobService', () => {
     it('rejects duplicate skill names with whitespace', async () => {
         mocks.jobRepository.create.mockResolvedValue(job);
 
-        mocks.skillRepository.findByName.mockResolvedValue({
+        mocks.skillRepository.findAll.mockResolvedValue([{
             id: 10,
             name: 'TypeScript',
             category: 'language',
-        });
+        }]);
 
         await expect(
             service.create(createJobSchema.parse({
