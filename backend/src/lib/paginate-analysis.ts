@@ -1,5 +1,5 @@
 import type { ListPaginationQuery } from '@/schemas/list-pagination';
-import { pagination } from '@/schemas/list-pagination';
+import { pagination } from '@/lib/pagination';
 
 export function filterSortAndPaginateAnalysis<
     R extends { skills: Array<{ skillId: number; name: string }> },

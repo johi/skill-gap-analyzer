@@ -2,7 +2,7 @@ import { db } from '@/db';
 import { JobRepository, type JobWithSkills } from '@/repositories/job-repository';
 import type { UserSkillRepository } from '@/repositories/user-skill-repository';
 import type { ListJobsQuery } from '@/schemas/job';
-import { pagination } from '@/schemas/list-pagination';
+import { pagination } from '@/lib/pagination';
 import { JobMatchService } from '@/services/job-match-service';
 
 export interface ComparedJob extends JobWithSkills {

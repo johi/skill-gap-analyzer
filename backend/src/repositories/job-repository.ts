@@ -1,6 +1,6 @@
 import { and, asc, count, desc, eq, ilike, inArray, or, sql } from 'drizzle-orm';
 import type { ListJobsQuery } from '@/schemas/job';
-import { pagination } from '@/schemas/list-pagination';
+import { pagination } from '@/lib/pagination';
 import type { JobSkillRequirement } from '@/services/job-match-service';
 import { containsLikePattern } from '@/db/sql-pattern';
 

@@ -1,6 +1,6 @@
 import { asc, desc, eq, ilike, count } from 'drizzle-orm';
 import { containsLikePattern } from '@/db/sql-pattern';
-import { pagination } from '@/schemas/list-pagination';
+import { pagination } from '@/lib/pagination';
 import type { ListPaginationQuery } from '@/schemas/list-pagination';
 
 import { skills, userSkills } from '@/db/schema';
