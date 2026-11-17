@@ -28,7 +28,7 @@ import { createMarketAnalysisRoutes } from '@/routes/market-analysis';
 import { createJobImportRoutes } from '@/routes/job-import';
 import { createJobAnalysisRoutes } from '@/routes/job-analysis';
 
-import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
+import { OpenAiJobAnalysisProvider } from '@/ai/openai-job-analysis-provider';
 import { JobAdvertisementUrlFetcher } from '@/job-advertisements/job-advertisement-url-fetcher';
 
 export function buildApp(

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { OpenAiJobAnalysisProvider } from '@/services/openai-job-analysis-provider';
+import { OpenAiJobAnalysisProvider } from '@/ai/openai-job-analysis-provider';
 import { jobExtractionJsonSchema } from '@/ai/schemas/extract-job-details';
 import { jobAnalysisInstructions } from '@/ai/instructions/extract-job-details';
 import {
