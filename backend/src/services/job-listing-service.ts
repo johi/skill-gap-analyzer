@@ -5,7 +5,7 @@ import type { ListJobsQuery } from '@/schemas/job';
 import { pagination } from '@/lib/pagination';
 import { JobMatchService } from '@/services/job-match-service';
 
-export interface ComparedJob extends JobWithSkills {
+export interface JobListItem extends JobWithSkills {
     matchPercentage: number | null;
     assessmentCoverage: number;
 }
@@ -17,7 +17,7 @@ function compareNullable(a: number | string | null, b: number | string | null, d
     return a < b ? -direction : a > b ? direction : 0;
 }
 
-export class JobComparisonService {
+export class JobListingService {
     constructor(
         private readonly userSkillRepository: UserSkillRepository,
         private readonly matchService: JobMatchService,
@@ -37,7 +37,7 @@ export class JobComparisonService {
             (!query.employmentType || job.employmentType === query.employmentType) &&
             (!query.applyStatus || job.applyStatus === query.applyStatus)
         );
-        const compared: ComparedJob[] = filtered.map(job => {
+        const compared: JobListItem[] = filtered.map(job => {
             const { matchPercentage, assessmentCoverage } = this.matchService.calculate(job.skills, assessments);
             return { ...job, matchPercentage, assessmentCoverage };
         });

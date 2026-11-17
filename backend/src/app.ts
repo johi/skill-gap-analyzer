@@ -18,7 +18,7 @@ import { SkillGapAnalysisService } from '@/services/skill-gap-analysis-service';
 import { SkillPriorityService } from '@/services/skill-priority-service';
 import { JobMatchService } from '@/services/job-match-service';
 import { JobMatchAnalysisService } from '@/services/job-match-analysis-service';
-import { JobComparisonService } from '@/services/job-comparison-service';
+import { JobListingService } from '@/services/job-listing-service';
 
 import { healthRoutes } from '@/routes/health';
 import { createJobRoutes } from '@/routes/jobs';
@@ -108,7 +108,7 @@ export function buildApp(
     );
 
     fastify.register(
-        createJobRoutes(jobService, jobMatchAnalysisService, new JobComparisonService(userSkillRepository, jobMatchService)),
+        createJobRoutes(jobService, jobMatchAnalysisService, new JobListingService(userSkillRepository, jobMatchService)),
         {
             prefix: '/api/v1/jobs',
         }

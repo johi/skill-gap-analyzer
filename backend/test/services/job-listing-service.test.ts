@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { JobComparisonService } from '@/services/job-comparison-service';
+import { JobListingService } from '@/services/job-listing-service';
 import { JobMatchService } from '@/services/job-match-service';
 import { listJobsQuerySchema } from '@/schemas/job';
 import type { JobRepository } from '@/repositories/job-repository';
@@ -24,11 +24,11 @@ function setup() {
     const assessments = { findAll: async () => [
         { skillId: 1, level: 4 }, { skillId: 2, level: 2 },
     ] } as unknown as UserSkillRepository;
-    return new JobComparisonService(assessments, new JobMatchService(), repository);
+    return new JobListingService(assessments, new JobMatchService(), repository);
 }
 const query = (options: Record<string, unknown> = {}) => listJobsQuerySchema.parse(options);
 
-describe('JobComparisonService', () => {
+describe('JobListingService', () => {
     it('calculates all matches and preserves unassessed results', async () => {
         const result = await setup().list(query());
         expect(result.data.find(j => j.id === 1)).toMatchObject({ matchPercentage: 75, assessmentCoverage: 100 });
