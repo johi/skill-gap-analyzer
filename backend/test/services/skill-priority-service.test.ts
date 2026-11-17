@@ -172,6 +172,38 @@ describe('SkillPriorityService', () => {
             .toEqual(['Docker', 'PHP', 'Rust']);
     });
 
+    it('sorts multiple unassessed skills by name after assessed skills', async () => {
+        const skill = (skillId: number, name: string, assessed: boolean) => ({
+            skillId,
+            name,
+            category: 'Programming Languages',
+            jobCount: 5,
+            mustHaveCount: 5,
+            niceToHaveCount: 0,
+            demandPercentage: 50,
+            proficiency: assessed ? 2 : null,
+            gap: assessed ? 3 : null,
+            status: assessed ? 'assessed' : 'unassessed',
+        });
+
+        skillGapAnalysisService.getSkillGaps.mockResolvedValue({
+            totalJobsAnalyzed: 10,
+            skills: [
+                skill(1, 'Rust', false),
+                skill(2, 'Zig', false),
+                skill(3, 'Docker', true),
+                skill(4, 'Ada', false),
+            ],
+        });
+
+        const result = await service.getSkillPriorities();
+
+        expect(result.skills.map((entry) => entry.name))
+            .toEqual(['Docker', 'Ada', 'Rust', 'Zig']);
+        expect(result.skills.slice(1).every((entry) => entry.priorityScore === null))
+            .toBe(true);
+    });
+
     it('propagates analysis errors', async () => {
         const error = new Error('Analysis unavailable');
 

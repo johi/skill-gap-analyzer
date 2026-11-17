@@ -73,6 +73,9 @@ export class SkillPriorityService {
         }
 
         skills.sort((a, b) => {
+            if (a.priorityScore === null && b.priorityScore === null) {
+                return a.name.localeCompare(b.name);
+            }
             if (a.priorityScore === null) return 1;
             if (b.priorityScore === null) return -1;
 
