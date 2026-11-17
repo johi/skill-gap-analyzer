@@ -2,14 +2,16 @@ import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
 } from '@/errors/job-analysis-errors';
-import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/ai/contracts/job-analysis-provider';
-import { jobExtractionJsonSchema } from '@/ai/schemas/extract-job-details';
-import { skillCategorizationJsonSchema } from '@/ai/schemas/categorize-skills';
-import { jobAnalysisInstructions } from '@/ai/instructions/extract-job-details';
-import { jobAnalysisCorrectionInstructions } from '@/ai/instructions/correct-job-extraction';
-import { skillCategorizationInstructions } from '@/ai/instructions/categorize-skills';
-import { contentClassificationInstructions } from '@/ai/instructions/classify-advertisement-content';
-import { contentClassificationJsonSchema } from '@/ai/schemas/classify-advertisement-content';
+import type { JobExtractionProvider, AnalysisValidationIssue } from '@/ai/contracts/job-extraction-provider';
+import type { SkillCategorizationProvider } from '@/ai/contracts/skill-categorization-provider';
+import type { ContentClassificationProvider } from '@/ai/contracts/content-classification-provider';
+import { jobExtractionJsonSchema } from '@/ai/providers/openai/schemas/extract-job-details';
+import { skillCategorizationJsonSchema } from '@/ai/providers/openai/schemas/categorize-skills';
+import { jobAnalysisInstructions } from '@/ai/providers/openai/instructions/extract-job-details';
+import { jobAnalysisCorrectionInstructions } from '@/ai/providers/openai/instructions/correct-job-extraction';
+import { skillCategorizationInstructions } from '@/ai/providers/openai/instructions/categorize-skills';
+import { contentClassificationInstructions } from '@/ai/providers/openai/instructions/classify-advertisement-content';
+import { contentClassificationJsonSchema } from '@/ai/providers/openai/schemas/classify-advertisement-content';
 
 interface OpenAiResponse {
     status?: string;
@@ -21,7 +23,7 @@ interface OpenAiResponse {
     }>;
 }
 
-export class OpenAiJobAnalysisProvider implements JobAnalysisProvider {
+export class OpenAiJobAnalysisProvider implements JobExtractionProvider, SkillCategorizationProvider, ContentClassificationProvider {
     constructor(
         private readonly apiKey = process.env.OPENAI_API_KEY,
         private readonly model = process.env.OPENAI_MODEL || 'gpt-4o-mini',

@@ -5,7 +5,8 @@ import {
     type JobAdvertisementAnalysis,
 } from '@/schemas/job-analysis';
 import { JobAnalysisInvalidResponseError } from '@/errors/job-analysis-errors';
-import type { JobAnalysisProvider, AnalysisValidationIssue } from '@/ai/contracts/job-analysis-provider';
+import type { JobExtractionProvider, AnalysisValidationIssue } from '@/ai/contracts/job-extraction-provider';
+import type { SkillCategorizationProvider } from '@/ai/contracts/skill-categorization-provider';
 import type { SkillRepository } from '@/repositories/skill-repository';
 import { canonicalSkillCategory, categoryKey, normalizeSkillCategory, uniqueSkillCategories } from '@/skills/skill-category';
 
@@ -65,7 +66,7 @@ const categorizationSchema = z.object({
 
 export class JobAnalysisService {
     constructor(
-        private readonly provider: JobAnalysisProvider,
+        private readonly provider: JobExtractionProvider & SkillCategorizationProvider,
         private readonly skillCatalogue?: Pick<SkillRepository, 'findAll'>
     ) {}
 
