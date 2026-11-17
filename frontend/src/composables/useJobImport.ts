@@ -1,12 +1,20 @@
 import { categoryKey } from '@/services/skill-category';
 import { computed, ref } from 'vue';
 import { ZodError } from 'zod';
+import type { ZodIssue } from 'zod';
 import { ApiError } from '@/api/client';
 import { analyzeJobImport, commitJobImport } from '@/api/job-import';
 import { normalizeReviewedJob, validateReviewedJob } from '@/services/job-import/reviewed-job';
 import type { ReviewedJob, JobReviewStatus } from '@/services/job-import/reviewed-job';
 import { importedJobSchema, jobDatasetSchema, reviewedImportSchema } from '@/schemas/job-import';
 import type { ImportedJob, JobDataset, JobImportAnalysis, JobImportCommitResponse } from '@/schemas/job-import';
+
+function formatValidationIssues(issues: readonly ZodIssue[]): string[] {
+  return issues.map(issue => {
+    const path = issue.path.join('.');
+    return path ? `${path}: ${issue.message}` : issue.message;
+  });
+}
 
 export function useJobImport() {
   const selectedFileName = ref<string | null>(null);
@@ -160,13 +168,7 @@ export function useJobImport() {
     const parsed = importedJobSchema.safeParse(job);
 
     if (!parsed.success) {
-      validationErrors.value = parsed.error.issues.map(issue => {
-        const path = issue.path.join('.');
-
-        return path
-            ? `${path}: ${issue.message}`
-            : issue.message;
-      });
+      validationErrors.value = formatValidationIssues(parsed.error.issues);
 
       return;
     }
@@ -254,13 +256,7 @@ export function useJobImport() {
       dataset.value = jobDatasetSchema.parse(parsed);
     } catch (err) {
       if (err instanceof ZodError) {
-        validationErrors.value = err.issues.map(issue => {
-          const path = issue.path.join('.');
-
-          return path
-              ? `${path}: ${issue.message}`
-              : issue.message;
-        });
+        validationErrors.value = formatValidationIssues(err.issues);
 
         return;
       }
@@ -341,13 +337,7 @@ export function useJobImport() {
     });
 
     if (!reviewedImport.success) {
-      validationErrors.value = reviewedImport.error.issues.map(issue => {
-        const path = issue.path.join('.');
-
-        return path
-            ? `${path}: ${issue.message}`
-            : issue.message;
-      });
+      validationErrors.value = formatValidationIssues(reviewedImport.error.issues);
 
       showConfirmation.value = false;
       return;
