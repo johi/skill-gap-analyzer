@@ -70,6 +70,19 @@ describe('SkillRepository', () => {
         });
     });
 
+    it('matches SQL wildcard characters literally', async () => {
+        await repository.create({ name: 'CI/CD', category: 'Tooling' });
+        await repository.create({ name: 'CI_CD', category: 'Tooling' });
+        await repository.create({ name: '100% TypeScript', category: 'Tooling' });
+        await repository.create({ name: 'Path\\Tools', category: 'Tooling' });
+
+        expect((await repository.findByName('ci_cd'))?.name).toBe('CI_CD');
+        expect((await repository.findByName('100% typescript'))?.name).toBe('100% TypeScript');
+        expect((await repository.findByName('path\\tools'))?.name).toBe('Path\\Tools');
+        expect(await repository.findByName('CI%CD')).toBeUndefined();
+        expect(await repository.findByName('Path_Tools')).toBeUndefined();
+    });
+
     it('returns skills ordered by name', async () => {
         await repository.create({
             name: 'TypeScript',

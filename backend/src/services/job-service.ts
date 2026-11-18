@@ -187,10 +187,7 @@ export class JobService {
 
             seen.add(normalizedName);
 
-            // ILIKE treats % and _ as patterns; retain repository semantics for those names.
-            let skill = /[%_]/.test(requestedSkill.name)
-                ? await skillRepository.findByName(requestedSkill.name)
-                : skillsByName.get(normalizedName);
+            let skill = skillsByName.get(normalizedName);
 
             if (skill && !normalizeSkillCategory(skill.category)) {
                 throw new ValidationError(`Existing skill '${skill.name}' has no valid category; correct it in the skill catalogue`);

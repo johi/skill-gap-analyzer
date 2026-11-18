@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, ilike, inArray, count } from 'drizzle-orm';
-import { containsLikePattern } from '@/db/sql-pattern';
+import { containsLikePattern, escapeLikePattern } from '@/db/sql-pattern';
 import { pagination } from '@/lib/pagination';
 import type { ListPaginationQuery } from '@/schemas/list-pagination';
 
@@ -49,7 +49,7 @@ export class SkillRepository {
         const [skill] = await this.db
             .select()
             .from(skills)
-            .where(ilike(skills.name, name))
+            .where(ilike(skills.name, escapeLikePattern(name)))
             .limit(1);
 
         return skill;

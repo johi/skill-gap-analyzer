@@ -326,17 +326,44 @@ describe('JobService', () => {
         ]);
     });
 
-    it('preserves ILIKE pattern matching for skill names containing underscores', async () => {
+    it('does not match a different catalogue skill through SQL wildcards', async () => {
         mocks.jobRepository.create.mockResolvedValue(job);
         mocks.jobRepository.findById.mockResolvedValue(jobWithSkills);
-        mocks.skillRepository.findByName.mockResolvedValue({
-            id: 12, name: 'CI/CD', category: 'Tooling',
+        mocks.skillRepository.findAll.mockResolvedValue([
+            { id: 12, name: 'CI/CD', category: 'Tooling' },
+        ]);
+        mocks.skillRepository.create.mockResolvedValue({
+            id: 13, name: 'CI_CD', category: 'Tooling',
         });
+
         await service.create({
             ...input,
             skills: [{ name: 'CI_CD', category: 'Tooling', requirement: 'must_have' }],
         });
-        expect(mocks.skillRepository.findByName).toHaveBeenCalledWith('CI_CD');
+
+        expect(mocks.skillRepository.findByName).not.toHaveBeenCalled();
+        expect(mocks.skillRepository.create).toHaveBeenCalledWith({
+            name: 'CI_CD', category: 'Tooling',
+        });
+        expect(mocks.jobRepository.replaceSkills).toHaveBeenCalledWith(1, [
+            { skillId: 13, requirement: 'must_have' },
+        ]);
+    });
+
+    it('reuses an exact catalogue skill containing an underscore', async () => {
+        mocks.jobRepository.create.mockResolvedValue(job);
+        mocks.jobRepository.findById.mockResolvedValue(jobWithSkills);
+        mocks.skillRepository.findAll.mockResolvedValue([
+            { id: 12, name: 'CI_CD', category: 'Tooling' },
+        ]);
+
+        await service.create({
+            ...input,
+            skills: [{ name: 'ci_cd', category: 'Tooling', requirement: 'must_have' }],
+        });
+
+        expect(mocks.skillRepository.findByName).not.toHaveBeenCalled();
+        expect(mocks.skillRepository.create).not.toHaveBeenCalled();
         expect(mocks.jobRepository.replaceSkills).toHaveBeenCalledWith(1, [
             { skillId: 12, requirement: 'must_have' },
         ]);
