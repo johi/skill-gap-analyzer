@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { OpenAiJobAnalysisProvider } from '@/ai/providers/openai/openai-job-analysis-provider';
-import { jobExtractionJsonSchema } from '@/ai/providers/openai/schemas/extract-job-details';
-import { jobAnalysisInstructions } from '@/ai/providers/openai/instructions/extract-job-details';
+import { OpenAiProvider } from '@/ai/providers/openai/openai-provider';
+import { jobExtractionJsonSchema } from '@/ai/providers/openai/schemas/job-extraction';
+import { jobExtractionInstructions } from '@/ai/providers/openai/instructions/job-extraction';
 import {
     JobAnalysisInvalidResponseError,
     JobAnalysisUnavailableError,
@@ -16,10 +16,10 @@ function response(text: string, status = 'completed'): Response {
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
 }
 
-describe('OpenAiJobAnalysisProvider', () => {
+describe('OpenAiProvider', () => {
     it('uses structured Responses API output, keeps API key on backend, and disables storage', async () => {
         const fetchMock = vi.fn().mockResolvedValue(response('{"company":"Example"}'));
-        const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+        const provider = new OpenAiProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
         expect(await provider.analyze(advertisement)).toEqual({ company: 'Example' });
         const [url, init] = fetchMock.mock.calls[0]!;
         expect(url).toBe('https://api.openai.com/v1/responses');
@@ -40,7 +40,7 @@ describe('OpenAiJobAnalysisProvider', () => {
             expect(body.text.format.schema.properties).not.toHaveProperty(obsoleteField);
             expect(body.text.format.schema.required).not.toContain(obsoleteField);
         }
-        expect(body.instructions).toContain(jobAnalysisInstructions);
+        expect(body.instructions).toContain(jobExtractionInstructions);
         expect(body.instructions).toContain(`Current date (UTC): ${new Date().toISOString().slice(0, 10)}`);
     });
 
@@ -49,7 +49,7 @@ describe('OpenAiJobAnalysisProvider', () => {
         try {
             vi.setSystemTime(new Date('2026-10-28T12:00:00Z'));
             const fetchMock = vi.fn().mockImplementation(async () => response('{}'));
-            const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+            const provider = new OpenAiProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
             await provider.analyze(advertisement);
             await provider.correctAnalysis(advertisement, { applicationDeadline: '2023-11-16' }, [
                 { path: 'applicationDeadline', code: 'invalid_format' },
@@ -68,7 +68,7 @@ describe('OpenAiJobAnalysisProvider', () => {
 
     it('refuses to call the provider without an API key', async () => {
         const fetchMock = vi.fn();
-        const provider = new OpenAiJobAnalysisProvider('', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+        const provider = new OpenAiProvider('', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
         await expect(provider.analyze(advertisement))
             .rejects.toBeInstanceOf(JobAnalysisUnavailableError);
         expect(fetchMock).not.toHaveBeenCalled();
@@ -76,14 +76,14 @@ describe('OpenAiJobAnalysisProvider', () => {
 
     it('reports provider HTTP failures as unavailable', async () => {
         const fetchMock = vi.fn().mockResolvedValue(new Response('unauthorized', { status: 401 }));
-        const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+        const provider = new OpenAiProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
         await expect(provider.analyze(advertisement))
             .rejects.toBeInstanceOf(JobAnalysisUnavailableError);
     });
 
     it('reports network failures as unavailable', async () => {
         const fetchMock = vi.fn().mockRejectedValue(new Error('network down'));
-        const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+        const provider = new OpenAiProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
         await expect(provider.analyze(advertisement))
             .rejects.toBeInstanceOf(JobAnalysisUnavailableError);
     });
@@ -97,7 +97,7 @@ describe('OpenAiJobAnalysisProvider', () => {
             new Response('null', { status: 200 }),
         ]) {
             const fetchMock = vi.fn().mockResolvedValue(result);
-            const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+            const provider = new OpenAiProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
             await expect(provider.analyze(advertisement))
                 .rejects.toBeInstanceOf(JobAnalysisInvalidResponseError);
         }
@@ -109,7 +109,7 @@ describe('OpenAI stage-two categorization', () => {
         const fetchMock = vi.fn().mockResolvedValue(response(JSON.stringify({
             skills: [{ name: 'RabbitMQ', category: 'Messaging Systems' }],
         })));
-        const provider = new OpenAiJobAnalysisProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
+        const provider = new OpenAiProvider('test-secret', 'gpt-4o-mini', fetchMock as unknown as typeof fetch);
         expect(await provider.categorize(['RabbitMQ'], ['Databases'], advertisement)).toEqual({
             skills: [{ name: 'RabbitMQ', category: 'Messaging Systems' }],
         });

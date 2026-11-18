@@ -5,13 +5,13 @@ import {
 import type { JobExtractionProvider, AnalysisValidationIssue } from '@/ai/contracts/job-extraction-provider';
 import type { SkillCategorizationProvider } from '@/ai/contracts/skill-categorization-provider';
 import type { ContentClassificationProvider } from '@/ai/contracts/content-classification-provider';
-import { jobExtractionJsonSchema } from '@/ai/providers/openai/schemas/extract-job-details';
-import { skillCategorizationJsonSchema } from '@/ai/providers/openai/schemas/categorize-skills';
-import { jobAnalysisInstructions } from '@/ai/providers/openai/instructions/extract-job-details';
-import { jobAnalysisCorrectionInstructions } from '@/ai/providers/openai/instructions/correct-job-extraction';
-import { skillCategorizationInstructions } from '@/ai/providers/openai/instructions/categorize-skills';
-import { contentClassificationInstructions } from '@/ai/providers/openai/instructions/classify-advertisement-content';
-import { contentClassificationJsonSchema } from '@/ai/providers/openai/schemas/classify-advertisement-content';
+import { jobExtractionJsonSchema } from '@/ai/providers/openai/schemas/job-extraction';
+import { skillCategorizationJsonSchema } from '@/ai/providers/openai/schemas/skill-categorization';
+import { jobExtractionInstructions } from '@/ai/providers/openai/instructions/job-extraction';
+import { jobExtractionCorrectionInstructions } from '@/ai/providers/openai/instructions/job-extraction-correction';
+import { skillCategorizationInstructions } from '@/ai/providers/openai/instructions/skill-categorization';
+import { contentClassificationInstructions } from '@/ai/providers/openai/instructions/content-classification';
+import { contentClassificationJsonSchema } from '@/ai/providers/openai/schemas/content-classification';
 
 interface OpenAiResponse {
     status?: string;
@@ -23,7 +23,7 @@ interface OpenAiResponse {
     }>;
 }
 
-export class OpenAiJobAnalysisProvider implements JobExtractionProvider, SkillCategorizationProvider, ContentClassificationProvider {
+export class OpenAiProvider implements JobExtractionProvider, SkillCategorizationProvider, ContentClassificationProvider {
     constructor(
         private readonly apiKey = process.env.OPENAI_API_KEY,
         private readonly model = process.env.OPENAI_MODEL || 'gpt-4o-mini',
@@ -31,12 +31,12 @@ export class OpenAiJobAnalysisProvider implements JobExtractionProvider, SkillCa
     ) {}
 
     analyze(advertisement: string): Promise<unknown> {
-        return this.request(this.withCurrentDate(jobAnalysisInstructions), advertisement, jobExtractionJsonSchema, 'job_advertisement_analysis');
+        return this.request(this.withCurrentDate(jobExtractionInstructions), advertisement, jobExtractionJsonSchema, 'job_advertisement_analysis');
     }
 
     correctAnalysis(advertisement: string, previous: unknown, issues: AnalysisValidationIssue[]): Promise<unknown> {
         return this.request(
-            this.withCurrentDate(jobAnalysisCorrectionInstructions),
+            this.withCurrentDate(jobExtractionCorrectionInstructions),
             JSON.stringify({ advertisement, previous, validationIssues: issues }),
             jobExtractionJsonSchema,
             'job_advertisement_correction'

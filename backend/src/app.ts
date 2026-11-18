@@ -28,7 +28,7 @@ import { createMarketAnalysisRoutes } from '@/routes/market-analysis';
 import { createJobImportRoutes } from '@/routes/job-import';
 import { createJobAnalysisRoutes } from '@/routes/job-analysis';
 
-import { OpenAiJobAnalysisProvider } from '@/ai/providers/openai/openai-job-analysis-provider';
+import { OpenAiProvider } from '@/ai/providers/openai/openai-provider';
 import { JobAdvertisementUrlFetcher } from '@/job-advertisements/job-advertisement-url-fetcher';
 
 export function buildApp(
@@ -91,7 +91,7 @@ export function buildApp(
         }
     );
 
-    const analysisProvider = new OpenAiJobAnalysisProvider();
+    const analysisProvider = new OpenAiProvider();
     fastify.register(
         createJobAnalysisRoutes(
             new JobAnalysisService(analysisProvider, skillRepository),
