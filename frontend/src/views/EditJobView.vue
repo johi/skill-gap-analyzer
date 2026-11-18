@@ -70,7 +70,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="mx-auto max-w-4xl space-y-6">
+  <section class="w-full space-y-6">
     <Button variant="ghost" size="sm" as-child>
       <RouterLink
           v-if="job"
